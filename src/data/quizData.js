@@ -7,7 +7,8 @@
 //   第一章 W1：w1field(变量/字符串/运算符) w1lair(列表/元组/输出) w1boss
 //   第二章 W2：w2field(函数) w2heal(字典) w2lair(条件/循环) w2boss
 //   第三章 W3：w3shard(NumPy) w3heal(绘图/科学计算/蒙特卡洛) w3boss
-//   第四章 W4-W8：w4-w8（天文包/加速/数值方法/信号/暗物质）
+//   第四章 W4-W8：每章三池 {w}shard/{w}lair/{w}boss（天文包/加速/数值方法/
+//   信号/暗物质；heal 与 lair 共用池），tier 每章递进 3 档（w4=11/12/13 → w8=23/24/25）
 // 第三章起地图符文槽位由通用生成器铺设（c{章}s{n}/h{n}/l{n}/boss），
 // 槽位→题池映射从 chapters.js 注册表自动生成。
 // ============================================================
@@ -869,7 +870,7 @@ export const QUESTIONS = {
     explain: 'a > 4 筛出 [5 8 9]，sum() 相加得 22。掩膜 + 聚合是天文数据处理的黄金组合：筛选 + 统计一步完成。',
   },
 
-  // ============ W4 · 天文包（w4 · 难度 11）============
+  // ============ W4 · 天文包 · 星图碎片（w4shard · 难度 11）============
   ap1: {
     chapter: '第四章 · 天文包',
     tier: 11,
@@ -879,25 +880,6 @@ export const QUESTIONS = {
     options: ['header', 'meta', 'info', 'attrs'],
     answer: 0,
     explain: 'FITS = header（键值对元数据）+ data（N 维数组）。读图先看 header： exposure、滤波片、世界坐标参数全在里面。',
-  },
-  ap2: {
-    chapter: '第四章 · 天文包',
-    tier: 11,
-    prompt: 'Astropy 的 Quantity 让数字带上单位。这段咒语打印什么？',
-    code: 'from astropy import units as u\nd = 3 * u.kpc\nprint(d.to(u.pc))',
-    options: ['3000.0 pc', '3 pc', '0.003 pc', '报错'],
-    answer: 0,
-    explain: 'Quantity 会自动换算单位：1 kpc = 1000 pc，所以 3 kpc = 3000.0 pc。单位错误是天文代码最常见的 bug，Quantity 帮你挡住它。',
-  },
-  ap3: {
-    chapter: '第四章 · 天文包',
-    tier: 11,
-    prompt: '想把「赤经 10h，赤纬 +20°」变成坐标对象，空格里该填什么？',
-    code: 'from astropy.coordinates import SkyCoord\nc = ___("10h 20d", frame="icrs")',
-    fill: true,
-    options: ['SkyCoord', 'Coordinate', 'AstroCoord', 'Pointing'],
-    answer: 0,
-    explain: 'SkyCoord 是天球坐标咒语：支持 icrs / galactic 等坐标系，能互相转换、计算角距离、匹配星表。',
   },
   ap4: {
     chapter: '第四章 · 天文包',
@@ -917,11 +899,85 @@ export const QUESTIONS = {
     answer: 0,
     explain: 'HEALPix 把球面切成 12×NSIDE² 个等面积像素——WMAP/Planck 的全天 CMB 图都用它存（课程 Week4 的示例数据就是 WMAP 地图！）。',
   },
+  ap6: {
+    chapter: '第四章 · 天文包',
+    tier: 11,
+    prompt: '星图守卫用 healpy 检视 WMAP 全天图：hp.ma() 给地图蒙上面纱后，想取出所有「未被掩膜」的有效像素值，该念哪个咒语？',
+    code: 'import healpy as hp\nimport numpy as np\nm = hp.read_map("wmap_map.fits")\nmasked = hp.ma(m)                    # 蒙上可擦写的面纱\nmasked.mask = np.logical_not(m > 0)  # 遮住 m<=0 的像素\nvalid = masked.___()                 # 只取没被遮住的像素',
+    fill: true,
+    options: ['compressed', 'filled', 'flatten', 'unmask'],
+    answer: 0,
+    explain: 'hp.ma() 把地图变成掩膜数组：mask 为 True 的像素被遮住；np.logical_not 把「想保留」反转成「想遮住」；.filled() 会把被遮像素填成固定值，而 .compressed() 直接交出所有未遮罩的有效像素——统计 CMB 温度分布前必做的一步。',
+  },
+  ap7: {
+    chapter: '第四章 · 天文包',
+    tier: 11,
+    prompt: 'HDF5 书库像一棵倒挂的树，数据按层级存放。从 HDF5 文件里读取 lensCats 组下的星表时，Table.read 用哪个参数指明文件内部的层级？',
+    code: 'from astropy.table import Table\ncat = Table.read("lens_results.hdf5", ___="/lensCats")',
+    fill: true,
+    options: ['path', 'group', 'folder', 'layer'],
+    answer: 0,
+    explain: 'HDF5 内部像文件系统一样分层：path="/lensCats" 指向文件内部那个「目录」里的数据组，与磁盘上的文件路径无关——文件本身的位置已经写在第一个参数里了。',
+  },
 
-  // ============ W5 · 加速（w5 · 难度 12）============
+  // ============ W4 · 天文包 · 神殿符文（w4lair · 难度 12）============
+  ap8: {
+    chapter: '第四章 · 天文包',
+    tier: 12,
+    prompt: 'FITS 神殿的星表刻在二进制表 HDU 里。想一眼看清这张表有哪些列（列名列表），数据部分的哪个属性一念即中？',
+    code: 'from astropy.io import fits\nhdul = fits.open("qso_mock.fits")\ntable_data = hdul[1].data\ncols = table_data.___',
+    fill: true,
+    options: ['names', 'columns', 'keys', 'fields'],
+    answer: 0,
+    explain: '.names 交出列名列表（如 ["ZLENS", "IMSEP", "NIMG"]）。.columns 是完整的列对象（含 format 等元数据）；keys 是字典的咒语——别串了门。',
+  },
+  ap9: {
+    chapter: '第四章 · 天文包',
+    tier: 12,
+    prompt: '神殿档案里混着各式透镜系统，守卫只放行 NIMG 列等于 2 的行。空格里该填什么？',
+    code: "rows = table_data[table_data[___] == 2]",
+    fill: true,
+    options: ["'NIMG'", 'NIMG', '.NIMG', 'get("NIMG")'],
+    answer: 0,
+    explain: "FITS 表取列用中括号 + 列名字符串：table_data['NIMG'] 交出整列；== 2 得到布尔掩膜；再用掩膜索引只留下 True 的行——和 Week3 的 NumPy 布尔筛选一脉相承。",
+  },
+
+  // ============ W4 · 单位术士 破盾符文（w4boss · 难度 13）============
+  ap10: {
+    chapter: '第四章 · 天文包',
+    chapterBoss: true,
+    tier: 13,
+    prompt: '单位术士的卷轴是 HDUList 队伍！先放入 PrimaryHDU，再 append 一张 ImageHDU，又往索引 1 处 insert 一张。这段咒语打印什么？',
+    code: 'from astropy.io import fits\nimport numpy as np\nhdul = fits.HDUList([fits.PrimaryHDU(np.arange(3.0))])\nhdul.append(fits.ImageHDU(np.ones((2, 2))))   # 排到队尾\nhdul.insert(1, fits.ImageHDU(np.zeros(4)))    # 插队到索引 1\nprint(len(hdul), hdul[2].data.shape)',
+    options: ['3 (2, 2)', '2 (4,)', '3 (4,)', '4 (2, 2)'],
+    answer: 0,
+    explain: 'append 把 ones 接到队尾（索引 1）；insert(1, ...) 把 zeros 插到索引 1，ones 被挤到索引 2。队伍共 3 人，hdul[2] 是 ones，shape 为 (2, 2)。FITS 文件就是 HDUList：第 0 个永远是 PrimaryHDU。',
+  },
+  ap11: {
+    chapter: '第四章 · 天文包',
+    chapterBoss: true,
+    tier: 13,
+    prompt: '术士挥杖！透镜星表里 IMSEP（两像角距）与 ZLENS（透镜红移）先过布尔掩膜，再做列运算。这段咒语打印什么？',
+    code: 'import numpy as np\nIMSEP = np.array([2.0, 5.0])   # 两像间的角距离\nZLENS = np.array([1.0, 0.5])   # 透镜红移\nsel = (IMSEP > 1.0) & (ZLENS < 1.5)\ndeltaTheta = np.abs(IMSEP[sel] * (ZLENS[sel] + 1))\nprint(deltaTheta[0])',
+    options: ['4.0', '3.0', '2.0', '5.0'],
+    answer: 0,
+    explain: '掩膜的两个条件都成立；像被引力放大 (ZLENS+1) 倍：IMSEP×(ZLENS+1) = 2.0×2.0 = 4.0（讲义透镜几何的 deltaTheta）。先掩膜选行、再对列做代数——星表处理的黄金连招。',
+  },
+  ap12: {
+    chapter: '第四章 · 天文包',
+    chapterBoss: true,
+    tier: 13,
+    prompt: '术士的最终审判！MCMC 采样器踩进先验禁区（log_prior 返回 -inf）时，log_probability 会宣判什么？',
+    code: 'def log_probability(theta):\n    lp = log_prior(theta)          # 界外返回 -inf\n    if not np.isfinite(lp):\n        return -np.inf\n    return lp + log_likelihood(theta)',
+    options: ['-inf —— 先验一刀否决，连似然都不用算', '0.0 —— 保持中立', '只返回 log_likelihood 的值', '报错 NaN'],
+    answer: 0,
+    explain: '先验 -inf 意味着「此处概率为零」：概率 0 × 任何似然仍是 0，后验 log 直接 -inf 短路——np.isfinite 专查 ±inf 与 NaN，是 MCMC 防火墙的标准写法。',
+  },
+
+  // ============ W5 · 加速 · 引擎碎片（w5shard · 难度 14）============
   sp1: {
     chapter: '第五章 · 加速',
-    tier: 12,
+    tier: 14,
     prompt: '把 Python for 循环改成 NumPy 数组运算（向量化），通常能快多少？',
     code: 'for x in data:        # 慢\n    out.append(x**2)\nout = data ** 2      # 快',
     options: ['快几倍到上百倍（循环在 C 层完成）', '完全一样快', '反而更慢', '快不到两倍'],
@@ -930,16 +986,27 @@ export const QUESTIONS = {
   },
   sp2: {
     chapter: '第五章 · 加速',
-    tier: 12,
+    tier: 14,
     prompt: 'numba 的 @jit 装饰器做了什么？',
     code: 'from numba import jit\n\n@jit(nopython=True)\ndef step(body): ...',
     options: ['把 Python 函数即时编译成机器码', '把函数变成协程', '把函数移到 GPU', '缓存函数的返回值'],
     answer: 0,
     explain: '@jit 在第一次调用时把函数编译成机器码，数值密集的循环可以获得接近 C 的速度——课程 Week5 的 N-body 实验就是例子。',
   },
+  sp5: {
+    chapter: '第五章 · 加速',
+    tier: 14,
+    prompt: '课程里反复强调的 KISS 法则提醒我们？',
+    code: '"Keep it simple, stupid"',
+    options: ['先写对再写快，不要过早优化', '永远选最快的算法', '代码行数越少越好', '只用内置函数'],
+    answer: 0,
+    explain: 'KISS + 奥卡姆剃刀：先让代码正确、简单，profile 找到瓶颈，再针对性加速。过早优化是万恶之源。',
+  },
+
+  // ============ W5 · 加速 · 深渊符文（w5lair · 难度 15）============
   sp3: {
     chapter: '第五章 · 加速',
-    tier: 12,
+    tier: 15,
     prompt: 'multiprocessing 的 Pool.map 适合什么场景？',
     code: 'from multiprocessing import Pool\nwith Pool(4) as p:\n    results = p.map(work, tasks)',
     options: ['把大量独立任务分给多个进程（绕开 GIL）', '让单个函数变快', '减少内存占用', '自动向量化循环'],
@@ -948,27 +1015,50 @@ export const QUESTIONS = {
   },
   sp4: {
     chapter: '第五章 · 加速',
-    tier: 12,
-    prompt: 'mpi4py 的 comm.bcast 做什么？',
-    code: 'from mpi4py import MPI\ncomm = MPI.COMM_WORLD\ndata = comm.bcast(data, root=0)',
-    options: ['把 0 号进程的数据广播给所有进程', '收集所有进程的数据到 0 号', '设置同步屏障', '计算全局最大值'],
+    tier: 15,
+    prompt: 'mpi4py 的 comm.Bcast([data, MPI.DOUBLE], root=0) 做什么？',
+    code: 'from mpi4py import MPI\nimport numpy as np\ncomm = MPI.COMM_WORLD\ndata = np.zeros(4)\ncomm.Bcast([data, MPI.DOUBLE], root=0)',
+    options: ['把 0 号进程的数组缓冲区广播给所有进程', '收集所有进程的数据到 0 号', '设置同步屏障', '把所有进程的数据相加归约'],
     answer: 0,
-    explain: 'bcast 从 root 进程广播数据；gather/scatter 是收集/散发；屏障是 barrier。MPI 是超算上 N-body 模拟的并行语言。',
-  },
-  sp5: {
-    chapter: '第五章 · 加速',
-    tier: 12,
-    prompt: '课程里反复强调的 KISS 法则提醒我们？',
-    code: '"Keep it simple, stupid"',
-    options: ['先写对再写快，不要过早优化', '永远选最快的算法', '代码行数越少越好', '只用内置函数'],
-    answer: 0,
-    explain: 'KISS + 奥卡姆剃刀：先让代码正确、简单，profile 找到瓶颈，再针对性加速。过早优化是万恶之源。',
+    explain: '大写 Bcast 直接广播数组缓冲区：[data, MPI.DOUBLE] 描述「缓冲区 + 元素类型」，root=0 指定 0 号进程为广播源，结束后所有进程的 data 都与它一致。小写 bcast 能广播任意 Python 对象但更慢；gather/scatter 是收集/散发；Barrier 才是同步屏障。',
   },
 
-  // ============ W6 · 数值方法（w6 · 难度 13）============
+  // ============ W5 · 迟缓巨魔 破盾符文（w5boss · 难度 16）============
+  sp6: {
+    chapter: '第五章 · 加速',
+    chapterBoss: true,
+    tier: 16,
+    prompt: '巨魔的熔炉卷轴上刻着 Simpson 积分的 N=100000001——复合 Simpson 以「1-4-1」两格一组加权，子区间数必须是偶数。这条咒语打印什么？',
+    code: 'print(100000001 % 2)',
+    options: ['1（奇数！用之前得 +1 或 -1）', '0（正好是偶数）', '100000001', '报错'],
+    answer: 0,
+    explain: '复合 Simpson 把子区间两两成对加权 1-4-1，因此 N 必须为偶数。100000001 % 2 = 1 暴露了它是奇数——讲义特意两次提醒这个陷阱：N 加 1 或减 1 即可。',
+  },
+  sp7: {
+    chapter: '第五章 · 加速',
+    chapterBoss: true,
+    tier: 16,
+    prompt: 'mpi4py 用 range(rank, nruns, size) 把任务摊给各进程：nruns=15 个任务、size=4 个进程时，Task 7 会落进哪个 rank 的口袋？',
+    code: 'nruns, size = 15, 4\ntask = 7\nprint(task % size)',
+    options: ['3', '1', '7', '0'],
+    answer: 0,
+    explain: 'range(rank, 15, 4) 让每个 rank 领走编号 ≡ rank (mod 4) 的任务：rank 0 得 0, 4, 8, 12；rank 3 得 3, 7, 11。Task 7 = 4×1+3 → 7 % 4 = 3，归 rank 3。',
+  },
+  sp8: {
+    chapter: '第五章 · 加速',
+    chapterBoss: true,
+    tier: 16,
+    prompt: '巨魔的终极试炼：讲义用八种方法（朴素 for / NumPy 切片 / scipy.simpson / numba / JAX / ctypes / OpenMP / mpi4py）算同一个积分 ∫₀^(π/2) sin(x) dx。它们的结果是？',
+    code: 'naive / numpy / scipy / numba / jax / ctypes / OpenMP / mpi4py',
+    options: ['殊途同归——都 ≈ 1.0（差别只在速度）', '各不相同，无法比较', '只有 scipy 的结果等于 1.0', '并行版本的结果更精确'],
+    answer: 0,
+    explain: '∫₀^(π/2) sin(x) dx = 1.0。八种实现只是「怎么算」不同，数学答案唯一：≈1.0（浮点误差仅 1e-16 量级）。加速的第一课：先确认大家算的是同一个东西，再比谁快。',
+  },
+
+  // ============ W6 · 数值方法 · 数值碎片（w6shard · 难度 17）============
   nm1: {
     chapter: '第六章 · 数值方法',
-    tier: 13,
+    tier: 17,
     prompt: 'scipy.integrate.quad(f, a, b) 计算什么？',
     code: 'from scipy import integrate\nval, err = integrate.quad(np.sin, 0, np.pi)',
     options: ['f 在 [a, b] 上的定积分', 'f 的不定积分', 'f 的根', 'f 的最小值'],
@@ -977,7 +1067,7 @@ export const QUESTIONS = {
   },
   nm2: {
     chapter: '第六章 · 数值方法',
-    tier: 13,
+    tier: 17,
     prompt: '想数值求解常微分方程初值问题 dy/dt = f(t, y)，该用哪个咒语？',
     code: 'from scipy.integrate import ___\nsol = ___(f, t_span, y0)',
     fill: true,
@@ -987,25 +1077,16 @@ export const QUESTIONS = {
   },
   nm3: {
     chapter: '第六章 · 数值方法',
-    tier: 13,
+    tier: 17,
     prompt: 'curve_fit(model, x, y) 做什么？',
     code: 'from scipy.optimize import curve_fit\npopt, pcov = curve_fit(model, x, y)',
     options: ['找让模型最贴近数据的参数', '在数据点之间插值', '对数据做傅里叶变换', '平滑去除噪声'],
     answer: 0,
     explain: 'curve_fit 用最小二乘调整模型参数，让模型曲线尽量贴合数据。popt 是最优参数，pcov 的对角线开方是参数的不确定度。',
   },
-  nm4: {
-    chapter: '第六章 · 数值方法',
-    tier: 13,
-    prompt: '求方程 f(x) = 0 在区间 [a, b] 内的根，用哪个咒语？',
-    code: 'from scipy.optimize import brentq\nx0 = brentq(f, a, b)',
-    options: ['brentq（区间求根法家族）', 'quad', 'minimize', 'interp1d'],
-    answer: 0,
-    explain: 'brentq 要求 f(a) 与 f(b) 异号，然后稳健地收敛到根。求透镜方程、找轨道交点都用它。',
-  },
   nm5: {
     chapter: '第六章 · 数值方法',
-    tier: 13,
+    tier: 17,
     prompt: 'interp1d(x, y)(x_new) 返回什么？',
     code: 'from scipy.interpolate import interp1d\nf = interp1d(x, y)\ny_new = f(x_new)',
     options: ['x_new 处的插值（默认线性）', 'x_new 处的导数', 'x 到 y 的积分', '拟合直线的斜率'],
@@ -1013,10 +1094,53 @@ export const QUESTIONS = {
     explain: '插值回答「数据点之间是什么」：给定新 x，用线段（或三次样条）估算对应的 y。把两条不同采样的光谱对齐全靠它。',
   },
 
-  // ============ W7 · 线性代数与信号（w7 · 难度 14）============
+  // ============ W6 · 数值方法 · 迷宫符文（w6lair · 难度 18）============
+  nm4: {
+    chapter: '第六章 · 数值方法',
+    tier: 18,
+    prompt: '求方程 f(x) = 0 在区间 [a, b] 内的根，用哪个咒语？',
+    code: 'from scipy.optimize import brentq\nx0 = brentq(f, a, b)',
+    options: ['brentq（区间求根法家族）', 'quad', 'minimize', 'interp1d'],
+    answer: 0,
+    explain: 'brentq 要求 f(a) 与 f(b) 异号，然后稳健地收敛到根。求透镜方程、找轨道交点都用它。',
+  },
+
+  // ============ W6 · 优化牛头怪 破盾符文（w6boss · 难度 19）============
+  nm6: {
+    chapter: '第六章 · 数值方法',
+    chapterBoss: true,
+    tier: 19,
+    prompt: '牛头怪的迷宫里，六头守卫站成一排。N-body 大示例的核心一步：一行广播算出所有粒子的两两位置差，再 @ 质量向量。这段咒语打印什么？',
+    code: 'import numpy as np\nx = np.array([1., 2., 3., 4., 5., 6.])   # 六个粒子的位置\nmass = np.full((6, 1), 0.2)               # 各 0.2 质量\ndx = x - x[:, None]   # 广播：dx[i,j] = x[j] - x[i]\nF = (dx @ mass).ravel()\nprint(list(np.round(F, 2)))',
+    options: ['[3.0, 1.8, 0.6, -0.6, -1.8, -3.0]', '[3.0, 2.0, 1.0, -1.0, -2.0, -3.0]', '[15.0, 9.0, 3.0, -3.0, -9.0, -15.0]', '6'],
+    answer: 0,
+    explain: 'x - x[:, None] 一次广播出 6×6 的两两差（对角线为 0）；@ 质量向量把每行加权求和：第 i 行 = 0.2×(Σx_j − 6x_i) = 0.2×(21 − 6x_i)，得 [3.0, 1.8, 0.6, -0.6, -1.8, -3.0]。两行向量化顶掉双重循环——这就是 Week6 N-body 示例的魔法。',
+  },
+  nm7: {
+    chapter: '第六章 · 数值方法',
+    chapterBoss: true,
+    tier: 19,
+    prompt: '牛头怪的双斧劈开二重积分的迷宫！手算 ∫₀²∫₀¹ x·y² dy dx，这段咒语打印什么？',
+    code: 'from scipy import integrate\nf = lambda y, x: x * y**2\nval, err = integrate.dblquad(f, 0, 2, lambda x: 0, lambda x: 1)\nprint(round(val, 4))',
+    options: ['0.6667', '1.5', '0.1667', '0.3333'],
+    answer: 0,
+    explain: '内层 ∫₀¹ y² dy = 1/3，外层 ∫₀² x/3 dx = 2/3 ≈ 0.6667。注意 dblquad 的被积函数签名是 f(y, x)——y 在前！外层区间 [a, b] = [0, 2] 属于 x，gfun/hfun 给出 y 的范围。',
+  },
+  nm8: {
+    chapter: '第六章 · 数值方法',
+    chapterBoss: true,
+    tier: 19,
+    prompt: '迷宫地面高度沿两轴线性抬升。np.gradient 一次交出两个方向的梯度，采样间距 0.1。这段咒语打印什么？',
+    code: 'import numpy as np\na = np.arange(100).reshape(10, 10)\ngy, gx = np.gradient(a, 0.1)\nprint(gy[5, 5], gx[5, 5])',
+    options: ['100.0 10.0', '10.0 100.0', '100.0 100.0', '10.0 1.0'],
+    answer: 0,
+    explain: '行方向（axis 0）每下一行值 +10、间距 0.1 → 10/0.1 = 100.0；列方向（axis 1）每右一列 +1 → 1/0.1 = 10.0。np.gradient 返回 (axis0 梯度, axis1 梯度) 两个数组；忘给间距 0.1 的话会得到 10 和 1。',
+  },
+
+  // ============ W7 · 线性代数与信号 · 频谱碎片（w7shard · 难度 20）============
   sg1: {
     chapter: '第七章 · 线性代数与信号',
-    tier: 14,
+    tier: 20,
     prompt: 'np.linalg.eig(A) 返回什么？',
     code: 'import numpy as np\nw, v = np.linalg.eig(A)',
     options: ['特征值和特征向量', '行列式和逆矩阵', '矩阵的秩和迹', '均值和方差'],
@@ -1025,7 +1149,7 @@ export const QUESTIONS = {
   },
   sg2: {
     chapter: '第七章 · 线性代数与信号',
-    tier: 14,
+    tier: 20,
     prompt: 'np.cov(data) 计算什么？',
     code: 'import numpy as np\nC = np.cov(data)',
     options: ['协方差矩阵', '相关系数', '相关函数', '卷积核'],
@@ -1034,16 +1158,18 @@ export const QUESTIONS = {
   },
   sg3: {
     chapter: '第七章 · 线性代数与信号',
-    tier: 14,
+    tier: 20,
     prompt: 'np.fft.fft(signal) 把信号变换到哪里？',
     code: 'import numpy as np\nspec = np.fft.fft(signal)',
     options: ['频域（各频率成分的复振幅）', '时域', '图像域', '对数域'],
     answer: 0,
     explain: 'FFT 把信号拆解成不同频率正弦波的叠加——周期信号的脉动周期、仪器噪声的频谱特征都藏在这里。',
   },
+
+  // ============ W7 · 线性代数与信号 · 回廊符文（w7lair · 难度 21）============
   sg4: {
     chapter: '第七章 · 线性代数与信号',
-    tier: 14,
+    tier: 21,
     prompt: '望远镜把星光「涂抹」成斑（PSF），这个物理过程最像哪种数学运算？',
     code: 'convolved = np.convolve(image, psf, mode="same")',
     options: ['卷积（PSF 在图像上滑动相乘求和）', '相关函数', '傅里叶变换', '矩阵求逆'],
@@ -1052,7 +1178,7 @@ export const QUESTIONS = {
   },
   sg5: {
     chapter: '第七章 · 线性代数与信号',
-    tier: 14,
+    tier: 21,
     prompt: 'scikit-learn 的标准使用流程是？',
     code: 'from sklearn.ensemble import RandomForestClassifier\nclf = RandomForestClassifier()\nclf.fit(X_train, y_train)\ny_pred = clf.predict(X_test)',
     options: ['fit 训练 → predict 预测', 'predict 先于 fit', '只需要 fit', '必须手写梯度下降'],
@@ -1060,51 +1186,104 @@ export const QUESTIONS = {
     explain: 'sklearn 的所有模型都遵循同一咒语：fit(X, y) 学习 → predict(X) 预测 → score 评估。分类星系形态、光谱就用它。',
   },
 
-  // ============ W8 · 暗物质（w8 · 难度 15）============
+  // ============ W7 · 傅里叶魅影 破盾符文（w7boss · 难度 22）============
+  sg6: {
+    chapter: '第七章 · 线性代数与信号',
+    chapterBoss: true,
+    tier: 22,
+    prompt: '魅影的咆哮是三个纯音的叠加：1/4/7 Hz、幅度 3/1/0.5，采样率 2000、共 1 秒。FFT 频谱上这三根尖峰的幅度分别是多少？',
+    code: 'import numpy as np\nsr, T = 2000, 1.0\nN = int(sr * T)\nt = np.linspace(0, T, N, endpoint=False)\nsig = 3*np.sin(2*np.pi*1*t) + np.sin(2*np.pi*4*t) + 0.5*np.sin(2*np.pi*7*t)\nspec = np.abs(np.fft.rfft(sig))\nprint(round(spec[1]), round(spec[4]), round(spec[7]))',
+    options: ['3000 1000 500', '3 1 0.5', '1500 500 250', '1 4 7'],
+    answer: 0,
+    explain: 'FFT 把每个频率成分摊到谱峰上：峰值幅度 = A·N/2。N=2000：3×2000/2=3000、1×2000/2=1000、0.5×2000/2=500——幅度信息全藏在 A·N/2 里。',
+  },
+  sg7: {
+    chapter: '第七章 · 线性代数与信号',
+    chapterBoss: true,
+    tier: 22,
+    prompt: '魅影设下三行三列的封印矩阵。解开这个线性方程组，咒语打印什么？',
+    code: 'import numpy as np\nA = np.array([[4, 3, 2], [-2, 2, 3], [3, -5, 2]])\nb = np.array([25, -10, -4])\nprint(np.linalg.solve(A, b))',
+    options: ['[5. 3. -2.]', '[25. -10. -4.]', '[1. 2. 3.]', '报错（矩阵奇异）'],
+    answer: 0,
+    explain: 'solve(A, b) 解 Ax=b，得 x=[5, 3, -2]。验算：4×5+3×3+2×(-2)=25 ✓、-2×5+2×3+3×(-2)=-10 ✓、3×5-5×3+2×(-2)=-4 ✓。讲义推荐 solve 而不是 inv(A)@b——更快更稳。',
+  },
+  sg8: {
+    chapter: '第七章 · 线性代数与信号',
+    chapterBoss: true,
+    tier: 22,
+    prompt: '圣殿的三座乘法祭坛！np.inner(a, b) 与 a * b 分别打印什么？',
+    code: 'import numpy as np\na = np.arange(5)\nb = np.arange(5, 10)\nprint(np.inner(a, b))\nprint(a * b)',
+    options: ['80 和 [0 6 14 24 36]', '[0 6 14 24 36] 和 80', '80 和 80', '400 和 [5 6 7 8 9]'],
+    answer: 0,
+    explain: 'a * b 是逐元素积（Hadamard）：[0, 6, 14, 24, 36]；np.inner 在逐元素积之后再求和：0+6+14+24+36 = 80。内积是标量、逐元素积是同形数组——先逐项乘，再决定要不要加总。',
+  },
+
+  // ============ W8 · 暗物质 · 暗物质碎片（w8shard · 难度 23）============
   dm1: {
     chapter: '第八章 · 暗物质',
-    tier: 15,
+    tier: 23,
     prompt: 'NFW 轮廓描述暗物质晕的什么量随半径的分布？',
     code: 'rho(r) = rho_0 / (x * (1 + x)**2),  x = r / r_s',
     options: ['密度 ρ(r)', '质量 M(r)', '光度 L(r)', '温度 T(r)'],
     answer: 0,
     explain: 'NFW 轮廓是暗物质晕的密度分布：中心发散（cuspy），外围按 r³ 衰减。r_s 是特征半径，rho_0 是特征密度。',
   },
-  dm2: {
-    chapter: '第八章 · 暗物质',
-    tier: 15,
-    prompt: '暗物质晕质量 M₂₀₀ 通常定义在密度降为多少倍的半径处？',
-    code: 'M_200 = M(r_200)\nrho(r_200) = 200 * rho_crit',
-    options: ['200 倍宇宙临界密度', '2 倍临界密度', '2000 倍平均密度', '密度降到一半'],
-    answer: 0,
-    explain: '约定俗成：晕的边界 r₂₀₀ 定义在平均密度 ≈ 200 ρ_crit 处，内部质量记作 M₂₀₀。这是星系团/暗物质晕的「体重标准」。',
-  },
-  dm3: {
-    chapter: '第八章 · 暗物质',
-    tier: 15,
-    prompt: '用 N-body 模拟粒子测出 ρ(r) 后，怎么得到 NFW 参数 r_s 和 ρ₀？',
-    code: 'popt, _ = curve_fit(nfw_rho, r, rho)',
-    options: ['曲线拟合（如 scipy 的 curve_fit）', '直接读文件头', '傅里叶变换', '机器学习分类'],
-    answer: 0,
-    explain: '把 NFW 公式当作模型、模拟数据当作观测，curve_fit 找出最贴的 (rho_0, r_s)——这正是课程 Week8 的作业流程。',
-  },
   dm4: {
     chapter: '第八章 · 暗物质',
-    tier: 15,
+    tier: 23,
     prompt: '宇宙学 N-body 模拟中，暗物质粒子之间主要是什么相互作用？',
     code: 'F = G * m1 * m2 / r**2',
     options: ['万有引力（只受引力驱动）', '电磁力', '强核力', '流体压强'],
     answer: 0,
     explain: '暗物质只有引力相互作用（外加宇宙膨胀背景）。上万亿粒子在引力下成团、并合、形成暗物质晕——这就是 Week8 的宇宙学模拟。',
   },
+
+  // ============ W8 · 暗物质 · 核心符文（w8lair · 难度 24）============
+  dm3: {
+    chapter: '第八章 · 暗物质',
+    tier: 24,
+    prompt: '用 N-body 模拟粒子测出 ρ(r) 后，怎么得到 NFW 参数 r_s 和 ρ₀？',
+    code: 'popt, _ = curve_fit(nfw_rho, r, rho)',
+    options: ['曲线拟合（如 scipy 的 curve_fit）', '直接读文件头', '傅里叶变换', '机器学习分类'],
+    answer: 0,
+    explain: '把 NFW 公式当作模型、模拟数据当作观测，curve_fit 找出最贴的 (rho_0, r_s)——这正是课程 Week8 的作业流程。',
+  },
+
+  // ============ W8 · NFW 幻龙 破盾符文（w8boss · 难度 25）============
   dm5: {
     chapter: '第八章 · 暗物质',
-    tier: 15,
+    chapterBoss: true,
+    tier: 25,
     prompt: '把 NFW 密度 ρ(r) 从 0 积分到 r，得到什么？',
     code: 'M(r) = ∫ 4π r\'² ρ(r\') dr\'',
     options: ['半径 r 内的累积质量（enclosed mass）', '总光度', '晕的浓度参数', '位力温度'],
     answer: 0,
     explain: '质量 = 密度 × 体积的积分形式：M(r) 随 r 单调上升，到 r₂₀₀ 处的值就是晕质量。密度轮廓与质量轮廓可以互相换算。',
+  },
+  dm6: {
+    chapter: '第八章 · 暗物质',
+    chapterBoss: true,
+    tier: 25,
+    prompt: '幻龙的真身是密度 ρ(r)=ρ₀/[x(1+x)²]（x=r/Rₛ）。把密度从 0 积分到 R_max 得到质量 M，正确的公式形式是哪个？（代码代入讲义数字：ρ₀=5、Rₛ=0.3、R_max=3）',
+    code: 'import numpy as np\nrho_0, R_s, R_max = 5.0, 0.3, 3.0\nx = R_max / R_s\nM = 4 * np.pi * rho_0 * R_s**3 * (np.log(1 + x) + 1/(1 + x) - 1)\nprint(round(M, 4))',
+    options: [
+      '4πρ₀Rₛ³[ln(1+R_max/Rₛ) + 1/(1+R_max/Rₛ) − 1]',
+      '4πρ₀Rₛ³ · ln(1+R_max/Rₛ)',
+      '(4/3)πρ₀R_max³',
+      '4πρ₀Rₛ²[1 − 1/(1+R_max/Rₛ)]',
+    ],
+    answer: 0,
+    explain: '逐项积分 ∫₀^{R_max} 4πr²ρ(r)dr，换元 x=r/Rₛ 后得解析式 M = 4πρ₀Rₛ³[ln(1+x) + 1/(1+x) − 1]。代入讲义数字 → M ≈ 2.5257。密度与质量互为积分/微分——这是幻龙的一体两面。',
+  },
+  dm7: {
+    chapter: '第八章 · 暗物质',
+    chapterBoss: true,
+    tier: 25,
+    prompt: '幻龙吐出 MCMC 记忆之链：32 个 walkers 在 2 维参数空间走了 5000 步。烧掉前 1000 步（discard）、每 15 步取 1 步（thin）再摊平（flat），还剩几个样本？',
+    code: '# get_chain() 的 shape: (5000, 32, 2)\nsteps, walkers = 5000, 32\ndiscard, thin = 1000, 15\nprint((steps - discard) // thin * walkers)',
+    options: ['8512', '64000', '128000', '4000'],
+    answer: 0,
+    explain: 'discard=1000 烧掉未收敛的「烧入期」剩 4000 步；thin=15 按自相关时间取样去相关 → ⌊4000/15⌋=266 步；摊平后 ×32 walkers = 8512 个样本。（若 thin=2 则 2000×32 = 64000。）',
   },
 };
 
@@ -1127,16 +1306,26 @@ export const POOLS = {
   w3shard: ['np1', 'np2', 'np3', 'np4', 'np5', 'np6', 'np7', 'np8', 'np9', 'np10', 'np11', 'np12', 'np13', 'np14'],
   w3heal: ['mp1', 'mp2', 'mp3', 'mp4', 'mp5', 'mp6', 'mp7', 'mp8', 'mp9'],
   w3boss: ['nb1', 'nb2', 'nb3', 'nb4'],
-  // 第四章（Week 4：FITS/Astropy/healpy/emcee/sklearn）
-  w4: ['ap1', 'ap2', 'ap3', 'ap4', 'ap5'],
+  // 第四章（Week 4：FITS/Astropy/healpy/emcee/sklearn）—— 三池式
+  w4shard: ['ap1', 'ap4', 'ap5', 'ap6', 'ap7'],
+  w4lair: ['ap8', 'ap9'],
+  w4boss: ['ap10', 'ap11', 'ap12'],
   // 第五章（Week 5：向量化/numba/并行/KISS）
-  w5: ['sp1', 'sp2', 'sp3', 'sp4', 'sp5'],
+  w5shard: ['sp1', 'sp2', 'sp5'],
+  w5lair: ['sp3', 'sp4'],
+  w5boss: ['sp6', 'sp7', 'sp8'],
   // 第六章（Week 6：积分/ODE/拟合/求根/插值）
-  w6: ['nm1', 'nm2', 'nm3', 'nm4', 'nm5'],
+  w6shard: ['nm1', 'nm2', 'nm3', 'nm5'],
+  w6lair: ['nm4'],
+  w6boss: ['nm6', 'nm7', 'nm8'],
   // 第七章（Week 7：线性代数/FFT/卷积/ML）
-  w7: ['sg1', 'sg2', 'sg3', 'sg4', 'sg5'],
+  w7shard: ['sg1', 'sg2', 'sg3'],
+  w7lair: ['sg4', 'sg5'],
+  w7boss: ['sg6', 'sg7', 'sg8'],
   // 第八章（Week 8：NFW/暗物质晕/N-body）
-  w8: ['dm1', 'dm2', 'dm3', 'dm4', 'dm5'],
+  w8shard: ['dm1', 'dm4'],
+  w8lair: ['dm3'],
+  w8boss: ['dm5', 'dm6', 'dm7'],
 };
 
 // ------------------------------------------------------------
@@ -1192,7 +1381,7 @@ export function pickQuestion(slotId) {
 
 // ---------- 极简 Python 语法高亮 ----------
 const KEYWORDS = /\b(for|while|in|if|elif|else|def|return|import|from|and|or|not|True|False|as|lambda)\b/g;
-const FUNCS = /\b(print|range|len|append|int|str|input|np|plt|array|arange|linspace|zeros|ones|mean|sum|rand|argmax|reshape|scatter|hist|xlabel|ylabel|savefig|fits|units|u|SkyCoord|quad|curve_fit|solve_ivp|brentq|interp1d|fft|eig|cov|convolve|Pool|jit)\b/g;
+const FUNCS = /\b(print|range|len|append|int|str|input|np|plt|array|arange|linspace|zeros|ones|mean|sum|rand|argmax|reshape|scatter|hist|xlabel|ylabel|savefig|fits|units|u|SkyCoord|quad|dblquad|curve_fit|solve_ivp|brentq|interp1d|fft|rfft|eig|cov|convolve|Pool|jit|ma|compressed|logical_not|isfinite|Bcast|gradient|inner|solve)\b/g;
 
 export function highlight(code) {
   let html = code

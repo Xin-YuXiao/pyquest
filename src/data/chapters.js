@@ -199,7 +199,7 @@ export const CHAPTERS = [
     buildField, buildLair,
     boss: 'snake', bossName: '单位术士',
     npcKind: 'tablet', npcName: '星图石碑',
-    pools: { shard: 'w4', heal: 'w4', lair: 'w4', boss: 'w4' },
+    pools: { shard: 'w4shard', heal: 'w4lair', lair: 'w4lair', boss: 'w4boss' },
     theme: {
       palette: 'grass', seed: 20260401, w: 32, h: 24,
       healRunes: 2, slimeVariant: 'crimson', slimes: 5,
@@ -237,7 +237,7 @@ export const CHAPTERS = [
     buildField, buildLair,
     boss: 'slime', bossName: '迟缓巨魔',
     npcKind: 'tablet', npcName: '熔炉石碑',
-    pools: { shard: 'w5', heal: 'w5', lair: 'w5', boss: 'w5' },
+    pools: { shard: 'w5shard', heal: 'w5lair', lair: 'w5lair', boss: 'w5boss' },
     theme: {
       palette: 'dungeon', seed: 20260501, w: 30, h: 24,
       healRunes: 2, slimeVariant: 'crimson', slimes: 4,
@@ -275,7 +275,7 @@ export const CHAPTERS = [
     buildField, buildLair,
     boss: 'snake', bossName: '优化牛头怪',
     npcKind: 'tablet', npcName: '神殿石碑',
-    pools: { shard: 'w6', heal: 'w6', lair: 'w6', boss: 'w6' },
+    pools: { shard: 'w6shard', heal: 'w6lair', lair: 'w6lair', boss: 'w6boss' },
     theme: {
       palette: 'dungeon', seed: 20260601, w: 30, h: 24,
       healRunes: 2, slimeVariant: 'crimson', slimes: 4,
@@ -313,7 +313,7 @@ export const CHAPTERS = [
     buildField, buildLair,
     boss: 'slime', bossName: '傅里叶魅影',
     npcKind: 'tablet', npcName: '信号石碑',
-    pools: { shard: 'w7', heal: 'w7', lair: 'w7', boss: 'w7' },
+    pools: { shard: 'w7shard', heal: 'w7lair', lair: 'w7lair', boss: 'w7boss' },
     theme: {
       palette: 'grass', seed: 20270701, w: 32, h: 24,
       healRunes: 2, slimeVariant: 'crimson', slimes: 5,
@@ -351,7 +351,7 @@ export const CHAPTERS = [
     buildField, buildLair,
     boss: 'snake', bossName: 'NFW 幻龙',
     npcKind: 'tablet', npcName: '深空石碑',
-    pools: { shard: 'w8', heal: 'w8', lair: 'w8', boss: 'w8' },
+    pools: { shard: 'w8shard', heal: 'w8lair', lair: 'w8lair', boss: 'w8boss' },
     final: true,
     theme: {
       palette: 'dungeon', seed: 20280801, w: 32, h: 24,
