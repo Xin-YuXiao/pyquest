@@ -25,6 +25,8 @@ const CASES = {
   // ---- W4-W8 本批次（结构改造 + 补空池）涉及的确定输出题 ----
   ap10: '3 (2, 2)',                       // HDUList append/insert 索引推理
   ap11: '4.0',                            // IMSEP*(ZLENS+1) 透镜几何
+  ap20: '0.0 -inf',                       // log_prior 均匀先验界内/界外
+  ap22: '8 2',                            // train_test_split 80/20
   sp6: '1',                               // N 奇偶陷阱
   sp7: '3',                               // mpi 任务分配 Task 7 → rank 3
   nm6: '[3.0, 1.8, 0.6, -0.6, -1.8, -3.0]', // N-body 成对差广播+矩阵乘
