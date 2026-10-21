@@ -29,6 +29,8 @@ const CASES = {
   ap22: '8 2',                            // train_test_split 80/20
   sp6: '1',                               // N 奇偶陷阱
   sp7: '3',                               // mpi 任务分配 Task 7 → rank 3
+  sp16: '1.0',                            // Simpson 1-4-1：f=1 [0,1] N=2 → 1.0
+  sp20: '25000000 1',                     // divmod 分块 ave/res
   nm6: '[3.0, 1.8, 0.6, -0.6, -1.8, -3.0]', // N-body 成对差广播+矩阵乘
   nm7: '0.6667',                          // dblquad x·y² → 2/3
   nm8: '100.0 10.0',                      // np.gradient 二维双轴
