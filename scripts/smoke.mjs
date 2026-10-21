@@ -184,15 +184,22 @@ ok(`题池 ${Object.keys(POOLS).length} 个，池内难度一致（同池同难�
 
 // 3c. 每张地图的符文 qid 都是合法槽位，且指向非空题池（题量充足）
 const allRunes = [...allFields, ...allLairs].flatMap((m) => m.props.filter((p) => p.type === 'rune'));
-// TODO(题库充实批次2): W4-W8 各池尚未补满（w{lair} 目前 1-2 题），补足后统一恢复阈值 3
-const minPool = (name) => (/^w[123]/.test(name) ? 3 : 1);
 allRunes.forEach((p) => {
   const poolName = SLOT_POOL[p.qid];
   const pool = POOLS[poolName];
   if (!pool) fail(`符文槽 ${p.qid} 没有对应题池`);
-  else if (pool.length < minPool(poolName)) fail(`符文槽 ${p.qid} 的题池题量不足（${pool.length} < ${minPool(poolName)}）`);
+  else if (pool.length < 3) fail(`符文槽 ${p.qid} 的题池题量不足（${pool.length} < 3）`);
 });
 ok(`符文-题池映射完整（${allRunes.length} 个符文槽）`);
+
+// 3c'. W4-W8 池题量下限：w{N}shard ≥ 10 / w{N}lair ≥ 7 / w{N}boss ≥ 3（用下限而非精确值，留扩充余地）
+for (let w = 4; w <= 8; w++) {
+  [['shard', 10], ['lair', 7], ['boss', 3]].forEach(([k, n]) => {
+    const pool = POOLS[`w${w}${k}`];
+    if (pool && pool.length < n) fail(`题池 w${w}${k} 题量不足（${pool.length} < ${n}）`);
+  });
+}
+ok('W4-W8 题池题量达标（shard ≥ 10 / lair ≥ 7 / boss ≥ 3）');
 
 // 3d. 每章符文槽位抽到的题目所属章节正确（章→池归属抽查）
 for (const ch of CHAPTERS) {
@@ -222,8 +229,8 @@ try {
       if (q.tier !== tier) fail(`符文槽 ${slot} 抽到难度不符的题 ${q.id}（tier ${q.tier} != ${tier}）`);
       seen.add(q.id);
     }
-    // TODO(题库充实批次2): 单题池暂无法体现随机性，池补足后统一恢复
-    if (pool.length >= 2 && seen.size < 2) fail(`符文槽 ${slot} 多次抽题毫无随机性（题池 ${poolName}）`);
+    // 多题池多次独立抽取，应至少覆盖两道不同题
+    if (seen.size < 2) fail(`符文槽 ${slot} 多次抽题毫无随机性（题池 ${poolName}）`);
   }
   // 同一符文重开：题目保持不变
   G.qAnswered = new Set(); G.runeRolls = {};

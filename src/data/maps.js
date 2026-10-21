@@ -435,7 +435,9 @@ export function buildField(ch) {
     for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) blockTile(tx + dx, ty + dy);
   });
   blockTile(cx, 1); blockTile(cx + 1, 1);
-  blockTile(cx - 3, midY + 3); blockTile(cx - 4, midY + 3); blockTile(cx - 3, midY + 2); blockTile(cx - 3, midY + 4);
+  // 引导石碑周边半径 2 格（5×5 区域）不放符文/史莱姆：保证与石碑保持 ≥3 格间距，
+  // 避免玩家站在符文旁按 E 却先触发石碑对话（W6 野外 c6s3 曾落在石碑正东 1 格）
+  for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) blockTile(cx - 3 + dx, midY + 3 + dy);
   if (ch.prevKey) { blockTile(4, h - 1); blockTile(5, h - 1); blockTile(4, h - 2); blockTile(5, h - 2); }
   if (ch.nextKey) { blockTile(w - 2, midY); blockTile(w - 2, midY - 1); blockTile(w - 2, midY + 1); }
 

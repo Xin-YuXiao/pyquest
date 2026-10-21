@@ -51,7 +51,7 @@ npm run preview    # 本地预览构建产物
 | 第八章 · 深空晕环 | Week 8 | 深空晕环 + 暗物质核心 / NFW 幻龙 | NFW 轮廓、M₂₀₀、N-body 引力模拟、密度→质量积分 |
 
 > 第一、二章为手工地图（内容已按周次重对齐题池）；第三章为**通用生成器样板章**（完整可玩）；
-> 第四至八章已注册为可玩关卡（每章 5 题起步，题量将逐周充实）。
+> 第四至八章为通用生成器关卡，题库已充实至**每章 20 题**（shard/lair/boss 三池式）。
 
 ### 单章流程
 
@@ -70,11 +70,14 @@ npm run preview    # 本地预览构建产物
 - 通关结算中的「重新开始」会清档重置。
 - 存档实现：`src/core/save.js`（任何 HUD 数据变化 / 关页 / 切后台时写档）。
 
-## 📖 知识点覆盖（115 题 · 15 个同难度题池 · 对齐 P4A@UCAS 课程）
+## 📖 知识点覆盖（190 题 · 25 个同难度题池 · 对齐 P4A@UCAS 课程）
 
 每块符文石从所属**同难度题池**随机抽题：同池题目 `tier` 一致，
 随机但不撞题（同池多块符文不重复、已答过的题不再出现），
 同一块符文石在答对之前始终是同一道题。
+
+W4-W8 为**三池式**：每章 `w{N}shard`（野外碎片 ×10 基础）/ `w{N}lair`（巢穴祝福 ×7 进阶）/
+`w{N}boss`（BOSS 破盾 ×3 综合）共 20 题，难度 `tier` 11-25 随章递进（W4=11-13 … W8=23-25）。
 
 | 题池 | 题量 | 知识点 |
 | --- | --- | --- |
@@ -88,7 +91,21 @@ npm run preview    # 本地预览构建产物
 | w3shard（W3 高原 · 碎片） | 14 | ndarray 索引/shape/ndim、向量化、广播、arange/linspace/zeros、mean/sum、掩膜筛选、argmax、reshape、逐元素乘 |
 | w3heal（W3 巢穴 · 祝福） | 9 | plot/scatter/hist/xlabel/savefig、蒙特卡洛估π、random.rand、quad 积分 |
 | w3boss（W3 BOSS） | 4 | 平方和、reshape、掩膜+聚合 |
-| w4-w8（W4-8 各一池） | 5×5 | FITS/Astropy/healpy/emcee/sklearn；向量化/numba/并行/MPI/KISS；quad/solve_ivp/curve_fit/brentq/interp1d；eig/cov/FFT/卷积/sklearn；NFW/M₂₀₀/N-body/曲线拟合/累积质量 |
+| w4shard（W4 星图塔 · 碎片） | 10 | FITS header 与三类 HDU、`fits.open`/`writeto` overwrite、列 format="D"、500 GB 数据格式选型（HDF5）、healpy 等面积像素/NSIDE、`hp.ma` 掩膜取值、emcee 用途、conda 安装 healpy |
+| w4lair（W4 神殿 · 祝福） | 7 | 二进制表列名属性、布尔掩膜选行（NIMG）、EnsembleSampler 召唤、`get_chain(discard/thin/flat)`、均匀先验、`percentile [16,50,84]`、`train_test_split` |
+| w4boss（W4 单位术士） | 3 | HDUList append/insert、IMSEP/ZLENS 掩膜列运算、`log_prior` 返回 -inf 时 log_probability |
+| w5shard（W5 熔炉 · 碎片） | 10 | 向量化提速、numba `@jit`、KISS 法则/奥卡姆剃刀、GIL 与 multiprocessing、可并行判据、`mpirun` 启动、JAX、热点循环函数调用反模式、quad 一行胜千军 |
+| w5lair（W5 深渊 · 祝福） | 7 | `Pool.map`、`comm.Bcast`、复合 Simpson 1-4-1、numba 奇数格循环、ctypes 五步铸剑、OpenMP private 归约、divmod + Scatterv 分发 |
+| w5boss（W5 迟缓巨魔） | 3 | Simpson 大 N 拆块、`range(rank, nruns, size)` 任务摊派、八种加速法对比 |
+| w6shard（W6 神殿 · 碎片） | 10 | `quad`/`solve_ivp`/`curve_fit`/`interp1d` 各自用途、quad 返 val/err 两件套、odeint 签名陷阱、标量/向量求根两派、`derivative` 有限差分、`np.gradient`、MLE 取对数 |
+| w6lair（W6 迷宫 · 祝福） | 7 | brentq、quad `args` 传参、割线法两初值、`curve_fit` bounds、二阶 ODE 降阶、`np.triu` 成对求和、softening 防发散 |
+| w6boss（W6 优化牛头怪） | 3 | 广播 + `@` 算两两位置差、dblquad 二重积分、`np.gradient` 双轴梯度 |
+| w7shard（W7 圣殿 · 碎片） | 10 | `eig`/`cov`/`fft` 返回值、scipy.linalg 优先、特征方程、fft/ifft 往返、5σ 发现门槛、solve vs inv、matrix_rank/det、随机森林超参 |
+| w7lair（W7 回廊 · 祝福） | 7 | PSF=卷积、sklearn fit/predict 流程、FFT 频率轴、convolve2d 边缘提取、混淆矩阵、向量投影 `inner`、`B·inv(A)` 对照修正 |
+| w7boss（W7 傅里叶魅影） | 3 | 三纯音 FFT 尖峰、3×3 线性方程组、`inner` vs 逐元素乘 |
+| w8shard（W8 深空 · 碎片） | 10 | NFW 轮廓定义与发现、N-body 引力、ρ(Rₛ)=ρ₀/4、外区 r⁻³ 衰减、M(r) 与 ρ 的积分关系、MCMC 要点、逆变换采样、corner 角图、ML→emcee 衔接 |
+| w8lair（W8 核心 · 祝福） | 7 | ρ(r) 拟合出 r_s/ρ₀、interp1d 反转 CDF、球面均匀采样 θ/ψ、log-log 拟合、-inf 清洗、自相关时间 τ 与 thin、密度 vs 累积质量两种拟合 |
+| w8boss（W8 NFW 幻龙） | 3 | NFW 密度积分→累积质量、M(<R_max) 积分公式、walkers 链 discard/thin 统计 |
 
 ## 🏗️ 项目结构
 
@@ -101,7 +118,7 @@ src/
 ├── data/
 │   ├── chapters.js          # 八章注册表：周次/地图/对话/胜利文本/BOSS/题池配置（关卡数据核心）
 │   ├── maps.js              # 地图构建器：W1/W2 手工地图 + W3-W8 通用生成器（theme 驱动）
-│   └── quizData.js          # Python 题库（115 题 · 15 个同难度题池）+ 语法高亮
+│   └── quizData.js          # Python 题库（190 题 · 25 个同难度题池）+ 语法高亮
 ├── assets/cc0.js            # CC0 素材清单/加载/动画 + Kenney 小屋拼合
 │   └── (素材本体在 assets/cc0/)
 ├── textures/pixelArt.js     # 程序化补充贴图（符文石/爱心/传送门/水面等）
@@ -119,9 +136,15 @@ src/
 ui/                          # DOM 覆盖层：HUD、对话框、答题面板、结算（章节配置驱动）
 scripts/
 ├── smoke.mjs                # 无头冒烟测试（贴图/八章地图/题库/题池/抽题校验）
+├── verify-quiz.mjs          # 题库自动校验（用本机 python3 执行输出确定的题目，比对 stdout）
 ├── e2e.mjs                  # Playwright E2E：第一章全流程 + 存档
 ├── e2e-ch2.mjs              # 第二章 E2E（森林/洞窟/巨蟒/进入第三章/读档续玩）
-└── e2e-ch3.mjs              # 第三章 E2E（样板章全流程 + 衔接第四章 + 读档续玩）
+├── e2e-ch3.mjs              # 第三章 E2E（样板章全流程 + 衔接第四章 + 读档续玩）
+├── e2e-ch4.mjs              # 第四章 E2E（星图塔/FITS 符文/单位术士/衔接第五章）
+├── e2e-ch5.mjs              # 第五章 E2E（加速熔炉/深渊符文/迟缓巨魔/衔接第六章）
+├── e2e-ch6.mjs              # 第六章 E2E（数值神殿/迷宫符文/优化牛头怪/衔接第七章）
+├── e2e-ch7.mjs              # 第七章 E2E（信号圣殿/回廊符文/傅里叶魅影/衔接第八章）
+└── e2e-ch8.mjs              # 第八章 E2E（深空晕环/核心符文/NFW 幻龙/通关结算）
 ```
 
 ## 🎨 画面技术（Tiny Swords 素材 + CC0/程序化补充）
@@ -154,7 +177,7 @@ scripts/
 - **加一章**：在 `src/data/chapters.js` 的 `CHAPTERS` 里加一个对象（标题/世界名/BOSS/对话/victory 文案/
   theme 主题/题池名），再在 `src/data/quizData.js` 建对应题池——地图/场景/传送门全部自动生成注册。
 - **充实 W4-W8 题量**：在 `quizData.js` 的 `QUESTIONS` 里加题（标 `tier` 与所属池一致），
-  加进对应 `POOLS`（如 `w4`）即可，符文槽会自动抽到。
+  加进对应 `POOLS`（如 `w4shard` / `w4lair` / `w4boss`）即可，符文槽会自动抽到。
 - **改地图主题**：章节配置的 `theme` 字段（palette 草原/地牢、seed、尺寸、怪物密度、氛围色）。
 - **改 W1/W2 手工地图**：`src/data/maps.js` 是纯代码构建器，改数字即可挪动池塘、道路、道具。
 
@@ -163,9 +186,15 @@ scripts/
 ```bash
 npm run dev &                # 先起服务器
 node scripts/smoke.mjs       # 数据层冒烟测试（八章地图 + 题库校验）
+node scripts/verify-quiz.mjs # 题库自动校验（本机 python3 实跑输出确定的题目比对 stdout）
 node scripts/e2e.mjs         # E2E：第一章（答题/开门/BOSS/进第二章/存档）
 node scripts/e2e-ch2.mjs     # E2E：第二章（森林/洞窟/巨蟒/进第三章/读档续玩）
 node scripts/e2e-ch3.mjs     # E2E：第三章样板章（NumPy 符文/破盾/魔君/衔接第四章/读档）
+node scripts/e2e-ch4.mjs     # E2E：第四章（星图塔/FITS 符文/单位术士/衔接第五章）
+node scripts/e2e-ch5.mjs     # E2E：第五章（加速熔炉/深渊符文/迟缓巨魔/衔接第六章）
+node scripts/e2e-ch6.mjs     # E2E：第六章（数值神殿/迷宫符文/优化牛头怪/衔接第七章）
+node scripts/e2e-ch7.mjs     # E2E：第七章（信号圣殿/回廊符文/傅里叶魅影/衔接第八章）
+node scripts/e2e-ch8.mjs     # E2E：第八章（深空晕环/核心符文/NFW 幻龙/通关结算）
 ```
 
 ## 🗺️ 路线图（对齐 P4A@UCAS 八周课程）
@@ -174,10 +203,17 @@ node scripts/e2e-ch3.mjs     # E2E：第三章样板章（NumPy 符文/破盾/�
 - [x] ~~W1/W2 内容按周次重对齐（地牢=列表/元组，洞窟=控制流）~~ ✅
 - [x] ~~第三章 · 科学计算高原（NumPy/Matplotlib/蒙特卡洛，完整样板章）~~ ✅
 - [x] ~~W4-W8 注册为可玩关卡（传送门链 + 起步题池）~~ ✅
-- [ ] W4-W8 题量充实（每章 40-60 题：FITS 实操、emcee 漫步、NFW 拟合数值题）
+- [x] ~~W4-W8 题量充实 · 第一阶段（每章 20 题：shard×10 基础 / lair×7 进阶 / boss×3 综合，tier 11-25）~~ ✅
+- [ ] W4-W8 题量进一步充实（可选扩展至每章 40-60 题：FITS 实操、emcee 漫步、NFW 拟合数值题）
 - [ ] Pyodide 沙盒：W6-8 真实代码执行判分（跑 numpy/scipy 拟合 NFW）
 - [ ] 八个课程 Project 作为通关后「毕业试炼」隐藏关卡
 - [ ] 移动端虚拟摇杆；难度曲线（爱心上限/商店金币）
+
+### 第二部（64 学时扩展，详见 `docs/part2-plan.md`）
+
+- [ ] 第九章 · 统计圣所（天文学中的统计学基础，到 MCMC 后验分布为止）
+- [ ] 第十章 · 灵思之塔（vibe coding 工具方法论）
+- [ ] 第十一章 · 毕业试炼（project-driven study 实战收尾）
 
 ## 📄 许可证
 
