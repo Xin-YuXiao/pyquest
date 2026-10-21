@@ -200,64 +200,395 @@
     .btn.ghost { background: transparent; border-color: rgba(255,255,255,.4); color: #d8d2ea; box-shadow: none; }
     .btn:disabled { opacity: .45; cursor: not-allowed; }
 
-    /* 世界地图 */
+    /* ================= 世界地图（Tab 呼出） =================
+       一张羊皮纸大地图：八章地形色块 + landmark 小图标 + 弯曲小径。
+       地标三态：done 已通关 = 亮金 / 可进入 = 深紫 / locked = 墨紫。 */
     #map-backdrop {
       position: absolute; inset: 0;
-      background: rgba(20, 14, 30, .62);
+      background:
+        radial-gradient(120% 80% at 50% 42%, rgba(46, 32, 54, .55), rgba(18, 12, 26, .78));
       display: none; align-items: center; justify-content: center;
       z-index: 40;
     }
     #map-backdrop.show { display: flex; }
     #worldmap {
       width: min(880px, 94%);
-      background: var(--panel);
+      background: linear-gradient(180deg, #fff9ec 0%, #f7ebd3 100%);
       border: 3px solid var(--panel-border);
-      border-radius: 16px;
-      box-shadow: 0 8px 0 rgba(0, 0, 0, .3);
-      padding: 16px 18px 12px;
+      border-radius: 18px;
+      box-shadow:
+        0 9px 0 rgba(0, 0, 0, .28),
+        0 26px 50px rgba(0, 0, 0, .42),
+        inset 0 1px 0 #fffdf6;
+      padding: 10px 12px 8px;
       animation: pop .18s ease-out;
     }
     .map-head {
-      display: flex; justify-content: space-between; align-items: baseline;
-      margin-bottom: 12px;
-    }
-    .map-title { font-size: 22px; color: var(--ink); letter-spacing: 2px; }
-    .map-sub { font-size: 13px; color: #9a7f5a; }
-    .map-sub b { color: var(--gold); }
-    #map-path { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-    .map-node {
-      position: relative;
-      background: #fff;
-      border: 2px solid #d8c193;
-      border-radius: 12px;
-      padding: 9px 10px 8px;
-      text-align: left;
-      font-family: inherit;
-      cursor: pointer;
-      transition: transform .06s, border-color .12s, box-shadow .12s;
-    }
-    .map-node:hover { transform: translateY(-2px); border-color: var(--panel-border); }
-    .map-node.locked { cursor: not-allowed; opacity: .55; }
-    .map-node.locked:hover { transform: none; border-color: #d8c193; }
-    .map-node.done { border-color: #57b34a; background: #e9f8e4; }
-    .map-node.done:hover { border-color: #3d8f3d; }
-    .map-node.here { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(255, 210, 87, .35); }
-    .mn-top {
       display: flex; justify-content: space-between; align-items: center;
-      font-size: 12px; color: #9a7f5a; margin-bottom: 4px;
+      gap: 10px; margin: 2px 4px 8px;
     }
-    .mn-badge { font-size: 14px; }
-    .mn-name { font-size: 15px; color: var(--ink); line-height: 1.3; }
-    .mn-world { font-size: 12px; color: #9a7f5a; margin: 2px 0 6px; }
+    .map-title {
+      font-size: 21px; color: #4a3323; letter-spacing: 3px;
+      text-shadow: 0 1px 0 #fffdf6;
+    }
+    .map-sub { font-size: 12px; color: #9a7f5a; text-align: right; line-height: 1.5; }
+    .map-sub b { color: #bf8a26; }
+
+    /* ---- 画布：SVG 美术 + 按比例缩放的地标层 ---- */
+    #map-path {
+      position: relative;
+      aspect-ratio: 1000 / 600;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #f3e3c4;
+      box-shadow:
+        inset 0 0 0 2px #dcc59c,
+        inset 0 4px 18px rgba(120, 85, 40, .18);
+      --map-scale: 1;
+    }
+    .map-art {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%; display: block;
+      user-select: none; pointer-events: none;
+    }
+    .route-layer {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+    }
+    .map-nodes {
+      position: absolute; top: 0; left: 0;
+      width: 1000px; height: 600px;
+      transform: scale(var(--map-scale));
+      transform-origin: 0 0;
+      pointer-events: none;
+    }
+
+    /* ---- 小径：已通关 = 金色实线；可进入 = 流动金色点线；未解锁 = 暗色虚线 ---- */
+    .route-casing { fill: none; stroke: #f6e8cb; stroke-width: 8.5; stroke-linecap: round; }
+    .route { fill: none; stroke-width: 3.8; stroke-linecap: round; }
+    .route--done {
+      stroke: #e0a53c;
+      filter: drop-shadow(0 0 2.5px rgba(224, 165, 60, .55));
+    }
+    .route--open {
+      stroke: #dfa437;
+      stroke-dasharray: 1 9;
+      filter: drop-shadow(0 0 2px rgba(224, 165, 60, .5));
+      animation: trailFlow 1.9s linear infinite;
+    }
+    .route--lock {
+      stroke: #9c8666;
+      stroke-dasharray: 5 8;
+      opacity: .55;
+    }
+    @keyframes trailFlow { to { stroke-dashoffset: -20; } }
+
+    /* ---- 地标（0 尺寸锚点 + 圆徽 + 名称牌） ---- */
+    .map-node {
+      position: absolute;
+      left: calc(var(--x) * 10px);
+      top: calc(var(--y) * 6px);
+      /* 134×110 的命中区：锚点 = 圆徽中心（上探 23px，名称牌向下展开） */
+      width: 142px; height: 116px;
+      margin: -23px 0 0 -71px;
+      padding: 0; border: 0; background: none;
+      font-family: inherit;
+      color: inherit;
+      text-align: left;
+      cursor: pointer;
+      pointer-events: auto;
+      z-index: 2;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .map-node:hover:not(.locked),
+    .map-node:focus-visible { z-index: 5; }
+    .map-node.here { z-index: 4; }
+
+    .mn-pin {
+      position: absolute; left: 50%; top: 23px;
+      width: 48px; height: 48px;
+      transform: translate(-50%, -50%);
+      display: grid; place-items: center;
+      transition: transform .18s cubic-bezier(.34, 1.56, .64, 1);
+    }
+    .mn-disc {
+      width: 44px; height: 44px; border-radius: 50%;
+      display: grid; place-items: center;
+      font-size: 18px; line-height: 1;
+      font-variant-numeric: tabular-nums;
+      color: #f6ecdd;
+      background: radial-gradient(circle at 34% 26%, #584568 0%, #3a2d46 62%, #2b2135 100%);
+      border: 3px solid #7a5f8b;
+      box-shadow:
+        inset 0 2px 0 rgba(255, 255, 255, .16),
+        0 3px 0 rgba(0, 0, 0, .3),
+        0 0 0 3px rgba(255, 249, 233, .6);
+      text-shadow: 0 1px 2px rgba(0, 0, 0, .45);
+      transition: box-shadow .18s ease, background .18s ease;
+    }
+    .mn-badge {
+      position: absolute; top: -2px; right: -1px;
+      width: 21px; height: 21px; border-radius: 50%;
+      display: grid; place-items: center;
+      font-size: 11px; line-height: 1;
+      background: #fff8ea; border: 2px solid #b98a4e;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, .28);
+    }
+    .mn-badge:empty { display: none; }
+
+    .mn-plate {
+      position: absolute; left: 50%; top: 50px;
+      transform: translateX(-50%);
+      width: 142px;
+      display: flex; flex-direction: column; align-items: flex-start; gap: 1px;
+      padding: 5px 9px 6px;
+      border-radius: 9px;
+      text-align: left;
+      background: rgba(40, 31, 49, .94);
+      border: 1.5px solid #6a5478;
+      box-shadow:
+        0 4px 10px rgba(0, 0, 0, .32),
+        inset 0 1px 0 rgba(255, 255, 255, .08);
+      transition: transform .18s cubic-bezier(.34, 1.56, .64, 1),
+                  background .15s ease, border-color .15s ease, box-shadow .15s ease;
+    }
+    .mn-week {
+      display: flex; justify-content: space-between; align-items: baseline;
+      gap: 6px; width: 100%;
+      font-size: 10px; letter-spacing: 1.2px; color: #c8ac89;
+    }
+    .mn-here-tag { color: #ffd257; letter-spacing: .5px; }
+    .mn-name {
+      font-size: 14px; line-height: 1.3; color: #f8efe0;
+      white-space: nowrap;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, .4);
+    }
     .mn-status {
-      font-size: 12px; color: var(--ink);
-      background: rgba(42, 32, 24, .07);
-      border-radius: 6px; padding: 3px 7px;
-      display: inline-block;
+      margin-top: 1px;
+      font-size: 11px; line-height: 1.55;
+      color: #e9d7bd;
+      background: rgba(255, 255, 255, .1);
+      border: 1px solid rgba(255, 214, 140, .18);
+      border-radius: 5px;
+      padding: 0 5px;
+      white-space: nowrap;
     }
-    .mn-status.done { color: #2e7d32; }
-    .mn-status.locked { color: #9a7f5a; }
-    .map-tip { margin-top: 12px; font-size: 12px; color: #9a7f5a; text-align: center; }
+
+    /* ---- hover / 按下：轻微上浮 + 光晕 ---- */
+    .map-node:hover:not(.locked) .mn-pin {
+      transform: translate(-50%, calc(-50% - 5px));
+      filter: drop-shadow(0 0 9px rgba(255, 210, 87, .5));
+    }
+    .map-node:hover:not(.locked) .mn-plate {
+      transform: translate(-50%, -4px);
+      background: rgba(54, 42, 66, .97);
+      border-color: #b98a4e;
+      box-shadow:
+        0 9px 18px rgba(0, 0, 0, .4),
+        0 0 0 1px rgba(255, 210, 87, .25);
+    }
+    .map-node:hover:not(.locked) .mn-disc {
+      box-shadow:
+        inset 0 2px 0 rgba(255, 255, 255, .22),
+        0 6px 12px rgba(0, 0, 0, .35),
+        0 0 0 3px rgba(255, 249, 233, .75),
+        0 0 20px rgba(255, 210, 87, .6);
+    }
+    .map-node:active:not(.locked) .mn-pin {
+      transform: translate(-50%, calc(-50% - 1px)) scale(.97);
+    }
+
+    /* ---- done：已通关，暖金圆徽 + 亮纸牌 + 柔光呼吸 ---- */
+    .map-node.done .mn-disc {
+      color: #5b3a05;
+      background: radial-gradient(circle at 34% 26%, #fffbe0 0%, #ffdd82 48%, #f2b43c 100%);
+      border-color: #a8701a;
+      text-shadow: 0 1px 0 rgba(255, 255, 255, .6);
+      box-shadow:
+        inset 0 2px 0 rgba(255, 255, 255, .9),
+        0 3px 0 rgba(139, 90, 0, .35),
+        0 0 0 3px rgba(255, 249, 226, .9),
+        0 0 18px rgba(255, 196, 72, .6);
+      animation: mapGlow 3.6s ease-in-out infinite;
+      animation-delay: var(--d, 0s);
+    }
+    .map-node.done .mn-badge {
+      background: #fffdf6; border-color: #2f7d33; color: #2f7d33;
+    }
+    .map-node.done .mn-plate {
+      background: linear-gradient(180deg, #fffaea 0%, #ffe5a0 100%);
+      border-color: #d9a03a;
+      box-shadow:
+        0 4px 12px rgba(160, 105, 20, .28),
+        inset 0 1px 0 #fff,
+        0 0 0 1px rgba(255, 210, 87, .45);
+    }
+    .map-node.done .mn-week { color: #7a5a28; }
+    .map-node.done .mn-here-tag { color: #8a5a00; }
+    .map-node.done .mn-name { color: #3f2c1c; text-shadow: none; }
+    .map-node.done .mn-status {
+      color: #2a6f2f;
+      background: rgba(46, 125, 50, .12);
+      border-color: rgba(46, 125, 50, .24);
+    }
+    .map-node.done:hover .mn-plate {
+      background: linear-gradient(180deg, #fffdf4 0%, #ffefbc 100%);
+      box-shadow:
+        0 9px 20px rgba(160, 105, 20, .3),
+        inset 0 1px 0 #fff,
+        0 0 22px rgba(255, 196, 72, .45);
+    }
+    @keyframes mapGlow {
+      0%, 100% {
+        box-shadow: inset 0 2px 0 rgba(255, 255, 255, .9), 0 3px 0 rgba(139, 90, 0, .35),
+                    0 0 0 3px rgba(255, 249, 226, .9), 0 0 13px rgba(255, 196, 72, .42);
+      }
+      50% {
+        box-shadow: inset 0 2px 0 rgba(255, 255, 255, .95), 0 3px 0 rgba(139, 90, 0, .35),
+                    0 0 0 3px rgba(255, 249, 226, .95), 0 0 26px rgba(255, 196, 72, .78);
+      }
+    }
+
+    /* ---- locked：未解锁，最暗最钝，锁仍可辨 ---- */
+    .map-node.locked { cursor: not-allowed; }
+    .map-node.locked .mn-disc {
+      color: #8c8098;
+      background: radial-gradient(circle at 34% 26%, #2c2436 0%, #221c2a 65%, #1b1622 100%);
+      border-color: #3d3446;
+      box-shadow:
+        inset 0 2px 0 rgba(255, 255, 255, .05),
+        0 2px 0 rgba(0, 0, 0, .3),
+        0 0 0 3px rgba(255, 249, 233, .38);
+      text-shadow: none;
+    }
+    .map-node.locked .mn-badge {
+      background: #efe5d3; border-color: #4a3f55; opacity: .9;
+    }
+    .map-node.locked .mn-plate {
+      background: rgba(27, 21, 34, .94);
+      border-color: #3d3446;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, .35), inset 0 1px 0 rgba(255, 255, 255, .04);
+    }
+    .map-node.locked .mn-week { color: #a89bb3; }
+    .map-node.locked .mn-name { color: #b0a5bb; text-shadow: none; }
+    .map-node.locked .mn-status {
+      color: #a89bb3;
+      background: rgba(255, 255, 255, .05);
+      border-color: rgba(255, 255, 255, .08);
+    }
+    /* ---- here：当前所在章：常驻金环 + 扩散脉冲（暗底/亮底都清晰） ---- */
+    .map-node.here .mn-pin::before {
+      content: '';
+      position: absolute; inset: -3px;
+      border-radius: 50%;
+      border: 2.5px solid var(--gold);
+      box-shadow: 0 0 10px rgba(255, 210, 87, .6);
+      pointer-events: none;
+    }
+    .map-node.here .mn-pin::after {
+      content: '';
+      position: absolute; inset: -4px;
+      border-radius: 50%;
+      border: 2.5px solid var(--gold);
+      animation: herePulse 2.4s ease-out infinite;
+      pointer-events: none;
+    }
+    .map-node.here .mn-plate {
+      border-color: #e9b247;
+      box-shadow:
+        0 4px 12px rgba(0, 0, 0, .32),
+        0 0 0 1.5px rgba(255, 210, 87, .65);
+    }
+    @keyframes herePulse {
+      0% { transform: scale(.9); opacity: .95; }
+      70% { transform: scale(1.4); opacity: 0; }
+      100% { transform: scale(1.4); opacity: 0; }
+    }
+
+    /* ---- 键盘焦点 ---- */
+    .map-node:focus-visible { outline: none; }
+    .map-node:focus-visible .mn-plate {
+      outline: 3px solid var(--gold);
+      outline-offset: 3px;
+    }
+    .map-node.locked:focus-visible .mn-plate { outline-color: #7b6a89; }
+
+    /* ---- 图例 ---- */
+    .map-foot {
+      display: flex; flex-wrap: wrap; align-items: center;
+      gap: 4px 14px;
+      margin-top: 8px; padding: 0 4px 2px;
+      font-size: 11px; color: #8c7350;
+    }
+    .lg { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+    .lg::before {
+      content: ''; width: 20px; height: 0;
+      border-top: 3px solid #e0a53c; border-radius: 2px;
+    }
+    .lg-open::before { border-top-style: dotted; }
+    .lg-lock::before { border-top-style: dashed; border-top-color: #a08a6c; opacity: .7; }
+    .map-tip { margin-left: auto; color: #9a7f5a; }
+
+    /* ---- 窄屏：改为两列地标卡（地图美术收起，避免文字挤成竖条） ---- */
+    @media (max-width: 680px) {
+      #worldmap { padding: 8px 9px 6px; border-radius: 15px; }
+      .map-head { flex-direction: column; align-items: flex-start; gap: 2px; margin-bottom: 7px; }
+      .map-title { font-size: 18px; letter-spacing: 1px; }
+      .map-sub { text-align: left; font-size: 11px; }
+      #map-path { aspect-ratio: auto; }
+      .map-art, .route-layer { display: none; }
+      .map-nodes {
+        position: static; width: auto; height: auto; transform: none;
+        display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+        padding: 8px;
+      }
+      .map-node {
+        position: static; width: auto; height: auto; margin: 0;
+        display: flex; align-items: center; gap: 8px;
+        padding: 7px 8px; border-radius: 11px;
+        background: linear-gradient(158deg, #3d3046 0%, #2f2539 100%);
+        border: 2px solid #6a5478;
+        box-shadow: 0 2px 0 rgba(0, 0, 0, .25), inset 0 1px 0 rgba(255, 255, 255, .1);
+      }
+      .mn-pin {
+        position: relative; left: auto; top: auto; transform: none;
+        width: 34px; height: 34px; flex: 0 0 34px;
+      }
+      .mn-disc { width: 32px; height: 32px; font-size: 13px; border-width: 2px; box-shadow: none; animation: none; }
+      .mn-badge { width: 15px; height: 15px; font-size: 8px; border-width: 1.5px; top: -3px; right: -3px; }
+      #map-path .mn-plate {
+        position: static; transform: none; width: auto;
+        padding: 0; background: none; border: 0; box-shadow: none;
+        gap: 0;
+      }
+      #map-path .mn-week { font-size: 8px; letter-spacing: 1px; }
+      #map-path .mn-name { font-size: 12px; white-space: normal; }
+      #map-path .mn-status { font-size: 9px; margin-top: 2px; }
+      #map-path .map-node.done {
+        background: linear-gradient(158deg, #fffaea 0%, #ffe6a2 100%);
+        border-color: #d9a03a;
+      }
+      #map-path .map-node.locked {
+        background: linear-gradient(158deg, #2a2333 0%, #211b29 100%);
+        border-color: #40364a;
+      }
+      #map-path .map-node.here:not(.locked) {
+        box-shadow: 0 0 0 2px #2b2233, 0 0 0 4px var(--gold);
+      }
+      #map-path .map-node:hover:not(.locked) .mn-pin { transform: none; }
+      #map-path .map-node:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+      #map-path .map-node:focus-visible .mn-plate { outline: none; }
+      .map-foot { font-size: 10px; gap: 3px 10px; }
+      .map-tip { margin-left: 0; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .route--open,
+      .map-node.done .mn-disc,
+      .map-node.here .mn-pin::after,
+      #worldmap { animation: none; }
+    }
 
     /* 标题画面 / 胜利画面 */
     .full-modal {
@@ -349,7 +680,12 @@
               <span class="map-sub" id="map-sub"></span>
             </div>
             <div id="map-path"></div>
-            <div class="map-tip">点击已解锁的章节可快速传送（通关前一章节即解锁）</div>
+            <div class="map-foot">
+              <span class="lg lg-done">已通关</span>
+              <span class="lg lg-open">可进入</span>
+              <span class="lg lg-lock">未解锁</span>
+              <span class="map-tip">🌀 点击点亮的地标快速传送（通关前一章即解锁）</span>
+            </div>
           </div>
         </div>
 
