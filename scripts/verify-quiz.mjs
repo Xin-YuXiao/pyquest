@@ -51,6 +51,8 @@ const CASES = {
   sg20: '[1. 3.]\n[-6.  8.]',             // 讲义 bug：np.dot(B, inv(A)) 顺序反
   dm6: '2.5257',                          // NFW 质量积分公式
   dm7: '8512',                            // chain shape discard/thin/flat
+  dm8: '1.25',                            // NFW 特征半径处 ρ(Rₛ)=ρ₀/4
+  dm9: '0.0012',                          // 外翼 r⁻³：半径×10→密度×1/1000
 };
 
 let errors = 0;
