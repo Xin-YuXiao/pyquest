@@ -34,6 +34,13 @@ const CASES = {
   nm6: '[3.0, 1.8, 0.6, -0.6, -1.8, -3.0]', // N-body 成对差广播+矩阵乘
   nm7: '0.6667',                          // dblquad x·y² → 2/3
   nm8: '100.0 10.0',                      // np.gradient 二维双轴
+  nm9: '1.0 True',                        // quad 返回 (值, 误差) 元组
+  nm13: '[1.0, 2.0, 4.0, 6.0, 7.0]',      // np.gradient 一维：中心+单侧差分
+  nm15: '2.0',                            // quad args= 传参 ∫(2x+1)=2.0
+  nm16: '1.0',                            // root_scalar secant 两初值 → sol.root
+  nm17: '[3.02, 1.86]',                   // curve_fit bounds= 约束拟合
+  nm19: '[1.0, 2.0, 3.0]',                // np.triu 上三角成对距离（i<j 各一次）
+  nm20: '4.0 0.8',                        // softening：r=0 处 1/ε² 有限
   sg6: '3000 1000 500',                   // FFT 峰值幅度 A·N/2
   sg7: '[ 5.  3. -2.]',                   // solve 手算
   sg8: '80\n[ 0  6 14 24 36]',            // inner=80 vs 逐元素积
