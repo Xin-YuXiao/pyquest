@@ -9,6 +9,7 @@ import { G, cp } from '../core/state.js';
 import { CHAPTERS } from '../data/chapters.js';
 import { sfx } from '../audio/sfx.js';
 import { wipeTransition } from './wipe.js';
+import { ICON } from './icons.js';
 
 const MAP_W = 1000;
 const MAP_H = 600;
@@ -285,6 +286,11 @@ export class WorldMap {
     // 地图按容器宽度整体缩放地标层（美术 SVG 自适应，地标保持同一比例）
     this._ro = new ResizeObserver(() => this._fit());
     this._ro.observe(this.pathEl);
+
+    // 像素图标就位（#10 emoji 替换）：标题 🗺️ → 藏宝图，页脚提示 🌀 → 传送准星
+    // 写死整段 innerHTML，场景重启重复执行也幂等
+    document.querySelector('.map-title').innerHTML = `${ICON.map}冒险地图`;
+    document.querySelector('.map-tip').innerHTML = `${ICON.swirl}点击点亮的地标快速传送（通关前一章即解锁）`;
   }
 
   toggle() {
@@ -354,7 +360,7 @@ export class WorldMap {
 
   render() {
     const doneCount = CHAPTERS.filter((c) => cp(c.id).done).length;
-    this.subEl.innerHTML = `P4A 八周旅程<span class="dot-sep"></span>已通关 <b>${doneCount} / ${CHAPTERS.length}</b><span class="dot-sep"></span><b>Tab</b> 关闭`;
+    this.subEl.innerHTML = `P4A 八周旅程<span class="dot-sep"></span>已通关 <b>${doneCount} / ${CHAPTERS.length}</b><span class="dot-sep"></span><kbd>Tab</kbd> 关闭`;
 
     // 连线：目的地已通关 = 金色实线；已解锁未通关 = 流动金色点线；未解锁 = 暗色虚线
     const segs = CHAPTERS.slice(0, -1).map((ch, i) => {
@@ -382,8 +388,9 @@ export class WorldMap {
       if (p.done) classes.push('done');
       if (here) classes.push('here');
 
-      // 徽章优先级：锁定 > 当前所在 > 已通关（当前章即使已通关也保留 📍）
-      const badge = !unlocked ? '🔒' : (here ? '📍' : (p.done ? '✓' : ''));
+      // 徽章优先级：锁定 > 当前所在 > 已通关（当前章即使已通关也保留大头针）
+      // 🔒 → 像素挂锁，📍 → 像素大头针（icons.js，与爱心/碎片同族）
+      const badge = !unlocked ? ICON.lock : (here ? ICON.pin : (p.done ? '✓' : ''));
       const status = !unlocked
         ? { cls: 'locked', text: '未解锁' }
         : p.done

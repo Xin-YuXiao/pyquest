@@ -3,6 +3,7 @@
 // ============================================================
 import { G, chapterShards, cp } from '../core/state.js';
 import { CHAPTERS, getChapter } from '../data/chapters.js';
+import { ICON } from './icons.js';
 
 const SVG_HEART = (fill, shine) => `
   <svg viewBox="0 0 9 8" shape-rendering="crispEdges">
@@ -93,16 +94,17 @@ export class HUD {
     }
 
     // 目标提示：由当前章节进度推导
+    // （#11：目标行已与碎片计数胶囊分层，独立悬挂在胶囊下方）
     const ch = getChapter(G.current);
     const p = cp(ch.id);
     const next = CHAPTERS.find((c) => c.id === ch.id + 1);
     const allDone = CHAPTERS.every((c) => cp(c.id).done);
     let objective;
-    if (allDone) objective = '🎉 全部通关！自由探索吧';
+    if (allDone) objective = `${ICON.star}全部通关！自由探索吧`;
     else if (p.done) objective = next ? `本章通关！前往${next.fieldName}` : '本章通关！';
     else if (!p.gateOpen) objective = `收集${ch.shardLabel}，解开巢穴封印`;
     else objective = `进入${ch.lairName}，击败${ch.bossName}！`;
-    this.objectiveEl.textContent = objective;
+    this.objectiveEl.innerHTML = objective;
   }
 
   hint(html) {

@@ -5,6 +5,14 @@
 import { G } from '../core/state.js';
 import { CHAPTERS } from '../data/chapters.js';
 import { hasSave, clearSave, saveChapter } from '../core/save.js';
+import { ICON } from './icons.js';
+
+// 标题里的 emoji 前缀（chapters.js 的 victory.title 仍写着 🎉👑⚡…）
+// 在此剥掉，换成一枚统一的像素「章节印章」（#10）
+const STRIP_EMOJI = /^[\s\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]+\s*/u;
+const esc = (s) => s
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 export function initTitle({ onNew, onContinue }) {
   const el = document.getElementById('title');
@@ -37,9 +45,11 @@ export function initTitle({ onNew, onContinue }) {
 export function showVictory(ch, { hasNext, onNext, onRestart } = {}) {
   const el = document.getElementById('victory');
   const cfg = (ch && ch.victory) || {
-    title: '🎉 冒险成功！', text: '你完成了试炼！', next: '继续冒险',
+    title: '冒险成功！', text: '你完成了试炼！', next: '继续冒险',
   };
-  document.getElementById('victory-title').textContent = cfg.title;
+  // 金色章节印章 + 剥掉 emoji 的标题文案（textContent 仍为纯文字，兼容断言/读屏）
+  document.getElementById('victory-title').innerHTML =
+    `<span class="victory-stamp">${ICON.stamp}</span>${esc(cfg.title.replace(STRIP_EMOJI, ''))}`;
   document.getElementById('victory-text').innerHTML = cfg.text;
 
   const elapsed = Math.max(0, Math.round((Date.now() - G.startTime) / 1000));
