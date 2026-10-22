@@ -102,4 +102,58 @@ const STAR = `
     <rect x="4" y="4" width="2" height="2" fill="#fff3c4"/>
   </svg>`;
 
-export const ICON = { map: MAP, swirl: SWIRL, lock: LOCK, pin: PIN, stamp: STAMP, chevron: CHEVRON, star: STAR };
+// ---- 胜利封印页统计印（#13）：用时 / 解开谜题 / 章节进度 ----
+
+// 沙漏（冒险用时印）：棕框金砂，中腰一缕沙流
+const HOURGLASS = `
+  <svg class="pq-icon" viewBox="0 0 10 12" shape-rendering="crispEdges" aria-hidden="true">
+    <g fill="#b98a4e">
+      <rect x="1" y="0" width="8" height="1"/>
+      <rect x="1" y="11" width="8" height="1"/>
+      <rect x="1" y="1" width="1" height="2"/>
+      <rect x="8" y="1" width="1" height="2"/>
+      <rect x="1" y="8" width="1" height="2"/>
+      <rect x="8" y="8" width="1" height="2"/>
+    </g>
+    <g fill="#ffd257">
+      <rect x="3" y="2" width="4" height="1"/>
+      <rect x="3" y="3" width="1" height="1"/>
+      <rect x="6" y="3" width="1" height="1"/>
+      <rect x="4" y="5" width="2" height="2"/>
+      <rect x="4" y="8" width="2" height="1"/>
+      <rect x="3" y="9" width="4" height="1"/>
+    </g>
+    <rect x="4" y="4" width="2" height="1" fill="#fff3c4"/>
+  </svg>`;
+
+// 钥匙（解开谜题印）：金环 + 深金针杆与齿，「解开」的直觉符号
+const KEY = `
+  <svg class="pq-icon" viewBox="0 0 10 12" shape-rendering="crispEdges" aria-hidden="true">
+    <rect x="2" y="0" width="6" height="5" fill="#ffd257"/>
+    <rect x="3" y="1" width="4" height="3" fill="#fff8ea"/>
+    <rect x="4" y="5" width="2" height="6" fill="#e0a53c"/>
+    <rect x="6" y="8" width="2" height="1" fill="#e0a53c"/>
+    <rect x="6" y="10" width="2" height="1" fill="#e0a53c"/>
+    <rect x="2" y="0" width="2" height="1" fill="#fff3c4"/>
+  </svg>`;
+
+// 三角旗（章节进度印）：棕杆金顶 + 青色燕尾旗，指向下一章
+const FLAG = `
+  <svg class="pq-icon" viewBox="0 0 10 12" shape-rendering="crispEdges" aria-hidden="true">
+    <rect x="2" y="0" width="2" height="1" fill="#ffd257"/>
+    <rect x="2" y="1" width="1" height="10" fill="#7a5f3c"/>
+    <g fill="#3ddad7">
+      <rect x="3" y="2" width="4" height="1"/>
+      <rect x="3" y="3" width="5" height="1"/>
+      <rect x="3" y="4" width="4" height="1"/>
+      <rect x="3" y="5" width="3" height="1"/>
+      <rect x="3" y="6" width="2" height="1"/>
+    </g>
+    <rect x="3" y="2" width="2" height="1" fill="#fff8ea" opacity=".55"/>
+    <rect x="1" y="11" width="4" height="1" fill="#b98a4e"/>
+  </svg>`;
+
+export const ICON = {
+  map: MAP, swirl: SWIRL, lock: LOCK, pin: PIN, stamp: STAMP,
+  chevron: CHEVRON, star: STAR, hourglass: HOURGLASS, key: KEY, flag: FLAG,
+};

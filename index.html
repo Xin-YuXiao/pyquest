@@ -29,6 +29,8 @@
       --fs-display: 21px;
       --fs-hero: 44px;
       --fs-logo: 64px;
+      /* 大卡圆角：整页羊皮纸模态（世界地图 / 胜利封印页）共用骨架 */
+      --r-lg: 18px;
       --font-kai: "LXGW WenKai", "Kaiti SC", "STKaiti", "KaiTi", "Songti SC", "SimSun", serif;
       /* ---- 竖屏画布外边距（#12）：竖屏时设计画布向上下扩展铺满视口，
          该变量 = 画布区域之外的设计坐标边距，由 main.js fitStage 写入，
@@ -154,8 +156,7 @@
     .mn-badge .pq-icon { width: 13px; height: 13px; }
     #dlg-next .pq-icon { width: 14px; height: 7px; margin-right: 4px; vertical-align: -1px; }
     #objective .pq-icon { width: 15px; height: 15px; margin-right: 5px; vertical-align: -3px; }
-    .victory-stamp { display: inline-flex; margin-right: 12px; filter: drop-shadow(0 3px 0 rgba(0,0,0,.35)); }
-    .victory-stamp .pq-icon { width: 42px; height: 42px; }
+    /* 章节金印（#13 胜利封印页）：定位 / 尺寸 / 盖印动画见底部胜利画面区块 */
 
     /* 暗角（氛围） */
     #vignette {
@@ -369,7 +370,7 @@
     }
     .map-sub { font-family: var(--font-kai); font-size: var(--fs-caption); color: #9a7f5a; text-align: right; line-height: 1.5; }
     .map-sub b { color: #bf8a26; }
-    /* 分隔符：用间距替代「·」拼接（map-sub / victory-stats 共用） */
+    /* 分隔符：用间距替代「·」拼接（map-sub 用；#13 起胜利统计改为印章组，不再使用） */
     .dot-sep { margin: 0 10px; }
 
     /* ---- 画布：SVG 美术 + 按比例缩放的地标层 ---- */
@@ -698,9 +699,26 @@
     .portrait #title .subtitle { font-size: 30px; letter-spacing: 2px; }
     .portrait #title .keys { font-size: 24px; line-height: 1.9; max-width: 94%; }
     .portrait #btn-start { font-size: 30px; padding: 16px 52px; }
+
+    /* 胜利封印页（#13）：全屏竖排，金印与三枚统计印同步放大，终章仪式感不减 */
+    .portrait #victory .seal-paper {
+      width: 100%; max-width: none; height: 100%;
+      border-radius: 0; border-width: 0;
+      display: flex; flex-direction: column; justify-content: center;
+      padding: 0 30px 30px;
+      animation: none;
+    }
+    .portrait #victory .seal-band { margin: 0 -30px 30px; padding: 22px 120px 19px; border-radius: 0; }
     .portrait #victory h1 { font-size: 64px; }
-    .portrait #victory p { font-size: 28px; }
-    .portrait #victory .stats { font-size: 32px; }
+    .portrait #victory .victory-stamp { width: 106px; height: 106px; top: 20px; right: 28px; }
+    .portrait #victory .victory-stamp .pq-icon { width: 106px; height: 106px; }
+    .portrait #victory .seal-sub { font-size: 28px; line-height: 1.65; margin: 0 8px 32px; }
+    .portrait #victory .stat-seal { width: 182px; padding: 18px 8px 15px; gap: 6px; border-radius: 18px; }
+    .portrait #victory .stat-seal .pq-icon { width: 30px; height: 36px; }
+    .portrait #victory .stat-num { font-size: 38px; }
+    .portrait #victory .stat-lbl { font-size: 20px; }
+    .portrait #victory .seal-actions { flex-wrap: wrap; }
+    .portrait #victory .btn { font-size: 26px; padding: 12px 32px; }
 
     /* 世界地图：全屏滚动章节列表（两列卡在窄高比下重排为单列） */
     .portrait #worldmap {
@@ -810,9 +828,127 @@
       background: var(--accent); border-color: #a83d3d; color: #fff;
       box-shadow: 0 5px 0 #7d2b2b;
     }
-    #victory h1 { font-size: var(--fs-hero); color: var(--gold); text-shadow: 0 4px 0 #8a5a00; }
-    #victory p { font-size: var(--fs-body-lg); line-height: 1.8; color: #dfe4ff; }
-    #victory .stats { color: var(--teal); font-size: var(--fs-display); }
+    /* ---- 胜利画面 · 章节封印页（#13）：与标题星空模板彻底脱钩 ----
+       一张羊皮纸「通关证书」浮在暗色暖光里：暮紫窄条压顶承载金字标题，
+       章节金印盖在条与纸的交界，三枚统计印并排取代 dot-sep 数据行。
+       盖印时间轴：纸面 0~0.3s 上浮 → 金印 0.26~0.72s 落印（back-out 回弹）
+       → 0.58s 纸面顿挫 + 0.6s 墨圈晕开 → 统计印 0.85/1.0/1.15s 依次盖下
+       → 1.32s 按钮区收尾浮现（prefers-reduced-motion 时全部静态呈现） */
+    #victory {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: radial-gradient(120% 90% at 50% 38%, rgba(66, 46, 30, .58), rgba(22, 14, 9, .85));
+      overflow: hidden;
+    }
+    #victory.hidden { display: none; }
+    .seal-paper {
+      position: relative;
+      width: 680px; max-width: 94%;
+      background: linear-gradient(180deg, #fff9ec 0%, #f7ebd3 100%);
+      border: 2px solid var(--panel-border);
+      border-radius: var(--r-lg);
+      box-shadow:
+        0 9px 0 rgba(0, 0, 0, .28),
+        0 26px 50px rgba(0, 0, 0, .42),
+        inset 0 1px 0 #fffdf6;
+      padding: 0 36px 32px;
+      text-align: center;
+      animation: paperRise .3s ease-out both, paperThud .22s ease-out .58s;
+    }
+    /* 证书式内侧虚线框 */
+    .seal-paper::before {
+      content: ''; position: absolute; inset: 9px;
+      border: 2px dashed rgba(185, 138, 78, .38);
+      border-radius: 13px;
+      pointer-events: none;
+    }
+    @keyframes paperRise { from { transform: translateY(18px) scale(.97); opacity: 0; } }
+    @keyframes paperThud {
+      0% { transform: translateY(0); }
+      45% { transform: translateY(3px); }
+      100% { transform: translateY(0); }
+    }
+    /* 暮紫深底窄条压顶：保留一丝「夜战告捷」的色温，与标题屏的星空渐变分道 */
+    .seal-band {
+      margin: 0 -36px 24px;
+      padding: 20px 104px 17px;
+      background: linear-gradient(180deg, #57427a 0%, #4d3b68 100%);
+      border-bottom: 3px solid var(--panel-border);
+      border-radius: 16px 16px 0 0;
+    }
+    #victory h1 {
+      font-size: var(--fs-hero); color: var(--gold);
+      text-shadow: 0 3px 0 #8a5a00, 0 7px 16px rgba(0, 0, 0, .5);
+      letter-spacing: 4px; padding-left: 4px;
+    }
+    .seal-sub {
+      font-family: var(--font-kai); font-size: var(--fs-body-lg);
+      color: var(--ink); line-height: 1.75; margin: 0 26px 24px;
+    }
+    /* 章节金印：骑在暮紫条与纸面交界处微倾 9°，落印 scale 回弹出「顿挫」 */
+    .victory-stamp {
+      position: absolute; top: 15px; right: 25px;
+      width: 74px; height: 74px;
+      filter: drop-shadow(0 4px 0 rgba(0, 0, 0, .32));
+      animation: sealDrop .46s cubic-bezier(.34, 1.56, .64, 1) .26s both;
+    }
+    .victory-stamp .pq-icon { width: 74px; height: 74px; }
+    .victory-stamp::after {
+      content: ''; position: absolute; inset: -7px;
+      border-radius: 50%;
+      border: 3px solid rgba(185, 138, 78, .55);
+      animation: sealRing .5s ease-out .6s both;
+    }
+    @keyframes sealDrop {
+      0% { transform: rotate(-9deg) scale(2.6); opacity: 0; }
+      55% { opacity: 1; }
+      100% { transform: rotate(-9deg) scale(1); opacity: 1; }
+    }
+    @keyframes sealRing {
+      0% { transform: scale(.55); opacity: 0; }
+      35% { opacity: .9; }
+      100% { transform: scale(1.55); opacity: 0; }
+    }
+    /* 三枚统计印：像素风小圆章（图标 + 数字 + 小标），取代 teal 数据行 */
+    .seal-stats { display: flex; justify-content: center; gap: 28px; margin: 2px 0 26px; }
+    .stat-seal {
+      width: 122px; padding: 13px 6px 11px;
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      background: #fffdf6;
+      border: 2px solid var(--panel-border);
+      border-radius: 15px;
+      box-shadow:
+        inset 0 0 0 3px rgba(185, 138, 78, .28),
+        0 3px 0 rgba(0, 0, 0, .16);
+      animation: stampIn .3s ease-out both;
+    }
+    .stat-seal:nth-child(1) { animation-delay: .85s; }
+    .stat-seal:nth-child(2) { animation-delay: 1s; }
+    .stat-seal:nth-child(3) { animation-delay: 1.15s; }
+    .stat-seal .pq-icon { width: 20px; height: 24px; }
+    .stat-num {
+      font-family: "JetBrains Mono", Consolas, monospace;
+      font-size: 24px; font-weight: 700; line-height: 1.15;
+      color: #6b4a1e; font-variant-numeric: tabular-nums;
+    }
+    .stat-lbl {
+      font-family: var(--font-kai); font-size: var(--fs-caption);
+      color: #9a7f5a; letter-spacing: 2.5px; padding-left: 2.5px;
+    }
+    .seal-actions {
+      display: flex; justify-content: center; gap: 16px;
+      animation: sealUp .3s ease-out 1.32s both;
+    }
+    @keyframes sealUp { from { transform: translateY(9px); opacity: 0; } }
+    /* 「放弃冒险」：.btn.ghost 原为星空底设计的透明白，羊皮纸上改为纸面次级样式 */
+    #victory .btn.ghost {
+      background: #fff; border-color: var(--panel-border);
+      color: var(--ink); box-shadow: 0 3px 0 rgba(0, 0, 0, .15);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .seal-paper, .victory-stamp, .victory-stamp::after,
+      .stat-seal, .seal-actions { animation: none; }
+    }
   </style>
 </head>
 <body>
@@ -882,13 +1018,20 @@
           <button class="btn ghost" id="btn-new" style="display:none">新的冒险</button>
         </div>
 
-        <div id="victory" class="full-modal hidden">
-          <div class="stars"></div>
-          <h1 id="victory-title">冒险成功！</h1>
-          <p id="victory-text">…</p>
-          <p class="stats" id="victory-stats"></p>
-          <button class="btn primary" id="btn-next">▶ 进入第二章</button>
-          <button class="btn ghost" id="btn-restart">放弃冒险，重头再来</button>
+        <!-- 胜利画面 · 章节封印页（#13）：羊皮纸证书 + 盖章仪式（金印由 modal.js 注入） -->
+        <div id="victory" class="hidden">
+          <div class="seal-paper">
+            <div class="seal-band">
+              <h1 id="victory-title">冒险成功！</h1>
+            </div>
+            <div class="victory-stamp" aria-hidden="true"></div>
+            <p class="seal-sub" id="victory-text">…</p>
+            <div class="seal-stats" id="victory-stats"></div>
+            <div class="seal-actions">
+              <button class="btn primary" id="btn-next">▶ 进入第二章</button>
+              <button class="btn ghost" id="btn-restart">放弃冒险，重头再来</button>
+            </div>
+          </div>
         </div>
         </div>
       </div>
