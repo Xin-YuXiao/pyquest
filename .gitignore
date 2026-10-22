@@ -22,3 +22,4 @@ scripts/tmp-*.mjs
 .env.*
 .idea/
 .vscode/
+.slim/deepwork/
