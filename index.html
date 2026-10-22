@@ -30,6 +30,10 @@
       --fs-hero: 44px;
       --fs-logo: 64px;
       --font-kai: "LXGW WenKai", "Kaiti SC", "STKaiti", "KaiTi", "Songti SC", "SimSun", serif;
+      /* ---- 竖屏画布外边距（#12）：竖屏时设计画布向上下扩展铺满视口，
+         该变量 = 画布区域之外的设计坐标边距，由 main.js fitStage 写入，
+         HUD / 提示 / 对话用它锚定画布边缘（横屏恒为 0） ---- */
+      --cam-pad: 0px;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body {
@@ -47,18 +51,32 @@
       position: relative;
       width: 960px; height: 640px;
       max-width: 100vw; max-height: 100vh;
-      /* 保持 3:2，缩放由 JS 控制 */
+      /* 保持 3:2，缩放由 JS 控制；无 JS 回退时 DOM UI 以 1:1 呈现 960×640 设计稿 */
     }
     #stage > #game { position: absolute; inset: 0; }
     #stage > canvas { position: absolute; inset: 0; image-rendering: pixelated; }
 
-    /* ---------- DOM UI 层（覆盖在画布上） ---------- */
+    /* ---------- DOM UI 层（覆盖在画布上）· #12 移动端断裂修复 ----------
+       两层分工：
+       · #ui —— 视觉坐标系（不缩放，恒等于 stage 矩形）。碎片飞行 / 金光脉冲等
+         以 getBoundingClientRect 计算视觉坐标的 JS 特效元素挂这层，所见即所得。
+       · #ui-scale —— 960×640 设计坐标系（= canvas 1920×1280 内部尺寸的一半）。
+         全部浮层 / 字号 / 间距在这里按设计尺寸排版，由 main.js fitStage 以
+         「stage 宽 / 960」的系数（与画布同系数、同原点 = stage 左上角）整体
+         transform: scale，随画布等比缩放——手机上 stage 压到 374×249 时
+         浮层按比例同步缩小，不再溢出截断。 */
     #ui {
       position: absolute; inset: 0;
       pointer-events: none;
       z-index: 10;
     }
-    #ui > * { pointer-events: auto; }
+    #ui-scale {
+      position: absolute; left: 0; top: 0;
+      width: 960px; height: 640px;
+      transform-origin: 0 0;
+      pointer-events: none;
+    }
+    #ui-scale > * { pointer-events: auto; }
 
     /* HUD 顶部 */
     #hud-top {
@@ -637,58 +655,112 @@
     .lg-lock::before { border-top-style: dashed; border-top-color: #a08a6c; opacity: .7; }
     .map-tip { margin-left: auto; color: #9a7f5a; }
 
-    /* ---- 窄屏：改为两列地标卡（地图美术收起，避免文字挤成竖条） ---- */
-    @media (max-width: 680px) {
-      #worldmap { padding: 8px 9px 6px; border-radius: 15px; }
-      .map-head { flex-direction: column; align-items: flex-start; gap: 2px; margin-bottom: 7px; }
-      .map-title { font-size: 18px; letter-spacing: 1px; }
-      .map-sub { text-align: left; font-size: 11px; }
-      #map-path { aspect-ratio: auto; }
-      .map-art, .route-layer { display: none; }
-      .map-nodes {
-        position: static; width: auto; height: auto; transform: none;
-        display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
-        padding: 8px;
-      }
-      .map-node {
-        position: static; width: auto; height: auto; margin: 0;
-        display: flex; align-items: center; gap: 8px;
-        padding: 7px 8px; border-radius: 11px;
-        background: linear-gradient(158deg, #3d3046 0%, #2f2539 100%);
-        border: 2px solid #6a5478;
-        box-shadow: 0 2px 0 rgba(0, 0, 0, .25), inset 0 1px 0 rgba(255, 255, 255, .1);
-      }
-      .mn-pin {
-        position: relative; left: auto; top: auto; transform: none;
-        width: 34px; height: 34px; flex: 0 0 34px;
-      }
-      .mn-disc { width: 32px; height: 32px; font-size: 13px; border-width: 2px; box-shadow: none; animation: none; }
-      .mn-badge { width: 15px; height: 15px; font-size: 8px; border-width: 1.5px; top: -3px; right: -3px; }
-      #map-path .mn-plate {
-        position: static; transform: none; width: auto;
-        padding: 0; background: none; border: 0; box-shadow: none;
-        gap: 0;
-      }
-      #map-path .mn-week { font-size: 8px; letter-spacing: 1px; }
-      #map-path .mn-name { font-size: 12px; white-space: normal; }
-      #map-path .mn-status { font-size: 9px; margin-top: 2px; }
-      #map-path .map-node.done {
-        background: linear-gradient(158deg, #fffaea 0%, #ffe6a2 100%);
-        border-color: #d9a03a;
-      }
-      #map-path .map-node.locked {
-        background: linear-gradient(158deg, #2a2333 0%, #211b29 100%);
-        border-color: #40364a;
-      }
-      #map-path .map-node.here:not(.locked) {
-        box-shadow: 0 0 0 2px #2b2233, 0 0 0 4px var(--gold);
-      }
-      #map-path .map-node:hover:not(.locked) .mn-pin { transform: none; }
-      #map-path .map-node:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
-      #map-path .map-node:focus-visible .mn-plate { outline: none; }
-      .map-foot { font-size: 10px; gap: 3px 10px; }
-      .map-tip { margin-left: 0; }
+    /* ---- 竖屏断点（#12 移动端断裂修复）----
+       旧 @media(max-width:680px) 视口断点已删除：布局住在按高度压缩的 stage 里，
+       视口宽度不再反映布局宽度，媒体查询救不了断裂。改由 main.js 依据
+       aspect（innerHeight > innerWidth）在 body 挂 .portrait，以下规则全部
+       写在 #ui-scale 的 960×640 设计坐标系内。
+       竖屏时 main.js 还会把设计画布向上下扩展铺满整块视口（--cam-pad =
+       画布区域外的设计边距）：全屏浮层（quiz / 地图 / 标题 / 胜利）占满屏幕；
+       HUD / 提示 / 对话通过 --cam-pad 仍锚定画布边缘，与游戏画面对齐。
+       字号统一放大约 1.6~1.8 倍：竖屏下整体缩放系数仅约 0.39，
+       设计 15px 只有 6px 视觉高度，不放大则不可读。 */
+    .portrait #hud-top { top: calc(10px + var(--cam-pad)); }
+    .portrait #hint { bottom: calc(12px + var(--cam-pad)); font-size: 26px; }
+    .portrait #dialogue { bottom: calc(46px + var(--cam-pad)); width: min(860px, 96%); }
+    .portrait #vignette { top: var(--cam-pad); bottom: var(--cam-pad); }
+
+    /* HUD / 对话：字号放大，锚定关系不变 */
+    .portrait .hearts svg { width: 42px; height: 42px; }
+    .portrait .hud-right { font-size: 26px; border-width: 3px; border-radius: 16px; padding: 8px 16px; }
+    .portrait .hud-right svg { width: 24px; height: 30px; }
+    .portrait #objective { font-size: 26px; padding: 4px 14px; }
+    .portrait #objective .pq-icon { width: 24px; height: 24px; }
+    .portrait #dlg-name { font-size: 24px; }
+    .portrait #dlg-text { font-size: 30px; min-height: 92px; }
+    .portrait #dlg-next { font-size: 18px; }
+    .portrait kbd { min-width: 26px; line-height: 26px; font-size: 18px; padding: 0 8px; }
+
+    /* 答题面板：全宽 + 放大（在全屏设计画布中居中；内容超高时滚动） */
+    .portrait #quiz-backdrop { overflow-y: auto; }
+    .portrait #quiz { width: 92%; margin: auto; }
+    .portrait .quiz-chapter { font-size: 18px; padding: 3px 14px; }
+    .portrait #quiz-prompt { font-size: 34px; }
+    .portrait .code-block { font-size: 24px; padding: 14px 18px; }
+    .portrait .code-block .blank { min-width: 72px; }
+    .portrait .opt { font-size: 30px; padding: 14px 20px; }
+    .portrait .opt code, .portrait .fill-preview { font-size: 24px; }
+    .portrait #quiz-feedback { font-size: 24px; }
+    .portrait .btn { font-size: 24px; padding: 10px 26px; }
+
+    /* 标题 / 胜利：全屏竖排，主标题维持视觉冲击 */
+    .portrait #title h1 { font-size: 84px; }
+    .portrait #title .subtitle { font-size: 30px; letter-spacing: 2px; }
+    .portrait #title .keys { font-size: 24px; line-height: 1.9; max-width: 94%; }
+    .portrait #btn-start { font-size: 30px; padding: 16px 52px; }
+    .portrait #victory h1 { font-size: 64px; }
+    .portrait #victory p { font-size: 28px; }
+    .portrait #victory .stats { font-size: 32px; }
+
+    /* 世界地图：全屏滚动章节列表（两列卡在窄高比下重排为单列） */
+    .portrait #worldmap {
+      width: 100%; height: 100%;
+      border-radius: 0;
+      display: flex; flex-direction: column;
+      padding: 14px 16px 10px;
     }
+    .portrait .map-head { margin: 0 0 10px; }
+    .portrait .map-title { font-size: 34px; letter-spacing: 2px; }
+    .portrait .map-title .pq-icon { width: 34px; height: 34px; }
+    .portrait .map-sub { font-size: 18px; text-align: left; }
+    .portrait #map-path {
+      aspect-ratio: auto; flex: 1; min-height: 0;
+      overflow-y: auto;
+      background: none; box-shadow: none; border-radius: 0;
+    }
+    .portrait .map-art, .portrait .route-layer { display: none; }
+    .portrait #map-path .map-nodes {
+      position: static; width: auto; height: auto; transform: none;
+      display: flex; flex-direction: column; gap: 12px;
+    }
+    .portrait #map-path .map-node {
+      position: static; width: auto; height: auto; margin: 0;
+      display: flex; align-items: center; gap: 16px;
+      padding: 12px 16px; border-radius: 14px;
+      background: linear-gradient(158deg, #3d3046 0%, #2f2539 100%);
+      border: 2px solid #6a5478;
+      box-shadow: 0 2px 0 rgba(0, 0, 0, .25), inset 0 1px 0 rgba(255, 255, 255, .1);
+    }
+    .portrait #map-path .mn-pin {
+      position: relative; left: auto; top: auto; transform: none;
+      width: 56px; height: 56px; flex: 0 0 56px;
+    }
+    .portrait #map-path .mn-disc { width: 52px; height: 52px; font-size: 26px; box-shadow: none; }
+    .portrait #map-path .mn-badge { width: 24px; height: 24px; font-size: 13px; top: -4px; right: -4px; }
+    .portrait #map-path .mn-plate {
+      position: static; transform: none; width: auto;
+      padding: 0; background: none; border: 0; box-shadow: none;
+      gap: 2px;
+    }
+    .portrait #map-path .mn-week { font-size: 18px; letter-spacing: 1px; }
+    .portrait #map-path .mn-name { font-size: 28px; white-space: normal; }
+    .portrait #map-path .mn-status { font-size: 20px; margin-top: 2px; }
+    .portrait #map-path .map-node.done {
+      background: linear-gradient(158deg, #fffaea 0%, #ffe6a2 100%);
+      border-color: #d9a03a;
+    }
+    .portrait #map-path .map-node.locked {
+      background: linear-gradient(158deg, #2a2333 0%, #211b29 100%);
+      border-color: #40364a;
+    }
+    .portrait #map-path .map-node.here:not(.locked) {
+      box-shadow: 0 0 0 2px #2b2233, 0 0 0 4px var(--gold);
+    }
+    .portrait #map-path .map-node:hover:not(.locked) .mn-pin { transform: none; }
+    .portrait #map-path .map-node:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+    .portrait #map-path .map-node:focus-visible .mn-plate { outline: none; }
+    .portrait .map-foot { font-size: 16px; margin-top: 10px; }
+    .portrait .map-tip { margin-left: 0; }
 
     @media (prefers-reduced-motion: reduce) {
       .map-node.here .mn-pin::after,
@@ -748,6 +820,7 @@
     <div id="stage">
       <div id="game"></div>
       <div id="ui">
+        <div id="ui-scale">
         <div id="vignette"></div>
         <div id="wipe"></div>
         <div id="hud-top" style="display:none">
@@ -816,6 +889,7 @@
           <p class="stats" id="victory-stats"></p>
           <button class="btn primary" id="btn-next">▶ 进入第二章</button>
           <button class="btn ghost" id="btn-restart">放弃冒险，重头再来</button>
+        </div>
         </div>
       </div>
     </div>
