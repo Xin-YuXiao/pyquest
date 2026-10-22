@@ -6,6 +6,7 @@
 //   到该章野外（塞尔达式圆形转场）
 // ============================================================
 import { G, cp } from '../core/state.js';
+import { phaseOf, PHASE } from '../core/phase.js';
 import { CHAPTERS } from '../data/chapters.js';
 import { sfx } from '../audio/sfx.js';
 import { wipeTransition } from './wipe.js';
@@ -322,10 +323,10 @@ export class WorldMap {
     this.scene.scene.resume();
   }
 
-  /** 章节解锁规则：第 1 章常开，其余需前一章节通关 */
+  /** 章节解锁规则：第 1 章常开，其余需前一章节通关（跨章规则，不属于章内 Phase） */
   unlocked(id) {
     if (id === 1) return true;
-    return cp(id - 1).done;
+    return phaseOf(id - 1) === PHASE.DONE;
   }
 
   /** 地标层按 1000×600 设计尺寸绘制，再整体缩放到容器宽度 */
@@ -359,7 +360,7 @@ export class WorldMap {
   }
 
   render() {
-    const doneCount = CHAPTERS.filter((c) => cp(c.id).done).length;
+    const doneCount = CHAPTERS.filter((c) => phaseOf(c.id) === PHASE.DONE).length;
     this.subEl.innerHTML = `P4A 八周旅程<span class="dot-sep"></span>已通关 <b>${doneCount} / ${CHAPTERS.length}</b><span class="dot-sep"></span><kbd>Tab</kbd> 关闭`;
 
     // 连线：目的地已通关 = 金色实线；已解锁未通关 = 流动金色点线；未解锁 = 暗色虚线
@@ -367,7 +368,7 @@ export class WorldMap {
       const target = CHAPTERS[i + 1];
       return {
         d: this._route(i),
-        state: cp(target.id).done ? 'done' : this.unlocked(target.id) ? 'open' : 'lock',
+        state: phaseOf(target.id) === PHASE.DONE ? 'done' : this.unlocked(target.id) ? 'open' : 'lock',
       };
     });
     const casings = segs.map((s) => `<path class="route-casing" d="${s.d}"/>`).join('');
@@ -383,17 +384,18 @@ export class WorldMap {
       const p = cp(ch.id);
       const unlocked = this.unlocked(ch.id);
       const here = G.current === ch.id;
+      const done = phaseOf(ch.id) === PHASE.DONE;
       const classes = ['map-node'];
       if (!unlocked) classes.push('locked');
-      if (p.done) classes.push('done');
+      if (done) classes.push('done');
       if (here) classes.push('here');
 
       // 徽章优先级：锁定 > 当前所在 > 已通关（当前章即使已通关也保留大头针）
       // 🔒 → 像素挂锁，📍 → 像素大头针（icons.js，与爱心/碎片同族）
-      const badge = !unlocked ? ICON.lock : (here ? ICON.pin : (p.done ? '✓' : ''));
+      const badge = !unlocked ? ICON.lock : (here ? ICON.pin : (done ? '✓' : ''));
       const status = !unlocked
         ? { cls: 'locked', text: '未解锁' }
-        : p.done
+        : done
           ? { cls: 'done', text: `已通关 · ${p.shards}/${p.shardsNeeded}` }
           : { cls: '', text: `待挑战 · ${p.shards}/${p.shardsNeeded}` };
       const shortName = ch.title.replace(/^第[一二三四五六七八九十]+章\s*·\s*/, '');
@@ -405,7 +407,7 @@ export class WorldMap {
       btn.style.setProperty('--x', x);
       btn.style.setProperty('--y', y);
       btn.title = `${ch.title} · ${ch.fieldName} → ${ch.lairName}`;
-      btn.setAttribute('aria-label', `${ch.title}，${!unlocked ? '未解锁' : p.done ? '已通关' : '可传送'}`);
+      btn.setAttribute('aria-label', `${ch.title}，${!unlocked ? '未解锁' : done ? '已通关' : '可传送'}`);
       btn.innerHTML = `
         <span class="mn-pin">
           <span class="mn-disc">${ch.id}</span>

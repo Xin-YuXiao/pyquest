@@ -2,6 +2,7 @@
 // HUD：生命值（爱心）、代码碎片计数、当前目标提示
 // ============================================================
 import { G, chapterShards, cp } from '../core/state.js';
+import { phaseOf, PHASE } from '../core/phase.js';
 import { CHAPTERS, getChapter } from '../data/chapters.js';
 import { ICON } from './icons.js';
 
@@ -93,17 +94,17 @@ export class HUD {
       this.shardEl.classList.add('gain');
     }
 
-    // 目标提示：由当前章节进度推导
+    // 目标提示：按章内阶段（core/phase.js）推导
     // （#11：目标行已与碎片计数胶囊分层，独立悬挂在胶囊下方）
     const ch = getChapter(G.current);
-    const p = cp(ch.id);
     const next = CHAPTERS.find((c) => c.id === ch.id + 1);
     const allDone = CHAPTERS.every((c) => cp(c.id).done);
+    const phase = phaseOf(ch.id);
     let objective;
     if (allDone) objective = `${ICON.star}全部通关！自由探索吧`;
-    else if (p.done) objective = next ? `本章通关！前往${next.fieldName}` : '本章通关！';
-    else if (!p.gateOpen) objective = `收集${ch.shardLabel}，解开巢穴封印`;
-    else objective = `进入${ch.lairName}，击败${ch.bossName}！`;
+    else if (phase === PHASE.DONE) objective = next ? `本章通关！前往${next.fieldName}` : '本章通关！';
+    else if (phase === PHASE.OPEN) objective = `进入${ch.lairName}，击败${ch.bossName}！`;
+    else objective = `收集${ch.shardLabel}，解开巢穴封印`;
     this.objectiveEl.innerHTML = objective;
   }
 

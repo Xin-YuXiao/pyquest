@@ -5,6 +5,7 @@
 // 由 main.js 按 chapters.js 注册表批量生成（8 章 × 2 场景）
 // ============================================================
 import { G, updateHud, cp } from '../core/state.js';
+import { npcLinesFor } from '../core/phase.js';
 import { CHAPTERS, getChapter } from '../data/chapters.js';
 import { WorldScene } from './WorldScene.js';
 import { showVictory } from '../ui/modal.js';
@@ -22,10 +23,9 @@ export class FieldScene extends WorldScene {
     super.create();
   }
 
-  /** 引导 NPC（长老/石碑）：对话内容来自章节配置 */
+  /** 引导 NPC（长老/石碑）：跨章问候优先，台词按章内阶段查表（core/phase.js） */
   talkToElder() {
-    const ctx = { cp: cp(this.ch.id), G, ch: this.ch };
-    this.dialogue.say({ name: this.ch.npcName, lines: this.ch.npc(ctx) });
+    this.dialogue.say({ name: this.ch.npcName, lines: npcLinesFor(this.ch, G) });
   }
 
   /** 封印之门被按 E 检查：集齐碎片则当场解锁 */
