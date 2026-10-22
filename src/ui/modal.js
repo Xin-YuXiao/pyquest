@@ -45,8 +45,8 @@ export function showVictory(ch, { hasNext, onNext, onRestart } = {}) {
   const elapsed = Math.max(0, Math.round((Date.now() - G.startTime) / 1000));
   const solved = G.answered.size;
   const doneCount = CHAPTERS.filter((c) => G.progress[c.id].done).length;
-  document.getElementById('victory-stats').textContent =
-    `用时 ${Math.floor(elapsed / 60)} 分 ${elapsed % 60} 秒 · 解开 ${solved} 个符文谜题 · 章节 ${doneCount} / ${CHAPTERS.length}`;
+  document.getElementById('victory-stats').innerHTML =
+    `用时 ${Math.floor(elapsed / 60)} 分 ${elapsed % 60} 秒<span class="dot-sep"></span>解开 ${solved} 个符文谜题<span class="dot-sep"></span>章节 ${doneCount} / ${CHAPTERS.length}`;
 
   const btnNext = document.getElementById('btn-next');
   const btnRestart = document.getElementById('btn-restart');
@@ -58,6 +58,8 @@ export function showVictory(ch, { hasNext, onNext, onRestart } = {}) {
     if (onNext) onNext();
   };
   btnRestart.onclick = () => {
+    // 对齐标题界面「新的冒险」的安全标准：清档前确认
+    if (!window.confirm('确定要放弃这次冒险吗？八周进度将被清除。')) return;
     clearSave();
     location.reload();
   };

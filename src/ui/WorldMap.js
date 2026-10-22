@@ -354,7 +354,7 @@ export class WorldMap {
 
   render() {
     const doneCount = CHAPTERS.filter((c) => cp(c.id).done).length;
-    this.subEl.innerHTML = `P4A 八周旅程 · 已通关 <b>${doneCount} / ${CHAPTERS.length}</b> · <b>Tab</b> 关闭`;
+    this.subEl.innerHTML = `P4A 八周旅程<span class="dot-sep"></span>已通关 <b>${doneCount} / ${CHAPTERS.length}</b><span class="dot-sep"></span><b>Tab</b> 关闭`;
 
     // 连线：目的地已通关 = 金色实线；已解锁未通关 = 流动金色点线；未解锁 = 暗色虚线
     const segs = CHAPTERS.slice(0, -1).map((ch, i) => {
@@ -373,7 +373,7 @@ export class WorldMap {
       <div class="map-nodes"></div>`;
     const layer = this.pathEl.querySelector('.map-nodes');
 
-    CHAPTERS.forEach((ch, i) => {
+    CHAPTERS.forEach((ch) => {
       const p = cp(ch.id);
       const unlocked = this.unlocked(ch.id);
       const here = G.current === ch.id;
@@ -397,7 +397,6 @@ export class WorldMap {
       btn.dataset.id = ch.id;
       btn.style.setProperty('--x', x);
       btn.style.setProperty('--y', y);
-      btn.style.setProperty('--d', `${(-i * 0.42).toFixed(2)}s`);
       btn.title = `${ch.title} · ${ch.fieldName} → ${ch.lairName}`;
       btn.setAttribute('aria-label', `${ch.title}，${!unlocked ? '未解锁' : p.done ? '已通关' : '可传送'}`);
       btn.innerHTML = `
@@ -406,7 +405,7 @@ export class WorldMap {
           <span class="mn-badge">${badge}</span>
         </span>
         <span class="mn-plate">
-          <span class="mn-week"><span>WEEK ${ch.week}</span>${here ? '<span class="mn-here-tag">当前</span>' : ''}</span>
+          <span class="mn-week"><span>第 ${ch.week} 周</span>${here ? '<span class="mn-here-tag">当前</span>' : ''}</span>
           <span class="mn-name">${shortName}</span>
           <span class="mn-status ${status.cls}">${status.text}</span>
         </span>`;

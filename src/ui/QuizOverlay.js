@@ -59,7 +59,7 @@ export class QuizOverlay {
     q.options.forEach((opt, i) => {
       const btn = document.createElement('button');
       btn.className = 'opt';
-      btn.innerHTML = `<b style="color:#b98a4e">${i + 1}. </b><code>${esc(opt)}</code>`;
+      btn.innerHTML = `<b style="color:#8a6335">${i + 1}. </b><code>${esc(opt)}</code>`;
       btn.addEventListener('click', () => this.select(i));
       this.optionsEl.appendChild(btn);
     });

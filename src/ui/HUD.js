@@ -30,6 +30,8 @@ export class HUD {
     this.objectiveEl = document.getElementById('objective');
     this.hintEl = document.getElementById('hint');
     this._lastShards = null; // 场景重启后首次 render 不误播碎片 gain 弹跳
+    this._lastHearts = null; // 同上：首次 render 不误播扣心红闪
+    this._hurtT = 0;
     this._onHud = () => this.render();
     document.addEventListener('pyquest:hud', this._onHud);
     this.render();
@@ -49,7 +51,16 @@ export class HUD {
         ? SVG_HEART('#ef5a68', 'rgba(255,255,255,.7)')
         : SVG_HEART('#564e66', 'rgba(255,255,255,.14)');
     }
+    const hurt = this._lastHearts != null && G.hearts < this._lastHearts;
+    this._lastHearts = G.hearts;
     this.heartsEl.innerHTML = html;
+    if (hurt) {
+      this.heartsEl.classList.remove('hurt-flash');
+      void this.heartsEl.offsetWidth; // 重启动画
+      this.heartsEl.classList.add('hurt-flash');
+      clearTimeout(this._hurtT);
+      this._hurtT = setTimeout(() => this.heartsEl.classList.remove('hurt-flash'), 200);
+    }
 
     const cur = chapterShards();
     const gained = this._lastShards != null && cur.shards > this._lastShards;

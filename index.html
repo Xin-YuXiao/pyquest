@@ -6,6 +6,7 @@
   <title>PyQuest · Python 冒险记</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet" />
   <style>
     :root {
       --panel: #fff8ea;
@@ -67,6 +68,14 @@
       0% { transform: scale(1); } 40% { transform: scale(1.7) rotate(-12deg); }
       100% { transform: scale(1); }
     }
+    /* 扣心反馈：红闪 + 轻抖 150ms（HUD.js 在心数减少时挂类） */
+    .hearts.hurt-flash { animation: hurtFlash .15s ease-out; }
+    @keyframes hurtFlash {
+      0% { filter: brightness(1); transform: translateX(0); }
+      30% { filter: brightness(1.6) saturate(1.7) drop-shadow(0 0 6px rgba(232, 106, 106, .95)); transform: translateX(-3px); }
+      60% { filter: brightness(1.25) drop-shadow(0 0 4px rgba(232, 106, 106, .55)); transform: translateX(2px); }
+      100% { filter: brightness(1); transform: translateX(0); }
+    }
     #objective { color: var(--gold); font-size: 13px; }
 
     /* 提示条 */
@@ -116,9 +125,9 @@
       display: none;
     }
     #dialogue.show { display: block; }
-    #dlg-name { color: var(--accent); font-size: 15px; margin-bottom: 4px; }
+    #dlg-name { color: #c2404a; font-size: 15px; margin-bottom: 4px; }
     #dlg-text { font-size: 17px; line-height: 1.55; min-height: 52px; }
-    #dlg-next { text-align: right; font-size: 13px; color: #9a7f5a; animation: blink 1s infinite; }
+    #dlg-next { text-align: right; font-size: 13px; color: #7a5f3c; animation: blink 1s infinite; }
     @keyframes blink { 50% { opacity: .25; } }
 
     /* 答题面板 */
@@ -149,7 +158,7 @@
       display: inline-block; background: var(--teal); color: #083b3a;
       font-size: 13px; border-radius: 8px; padding: 2px 10px; margin-bottom: 6px;
     }
-    .quiz-chapter.boss { background: #d591ff; }
+    .quiz-chapter.boss { background: #d591ff; color: #4a2a66; }
     #quiz-prompt { font-size: 17px; line-height: 1.5; margin-bottom: 10px; }
     .code-block {
       font-family: "JetBrains Mono", Consolas, "Courier New", monospace;
@@ -233,6 +242,8 @@
     }
     .map-sub { font-size: 12px; color: #9a7f5a; text-align: right; line-height: 1.5; }
     .map-sub b { color: #bf8a26; }
+    /* 分隔符：用间距替代「·」拼接（map-sub / victory-stats 共用） */
+    .dot-sep { margin: 0 10px; }
 
     /* ---- 画布：SVG 美术 + 按比例缩放的地标层 ---- */
     #map-path {
@@ -275,14 +286,12 @@
       stroke: #dfa437;
       stroke-dasharray: 1 9;
       filter: drop-shadow(0 0 2px rgba(224, 165, 60, .5));
-      animation: trailFlow 1.9s linear infinite;
     }
     .route--lock {
       stroke: #9c8666;
       stroke-dasharray: 5 8;
       opacity: .55;
     }
-    @keyframes trailFlow { to { stroke-dashoffset: -20; } }
 
     /* ---- 地标（0 尺寸锚点 + 圆徽 + 名称牌） ---- */
     .map-node {
@@ -399,19 +408,17 @@
       transform: translate(-50%, calc(-50% - 1px)) scale(.97);
     }
 
-    /* ---- done：已通关，暖金圆徽 + 亮纸牌 + 柔光呼吸 ---- */
+    /* ---- done：已通关，暖金圆徽 + 亮纸牌 + 静态柔光 ---- */
     .map-node.done .mn-disc {
       color: #5b3a05;
       background: radial-gradient(circle at 34% 26%, #fffbe0 0%, #ffdd82 48%, #f2b43c 100%);
       border-color: #a8701a;
       text-shadow: 0 1px 0 rgba(255, 255, 255, .6);
       box-shadow:
-        inset 0 2px 0 rgba(255, 255, 255, .9),
+        inset 0 2px 0 rgba(255, 255, 255, .92),
         0 3px 0 rgba(139, 90, 0, .35),
-        0 0 0 3px rgba(255, 249, 226, .9),
-        0 0 18px rgba(255, 196, 72, .6);
-      animation: mapGlow 3.6s ease-in-out infinite;
-      animation-delay: var(--d, 0s);
+        0 0 0 3px rgba(255, 249, 226, .92),
+        0 0 20px rgba(255, 196, 72, .6);
     }
     .map-node.done .mn-badge {
       background: #fffdf6; border-color: #2f7d33; color: #2f7d33;
@@ -438,16 +445,6 @@
         0 9px 20px rgba(160, 105, 20, .3),
         inset 0 1px 0 #fff,
         0 0 22px rgba(255, 196, 72, .45);
-    }
-    @keyframes mapGlow {
-      0%, 100% {
-        box-shadow: inset 0 2px 0 rgba(255, 255, 255, .9), 0 3px 0 rgba(139, 90, 0, .35),
-                    0 0 0 3px rgba(255, 249, 226, .9), 0 0 13px rgba(255, 196, 72, .42);
-      }
-      50% {
-        box-shadow: inset 0 2px 0 rgba(255, 255, 255, .95), 0 3px 0 rgba(139, 90, 0, .35),
-                    0 0 0 3px rgba(255, 249, 226, .95), 0 0 26px rgba(255, 196, 72, .78);
-      }
     }
 
     /* ---- locked：未解锁，最暗最钝，锁仍可辨 ---- */
@@ -584,8 +581,6 @@
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .route--open,
-      .map-node.done .mn-disc,
       .map-node.here .mn-pin::after,
       #worldmap { animation: none; }
     }
@@ -617,7 +612,8 @@
     #title h1 {
       font-size: 64px; color: var(--gold);
       text-shadow: 0 4px 0 #8a5a00, 0 8px 18px rgba(0,0,0,.5);
-      letter-spacing: 6px;
+      letter-spacing: 10px;
+      padding-left: 10px; /* 抵消末字符的 letter-spacing，保持视觉居中 */
     }
     #title .subtitle { font-size: 20px; color: #cfd6ff; letter-spacing: 3px; }
     #title .keys {
@@ -691,8 +687,8 @@
 
         <div id="title" class="full-modal">
           <div class="stars"></div>
-          <h1>P y Q u e s t</h1>
-          <div class="subtitle">~ Python for Astronomy · 八周冒险 ~</div>
+          <h1>PyQuest</h1>
+          <div class="subtitle">Python for Astronomy · 八周冒险</div>
           <div class="keys">
             <b>方向键 / WASD</b> 移动 &nbsp;·&nbsp; <b>J / 空格</b> 挥剑 &nbsp;·&nbsp; <b>E</b> 交互 / 对话 &nbsp;·&nbsp; <b>Tab</b> 世界地图<br />
             八章关卡对应八周课程：基础 → 函数 → NumPy → 天文包 → 加速 → 数值方法 → 信号 → 暗物质晕！
@@ -707,7 +703,7 @@
           <p id="victory-text">…</p>
           <p class="stats" id="victory-stats"></p>
           <button class="btn primary" id="btn-next">▶ 进入第二章</button>
-          <button class="btn ghost" id="btn-restart">重新开始</button>
+          <button class="btn ghost" id="btn-restart">放弃冒险，重头再来</button>
         </div>
       </div>
     </div>
