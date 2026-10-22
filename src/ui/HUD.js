@@ -11,7 +11,7 @@ const SVG_HEART = (fill, shine) => `
     <path d="M2 1h1v1H2z" fill="${shine}"/>
   </svg>`;
 
-const SVG_SHARD = `
+export const SVG_SHARD = `
   <svg viewBox="0 0 10 12" shape-rendering="crispEdges">
     <path d="M4 0h2v1h1v1h1v2h1v2h-1v2h-1v1h-1v1h-1v1H4v-1H3v-1H2V8H1V6H0V4h1V2h1V1h1z" fill="#ffd257"/>
     <path d="M4 2h1v2h1v2H5v2H4V6H3V4h1z" fill="#fff3c4"/>
@@ -32,8 +32,12 @@ export class HUD {
     this._lastShards = null; // 场景重启后首次 render 不误播碎片 gain 弹跳
     this._lastHearts = null; // 同上：首次 render 不误播扣心红闪
     this._hurtT = 0;
+    this._flightGained = 0;  // 「碎片入袋」飞行中：暂扣的碎片数（视觉延后跳变）
+    this._flightT = 0;
     this._onHud = () => this.render();
+    this._onFlight = (e) => this._deferShards(e);
     document.addEventListener('pyquest:hud', this._onHud);
+    document.addEventListener('pyquest:shardflight', this._onFlight);
     this.render();
   }
 
@@ -41,6 +45,20 @@ export class HUD {
 
   destroy() {
     document.removeEventListener('pyquest:hud', this._onHud);
+    document.removeEventListener('pyquest:shardflight', this._onFlight);
+  }
+
+  // 碎片正在飞向计数器：duration 内显示旧数字，落袋后跳 +1 并单次 gainPop
+  _deferShards(e) {
+    const { gained = 0, duration = 950 } = e.detail || {};
+    if (!gained) return;
+    this._flightGained = gained;
+    clearTimeout(this._flightT);
+    this._flightT = setTimeout(() => {
+      this._flightGained = 0;
+      this.render();
+    }, duration);
+    this.render(); // 立即回显旧数字（本次结算发生在同一帧内，不可见闪烁）
   }
 
   render() {
@@ -63,9 +81,11 @@ export class HUD {
     }
 
     const cur = chapterShards();
-    const gained = this._lastShards != null && cur.shards > this._lastShards;
-    this._lastShards = cur.shards;
-    this.shardEl.innerHTML = `${SVG_SHARD} <span>${cur.shards} / ${cur.needed}</span>`;
+    // 飞行中暂扣增量：数字等碎片落袋（T.REVEAL）才跳 + gainPop
+    const shown = this._flightGained ? Math.max(0, cur.shards - this._flightGained) : cur.shards;
+    const gained = this._lastShards != null && shown > this._lastShards;
+    this._lastShards = shown;
+    this.shardEl.innerHTML = `${SVG_SHARD} <span>${shown} / ${cur.needed}</span>`;
     if (gained) {
       this.shardEl.classList.remove('gain');
       void this.shardEl.offsetWidth;

@@ -191,6 +191,48 @@
     .opt.right::after { content: '✓'; float: right; color: #2e7d32; font-weight: bold; animation: stampIn .28s ease-out; }
     .opt.wrong::after { content: '✗'; float: right; color: #c62828; font-weight: bold; animation: stampIn .28s ease-out; }
     @keyframes stampIn { from { transform: scale(2.2); opacity: 0; } }
+
+    /* ---------- 答对兑付：「碎片入袋」（QuizOverlay._playShardFlight） ---------- */
+    /* 兑付期间面板已隐形但暗层保留，先放行指针 */
+    #quiz-backdrop.fading { transition: opacity .32s ease; opacity: 0; }
+    /* 题面代码块徽记金光（约 120ms） */
+    .code-block.blessed {
+      animation: blessGlow 120ms ease-out;
+    }
+    @keyframes blessGlow {
+      0% { box-shadow: none; }
+      35% {
+        box-shadow: 0 0 0 3px rgba(255, 210, 87, .75), 0 0 24px rgba(255, 210, 87, .55);
+        border-color: var(--gold);
+        background: #443a2c; /* 暗底轻染暖金 */
+      }
+      100% { box-shadow: none; }
+    }
+    /* 飞行碎片：复用 HUD 碎片 SVG，放大约 2 倍（34×41） */
+    .shard-fly {
+      position: absolute; left: 0; top: 0; z-index: 30;
+      width: 34px; height: 41px;
+      pointer-events: none;
+      filter: drop-shadow(0 0 7px rgba(255, 210, 87, .7));
+      will-change: transform, opacity;
+    }
+    .shard-fly svg { display: block; width: 34px; height: 41px; }
+    /* 屏幕极轻金光脉冲：峰值 opacity .18、200ms（延迟与 QuizOverlay T.REVEAL-10ms 联动） */
+    .shard-pulse {
+      position: absolute; inset: 0; z-index: 50; pointer-events: none;
+      background: radial-gradient(120% 110% at 82% 8%,
+        rgba(255, 210, 87, .9) 0%, rgba(255, 210, 87, .35) 16%, rgba(255, 210, 87, 0) 44%);
+      animation: shardPulse 200ms ease-out 940ms both;
+    }
+    @keyframes shardPulse {
+      0% { opacity: 0; }
+      40% { opacity: .18; }
+      100% { opacity: 0; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .code-block.blessed, .shard-pulse { animation: none; }
+    }
+
     .opt code, .fill-preview { font-family: "JetBrains Mono", Consolas, monospace; font-size: 14px; }
     #quiz-feedback { font-size: 15px; line-height: 1.5; min-height: 22px; margin-top: 10px; }
     #quiz-feedback.ok { color: #2e7d32; }
