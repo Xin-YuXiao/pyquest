@@ -21,6 +21,8 @@ const T = {
   SHARDS: 5,          // 视觉碎片枚数（1 次答对兑付 1 枚 → 5 枚全落袋后数字 +1）
 };
 
+const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
 export class QuizOverlay {
   constructor(scene) {
     this.scene = scene;
@@ -86,7 +88,6 @@ export class QuizOverlay {
     this.cancelBtn.style.display = 'inline-block';
 
     this.optionsEl.innerHTML = '';
-    const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     q.options.forEach((opt, i) => {
       const btn = document.createElement('button');
       btn.className = 'opt';
@@ -124,7 +125,12 @@ export class QuizOverlay {
       this.phase = 'correct';
       btn.classList.add('right');
       this.feedbackEl.className = 'ok';
-      this.feedbackEl.innerHTML = `✨ 咒语生效了！${this.q.explain}`;
+      // 反馈分层（#8）：首行结果，次行「解析」内嵌条（教学内容，绿系）
+      this.feedbackEl.innerHTML =
+        '<div class="fb-line">✨ 咒语生效了！</div>' +
+        (this.q.explain
+          ? `<div class="fb-hint"><span class="fb-hint-label">解析</span>${esc(this.q.explain)}</div>`
+          : '');
       this.confirmBtn.textContent = '领取奖励';
       this.cancelBtn.style.display = 'none';
       sfx.correct();
@@ -134,7 +140,10 @@ export class QuizOverlay {
       this.selected = -1;
       this.confirmBtn.disabled = true;
       this.feedbackEl.className = 'bad';
-      this.feedbackEl.textContent = '咒语失败了…… 生命 -1，重新考虑一下！（提示：' + this._hint() + '）';
+      // 反馈分层（#8）：首行 失败+惩罚（红），次行「提示」内嵌条（教学内容，棕系）
+      this.feedbackEl.innerHTML =
+        '<div class="fb-line">咒语失败了…… 生命 -1</div>' +
+        `<div class="fb-hint"><span class="fb-hint-label">提示</span>${esc(this._hint())}</div>`;
       this.panel.classList.remove('shake');
       void this.panel.offsetWidth; // 重启动画
       this.panel.classList.add('shake');
