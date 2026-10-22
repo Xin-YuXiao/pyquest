@@ -34,7 +34,7 @@ const sceneStub = {
   textures: {
     canvasKeys: new Set(),
     exists(key) { return this.canvasKeys.has(key); },
-    get() { return null; }, // CC0 tile 未加载 → ground 走占位分支（数据层测试不看像素）
+    get() { return null; }, // tileset 未加载 → ground 走占位分支（数据层测试不看像素）
     addCanvas(key, canvas) {
       this.canvasKeys.add(key);
       textures[key] = { w: canvas.width, h: canvas.height };
@@ -45,12 +45,11 @@ try {
   generateAllTextures(sceneStub);
   ok(`生成 ${Object.keys(textures).length} 张贴图`);
   const need = ['shard',
-    'heart_full', 'heart_half', 'heart_empty',
-    'portal_door', 'tablet', 'crystal', 'shroom',
+    'heart_full',
+    'portal_door', 'crystal', 'shroom',
     'gate_closed', 'gate_open', 'torch_0',
-    'water_0', 'water_1', 'water_2',
     'slash_0', 'slash_1', 'slash_2',
-    'particle', 'shadow', 'cloudshadow', 'foam_n', 'foam_s', 'foam_e', 'foam_w'];
+    'particle'];
   for (const k of need) if (!textures[k]) fail(`缺少贴图 ${k}`);
 } catch (e) { fail(`贴图生成抛出异常: ${e.message}`); }
 

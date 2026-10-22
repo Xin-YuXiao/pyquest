@@ -5,7 +5,7 @@
 // ⚠️ 许可证禁止再分发素材本体 → .gitignore 已排除，仅本地使用
 //
 // 单位帧规格：192×192/帧（本体约 52-90px，脚底在帧内 y≈134-136）
-// tileset：64×64/格（行 0-3 列 0-3 = 16 草变体；列 5-8 行 4-5 = 8 水变体）
+// tileset：64×64/格（行 0-3 列 0-3 = 16 草变体）
 // ============================================================
 
 const P = '/TinySwordsFreePack';
@@ -39,35 +39,15 @@ export const TS_SHEETS = {
   bush2: [`${P}/Terrain/Decorations/Bushes/Bushe2.png`, 128, 128],
   bush3: [`${P}/Terrain/Decorations/Bushes/Bushe3.png`, 128, 128],
   bush4: [`${P}/Terrain/Decorations/Bushes/Bushe4.png`, 128, 128],
-  // 地形装饰（点缀进 ground.js 画布）
-  bush1: [`${P}/Terrain/Decorations/Bushes/Bushe1.png`, 128, 128],
-  bush2: [`${P}/Terrain/Decorations/Bushes/Bushe2.png`, 128, 128],
-  bush3: [`${P}/Terrain/Decorations/Bushes/Bushe3.png`, 128, 128],
-  bush4: [`${P}/Terrain/Decorations/Bushes/Bushe4.png`, 128, 128],
 
   // 粒子特效
   dust: [`${P}/Particle FX/Dust_01.png`, 64, 64],
   fire: [`${P}/Particle FX/Fire_01.png`, 64, 64],
-  splash: [`${P}/Particle FX/Water Splash.png`, 192, 192],
-  explosion: [`${P}/Particle FX/Explosion_01.png`, 192, 192],
-  foam: [`${P}/Terrain/Tileset/Water Foam.png`, 192, 192],
 };
 
 // ---------- 静态图片 ----------
 export const TS_IMAGES = {
   ts_shadow: `${P}/Terrain/Tileset/Shadow.png`,     // 192×192 官方椭圆阴影
-  rock1: `${P}/Terrain/Decorations/Rocks/Rock1.png`, // 64×64
-  rock2: `${P}/Terrain/Decorations/Rocks/Rock2.png`,
-  rock3: `${P}/Terrain/Decorations/Rocks/Rock3.png`,
-  rock4: `${P}/Terrain/Decorations/Rocks/Rock4.png`,
-  waterRock1: `${P}/Terrain/Decorations/Rocks in the Water/Water Rocks_01.png`, // 64×64
-  waterRock2: `${P}/Terrain/Decorations/Rocks in the Water/Water Rocks_02.png`,
-  waterRock3: `${P}/Terrain/Decorations/Rocks in the Water/Water Rocks_03.png`,
-  waterRock4: `${P}/Terrain/Decorations/Rocks in the Water/Water Rocks_04.png`,
-  duck: `${P}/Terrain/Decorations/Rubber Duck/Rubber duck.png`, // 96×32
-  house1: `${P}/Buildings/Blue Buildings/House1.png`, // 128×192
-  house2: `${P}/Buildings/Blue Buildings/House2.png`,
-  house3: `${P}/Buildings/Blue Buildings/House3.png`,
   castle: `${P}/Buildings/Blue Buildings/Monastery.png`, // 192×320 修道院（村庄主建筑）
   tower: `${P}/Buildings/Blue Buildings/Tower.png`,      // 128×256 塔（森林引导石碑位）
   cloud1: `${P}/Terrain/Decorations/Clouds/Clouds_01.png`,
@@ -82,19 +62,8 @@ export const TS_TILESETS = {
   grass: `${P}/Terrain/Tileset/Tilemap_color1.png`,   // 村庄草绿
   forest: `${P}/Terrain/Tileset/Tilemap_color3.png`,  // 森林深绿
   path: `${P}/Terrain/Tileset/Tilemap_color4.png`,    // 沙黄（土路）
-  water: `${P}/Terrain/Tileset/Tilemap_color1.png`,   // 水波变体
 };
 export const WATER_BG = '#47aba9'; // 官方水底色
-
-// tileset 内可用格子（64×64/格）
-export const GRASS_TILES = [
-  // TS 草 tile 按行成套（跨行拼接有描边缝）→ 只用第 1 行
-  // 整洁化：ground.js 实际只混用 [1,1]（纯草 72%）与 [2,1]（微噪点 28%）
-  [0, 1], [1, 1], [2, 1], [3, 1],
-];
-export const WATER_TILES = [
-  [5, 4], [6, 4], [7, 4], [8, 4], [5, 5], [6, 5], [7, 5], [8, 5],
-];
 
 // ---------- 动画（key → [sheet, 帧数, 帧时长ms, 循环]） ----------
 export const TS_ANIMS = {
@@ -122,9 +91,6 @@ export const TS_ANIMS = {
 
   ts_dust: ['dust', 8, 55, false],
   ts_fire: ['fire', 8, 70, true],
-  ts_splash: ['splash', 9, 60, false],
-  ts_explosion: ['explosion', 8, 60, false],
-  ts_foam: ['foam', 16, 80, true],
 };
 
 /** BootScene.preload：加载全部 TS 素材 */

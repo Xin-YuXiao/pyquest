@@ -5,15 +5,15 @@
 画风致敬《塞尔达传说：织梦岛》Switch 重制版 + 欧美 Q 版卡通：俯视角、大头小身比例、
 描边卡通渲染（帽子/羽毛/肩带/宝珠等层叠细节）、柔和粉彩配色、无像素马赛克的矢量渲染。
 **全部角色以 4 倍尺寸显示**（`src/core/scale.js` 一键调节），环境物件按 2.5 倍跟随缩放。
-美术采用 **CC0 公共领域像素素材**（0x72 DungeonTileset II + Kenney Tiny Town，可自由商用与再分发）
-+ 少量同风格程序化贴图（符文石/碎片/传送门等游戏专属元素）。
+美术采用 [Tiny Swords](https://pixelfrog-assets.itch.io/tiny-swords)（Pixel Frog · Free Pack，本地素材包）
++ 少量同风格程序化贴图（代码碎片/爱心/传送门等游戏专属元素）。
 
 > [!NOTE]
 > **本项目完全由 GLM-5.3 Vibe Coding 而成** —— 从玩法设计、架构搭建、场景/实体实现、
 > 题库编写到美术整合与 E2E 测试脚本，全部代码均通过与 [GLM-5.3](https://chat.z.ai)
 > 的对话式协作（Vibe Coding）生成，未手写一行代码。
 
-![技术栈](https://img.shields.io/badge/Phaser%203-90.x-green) ![构建](https://img.shields.io/badge/Vite-7.x-purple) ![素材](https://img.shields.io/badge/Art-CC0%20公共领域-blue) ![开发方式](https://img.shields.io/badge/GLM--5.3-Vibe%20Coding-ff6f00) ![许可证](https://img.shields.io/badge/License-MIT-blue)
+![技术栈](https://img.shields.io/badge/Phaser%203-90.x-green) ![构建](https://img.shields.io/badge/Vite-7.x-purple) ![素材](https://img.shields.io/badge/Art-Tiny%20Swords%20%2B%20程序化-blue) ![开发方式](https://img.shields.io/badge/GLM--5.3-Vibe%20Coding-ff6f00) ![许可证](https://img.shields.io/badge/License-MIT-blue)
 
 ## 🎮 运行
 
@@ -119,10 +119,9 @@ src/
 │   ├── chapters.js          # 八章注册表：周次/地图/对话/胜利文本/BOSS/题池配置（关卡数据核心）
 │   ├── maps.js              # 地图构建器：W1/W2 手工地图 + W3-W8 通用生成器（theme 驱动）
 │   └── quizData.js          # Python 题库（190 题 · 25 个同难度题池）+ 语法高亮
-├── assets/cc0.js            # CC0 素材清单/加载/动画 + Kenney 小屋拼合
-│   └── (素材本体在 assets/cc0/)
-├── textures/pixelArt.js     # 程序化补充贴图（符文石/爱心/传送门/水面等）
-├── textures/ground.js       # 整图地面画布（三遍绘制：陆地 → 大尺度光影 → 水面）
+├── assets/ts.js             # Tiny Swords 素材清单/加载/动画（素材本体在 assets/TinySwordsFreePack/，未入库）
+├── textures/pixelArt.js     # 程序化补充贴图（代码碎片/爱心/传送门/石门等）
+├── textures/ground.js       # 整图地面画布（草地 → 水/土路 → 岸沫分层绘制）
 ├── audio/sfx.js             # WebAudio 程序化 8-bit 音效
 ├── entities/
 │   ├── Player.js            # 玩家：移动/挥剑/受击/死亡（回本章野外重生）
@@ -147,29 +146,22 @@ scripts/
 └── e2e-ch8.mjs              # 第八章 E2E（深空晕环/核心符文/NFW 幻龙/通关结算）
 ```
 
-## 🎨 画面技术（Tiny Swords 素材 + CC0/程序化补充）
+## 🎨 画面技术（Tiny Swords 素材 + 程序化补充）
 
 - **主素材**：[Tiny Swords](https://pixelfrog-assets.itch.io/tiny-swords)（Pixel Frog · Free Pack，
   本地 `assets/TinySwordsFreePack/`，**许可证禁止再分发 → .gitignore 排除，需自行下载**）——
-  角色全套（蓝勇士/僧侣/红小兵/黑勇士/紫勇士）、tileset 地形、树/灌木/云/岩石/民居、
-  尘土/火焰/水花/爆炸/泡沫特效
-- **CC0 补充**（`assets/cc0/`，随仓库分发）：
-  - [0x72 DungeonTileset II v1.7](https://0x72.itch.io/dungeontileset-ii)（`assets/cc0/0x72/`）——
-    骑士主角（待机/奔跑动画）、红鬼/绿萨满小怪、大恶魔 BOSS、鼻涕虫巨蟒、
-    石柱/宝箱/大门等地牢元素
-  - [Kenney Tiny Town / Tiny Dungeon](https://kenney.nl/assets/tiny-town)（`assets/cc0/kenney/`）——
-    草地/花地/土路 tileset、树木、火盆
-  - **TS 坐标系**：逻辑 tile 64px（相机 1x、单位帧 192×192 原尺寸 1:1 渲染，像素完美）
+  角色全套（蓝勇士/僧侣/红小兵/黑勇士/紫勇士）、tileset 地形、树/灌木/云、
+  尘土/火焰特效、建筑（修道院/塔）
+- **TS 坐标系**：逻辑 tile 64px（相机 1x、单位帧 192×192 原尺寸 1:1 渲染，像素完美）
 - 角色映射：勇者=蓝军勇士（待机/奔跑/挥剑动画）、长老=蓝军僧侣、村庄小怪=红小兵、
     森林小怪=黑勇士、第一章 BOSS=紫勇士巨型化+金徽（循环之王）、巨蟒=黑勇士头+黑小兵体节
 - 符文石待解状态仅做 ±0.7% 微缩放呼吸（视觉跳动 < 1px），不干扰辨识
 - **像素完美渲染**：16px tile × 相机 4x 整数放大，`pixelArt: true`，无插值模糊
-- **地形拼接**：`ground.js` 把 tileset 拼成整图画布——野外用 Kenney 草/土路
-  （邻接草色咬边），水面按 Kenney 平涂+深紫描边风格自绘（含岸线/浅水带/波纹），
-  地牢用 0x72 石地 + **亮顶/暗面立体砖墙**，洞窟叠紫调
-- **房屋拼合**：`assets/cc0.js` 把 Kenney 瓦/墙/窗/门 tile 拼成 128×96 小屋
-- **程序化补充**（`textures/pixelArt.js`）：符文石/代码碎片/爱心/传送门/函数石碑/
-  水晶/蘑菇等游戏专属元素，与素材同风格（平涂 + `#3f2631` 深紫描边）
+- **地形拼接**：`ground.js` 把 tileset 拼成整图画布——野外只取图集无缝中心格平铺
+  （草地/土路连续无描边缝，土路连接边贴死、仅外角圆角），水面用官方水底色
+  + 沿陆地一侧的连续岸沫条，地牢/洞窟用程序化深色石砖
+- **程序化补充**（`textures/pixelArt.js`）：代码碎片/爱心/传送门/水晶/蘑菇/
+  石门/火炬等游戏专属元素，与素材同风格（平涂 + `#3f2631` 深紫描边）
 - **碰撞与渲染分离**：碰撞由不可见静态矩形承担（`WorldScene.tileBodies`）
 
 ## 🔧 如何扩展
@@ -219,4 +211,5 @@ node scripts/e2e-ch8.mjs     # E2E：第八章（深空晕环/核心符文/NFW �
 
 - **本项目代码**：[MIT License](LICENSE)
 - **`assets/cc0/` 素材**：CC0 公共领域（0x72 / Kenney），可自由商用与再分发
+  （当前版本未加载，留作第二部备用素材）
 - **Tiny Swords 素材**：仅本地开发使用，许可证禁止再分发（未入库，需自行下载）

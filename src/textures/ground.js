@@ -165,11 +165,11 @@ export function makeGroundTexture(scene, def) {
   } else {
     // 从 Phaser 纹理缓存取 tileset 源图（BootScene 已加载）
     const tilesets = {};
-    for (const k of ['grass', 'forest', 'path', 'water']) {
+    for (const k of ['grass', 'forest', 'path']) {
       const tex = scene.textures.get(k);
       tilesets[k] = tex && tex.getSourceImage ? tex.getSourceImage() : null;
     }
-    if (!tilesets.grass || !tilesets.path || !tilesets.water) {
+    if (!tilesets.grass || !tilesets.path) {
       // 兜底：TS 素材未就绪时用草绿纯色（不应发生；smoke 走 stub 分支）
       ctx.fillStyle = '#93ba4f';
       ctx.fillRect(0, 0, canvas.width, canvas.height);

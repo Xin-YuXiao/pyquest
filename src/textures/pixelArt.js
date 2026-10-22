@@ -1,9 +1,9 @@
 // ============================================================
 // 程序化贴图（游戏专属元素）
-// 角色/地形/建筑使用 CC0 素材（src/assets/cc0.js），
+// 角色/地形/建筑使用 Tiny Swords 素材（src/assets/ts.js），
 // 这里只生成带有游戏身份、无现成素材的元素：
-// 符文石 / 代码碎片 / 爱心 / 传送门 / 函数石碑 / 水晶 / 蘑菇 /
-// 挥剑特效 / 阴影 / 粒子 / 水面动画帧
+// 代码碎片 / 爱心 / 传送门 / 水晶 / 蘑菇 /
+// 挥剑特效 / 粒子 / 石门 / 火炬
 // 风格与 Kenney Tiny Town 对齐：平涂色块 + #3f2631 深紫描边
 // ============================================================
 
@@ -26,7 +26,6 @@ export function rg(ctx, x, y, r, stops) {
 // ---------- Kenney 风格调色板 ----------
 const P = {
   line: '#3f2631',        // Kenney 通用描边
-  water: '#5ca4d9', waterD: '#4a8ec4', waterL: '#8cc4e8', foam: '#eafcff',
   stone: '#b4b0c4', stoneL: '#d0ccdc', stoneD: '#84809a', stoneDD: '#5d5970',
   gold: '#ffd257', goldD: '#d99a28',
   glow: '#3ddad7', red: '#f25670', pink: '#ff8a9d',
@@ -37,12 +36,6 @@ const P = {
 const px = (ctx, x, y, c) => { ctx.fillStyle = c; ctx.fillRect(x | 0, y | 0, 1, 1); };
 const rect = (ctx, x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(x | 0, y | 0, w, h); };
 const hline = (ctx, x0, x1, y, c) => rect(ctx, x0, y, x1 - x0 + 1, 1, c);
-function disc(ctx, cx, cy, r, c) {
-  ctx.fillStyle = c;
-  for (let y = -r; y <= r; y++) for (let x = -r; x <= r; x++) {
-    if (x * x + y * y <= r * r + r * 0.5) ctx.fillRect((cx + x) | 0, (cy + y) | 0, 1, 1);
-  }
-}
 function edisc(ctx, cx, cy, rx, ry, c) {
   ctx.fillStyle = c;
   for (let y = -ry; y <= ry; y++) for (let x = -rx; x <= rx; x++) {
@@ -72,37 +65,6 @@ function makePx(scene, key, w, h, draw) {
   ctx.imageSmoothingEnabled = false;
   draw(ctx, w, h);
   scene.textures.addCanvas(key, canvas);
-}
-
-// ============================================================
-// 符文石（发光 / 失效）
-// ============================================================
-function drawRune(ctx, cracked) {
-  const w = 40, h = 42, cx = 20;
-  edisc(ctx, cx, 38, 13, 3, P.stoneD);
-  rect(ctx, cx - 10, 4, 20, 32, P.stone);
-  rect(ctx, cx - 10, 4, 20, 3, P.stoneL);
-  rect(ctx, cx - 9, 7, 18, 2, P.stoneL);
-  rect(ctx, cx - 10, 30, 20, 6, P.stoneD);
-  rect(ctx, cx - 7, 9, 14, 24, cracked ? P.stoneDD : '#8a86a8');
-  rect(ctx, cx - 7, 9, 14, 2, P.stoneD);
-  for (const [sx, sy] of [[cx - 9, 6], [cx + 8, 6], [cx - 9, 33], [cx + 8, 33]]) {
-    px(ctx, sx, sy, P.gold); px(ctx, sx + 1, sy + 1, P.goldD);
-  }
-  const ink = cracked ? '#5d7070' : P.glow;
-  hline(ctx, cx - 4, cx + 4, 16, ink);
-  hline(ctx, cx - 4, cx + 4, 24, ink);
-  for (const yy of [17, 18, 19, 21, 22, 23]) {
-    px(ctx, cx - 5, yy, ink); px(ctx, cx + 5, yy, ink);
-  }
-  px(ctx, cx - 6, 15, ink); px(ctx, cx - 5, 15, ink); px(ctx, cx - 6, 25, ink); px(ctx, cx - 5, 25, ink);
-  px(ctx, cx + 5, 15, ink); px(ctx, cx + 6, 15, ink); px(ctx, cx + 5, 25, ink); px(ctx, cx + 6, 25, ink);
-  px(ctx, cx - 8, 34, '#6aaa5a'); px(ctx, cx - 7, 35, '#6aaa5a');
-  px(ctx, cx + 7, 35, '#6aaa5a');
-  if (cracked) {
-    for (let i = 0; i < 14; i++) px(ctx, cx + Math.sin(i * 1.1) * (i / 2) | 0, 5 + i * 2, P.stoneDD);
-  }
-  outline(ctx, w, h);
 }
 
 // ============================================================
@@ -136,7 +98,7 @@ function drawHeart(ctx, mode) {
 }
 
 // ============================================================
-// 传送门 / 函数石碑 / 水晶 / 蘑菇
+// 传送门 / 水晶 / 蘑菇
 // ============================================================
 function drawPortal(ctx) {
   const w = 48, cx = 24;
@@ -153,22 +115,6 @@ function drawPortal(ctx) {
   }
   rect(ctx, 8, 44, 32, 3, P.stoneD);
   outline(ctx, w, 48);
-}
-
-function drawTablet(ctx) {
-  const w = 40, h = 46, cx = 20;
-  rect(ctx, cx - 9, 8, 18, 32, P.stoneD);
-  rect(ctx, cx - 9, 8, 18, 2, P.stone);
-  edisc(ctx, cx, 10, 9, 4, P.stoneD);
-  rect(ctx, cx - 7, 12, 14, 24, '#6d687f');
-  const ink = P.glow;
-  rect(ctx, cx + 1, 16, 2, 14, ink);
-  px(ctx, cx, 17, ink); px(ctx, cx, 22, ink); px(ctx, cx - 1, 23, ink); px(ctx, cx + 3, 23, ink);
-  hline(ctx, cx - 3, cx + 4, 19, ink);
-  px(ctx, cx - 4, 30, ink); px(ctx, cx + 3, 30, ink);
-  edisc(ctx, cx, 40, 11, 3, '#6aaa5a');
-  edisc(ctx, cx, 39, 8, 2, '#78b866');
-  outline(ctx, w, h);
 }
 
 function drawCrystal(ctx) {
@@ -201,39 +147,6 @@ function drawShroom(ctx) {
 }
 
 // ============================================================
-// 水面动画帧（Kenney 配色：平涂蓝 + 浅色波纹）
-// ============================================================
-function drawWaterFrame(ctx, frame, seed) {
-  const T = 16;
-  const r = rng(seed);
-  rect(ctx, 0, 0, T, T, P.water);
-  // 深色斑
-  if (r() < 0.5) rect(ctx, 2 + (r() * 10 | 0), 2 + (r() * 10 | 0), 3, 2, P.waterD);
-  // 横向波纹（帧间下漂）
-  const y0 = (3 + frame * 3) % 14;
-  ctx.fillStyle = P.waterL;
-  for (let x = 1; x < 14; x += 4) {
-    ctx.fillRect(x + ((y0 % 4) > 1 ? 1 : 0), y0, 3, 1);
-    ctx.fillRect(x + 2, (y0 + 5) % 14, 2, 1);
-  }
-  ctx.fillStyle = P.foam;
-  if (r() < 0.6) ctx.fillRect(2 + (r() * 12 | 0), 2 + (r() * 12 | 0), 2, 1);
-}
-
-/** 岸边泡沫（4 方向，贴在靠岸一侧） */
-function makeFoam(scene) {
-  const edges = {
-    foam_n: (c) => { c.fillStyle = P.foam; c.fillRect(0, 0, 16, 1); c.fillRect(2, 1, 4, 1); c.fillRect(9, 1, 4, 1); c.fillStyle = P.waterL; c.fillRect(0, 2, 16, 2); },
-    foam_s: (c) => { c.fillStyle = P.foam; c.fillRect(0, 15, 16, 1); c.fillRect(2, 13, 4, 1); c.fillRect(9, 13, 4, 1); c.fillStyle = P.waterL; c.fillRect(0, 12, 16, 2); },
-    foam_w: (c) => { c.fillStyle = P.foam; c.fillRect(0, 0, 1, 16); c.fillRect(1, 2, 1, 4); c.fillRect(1, 9, 1, 4); c.fillStyle = P.waterL; c.fillRect(2, 0, 2, 16); },
-    foam_e: (c) => { c.fillStyle = P.foam; c.fillRect(15, 0, 1, 16); c.fillRect(13, 2, 1, 4); c.fillRect(13, 9, 1, 4); c.fillStyle = P.waterL; c.fillRect(12, 0, 2, 16); },
-  };
-  for (const [key, fn] of Object.entries(edges)) {
-    makePx(scene, key, 16, 16, fn);
-  }
-}
-
-// ============================================================
 // 特效
 // ============================================================
 function makeSlash(scene) {
@@ -252,21 +165,6 @@ function makeSlash(scene) {
       ctx.globalAlpha = 1;
     });
   }
-}
-
-function makeShadow(scene) {
-  makePx(scene, 'shadow', 16, 8, (ctx) => {
-    edisc(ctx, 8, 4, 7, 3, 'rgba(30,20,40,0.35)');
-  });
-}
-
-function makeCloudShadow(scene) {
-  makePx(scene, 'cloudshadow', 96, 58, (ctx) => {
-    ctx.globalAlpha = 0.3;
-    ctx.fillStyle = '#243040';
-    disc(ctx, 30, 34, 24); disc(ctx, 60, 22, 28); disc(ctx, 78, 38, 18);
-    ctx.globalAlpha = 1;
-  });
 }
 
 function makeParticle(scene) {
@@ -334,29 +232,16 @@ function drawTorch(ctx) {
 // 入口：生成全部程序化贴图
 // ============================================================
 export function generateAllTextures(scene) {
-  makePx(scene, 'rune', 40, 42, (ctx) => drawRune(ctx, false));
-  makePx(scene, 'rune_cracked', 40, 42, (ctx) => drawRune(ctx, true));
   makePx(scene, 'shard', 20, 24, drawShard);
   makePx(scene, 'heart_full', 15, 13, (ctx) => drawHeart(ctx, 'full'));
-  makePx(scene, 'heart_half', 15, 13, (ctx) => drawHeart(ctx, 'half'));
-  makePx(scene, 'heart_empty', 15, 13, (ctx) => drawHeart(ctx, 'empty'));
   makePx(scene, 'portal_door', 48, 48, drawPortal);
-  makePx(scene, 'tablet', 40, 46, drawTablet);
   makePx(scene, 'crystal', 32, 36, drawCrystal);
   makePx(scene, 'shroom', 20, 20, drawShroom);
   makePx(scene, 'gate_closed', 64, 64, (ctx) => drawGate(ctx, false));
   makePx(scene, 'gate_open', 64, 64, (ctx) => drawGate(ctx, true));
   makePx(scene, 'torch_0', 16, 32, drawTorch);
 
-  // 水面动画帧
-  for (let f = 0; f < 3; f++) {
-    makePx(scene, `water_${f}`, 16, 16, (ctx) => drawWaterFrame(ctx, f, f + 41));
-  }
-  makeFoam(scene);
-
   makeSlash(scene);
-  makeShadow(scene);
-  makeCloudShadow(scene);
   makeParticle(scene);
 }
 
