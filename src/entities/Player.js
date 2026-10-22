@@ -27,6 +27,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.attackCdUntil = 0;
     this.attackAnimUntil = 0;
     this.dying = false;
+    this.knockUntil = 0;
     this.nextDust = 0;
     this.setDepth(this.y);
     this.play('ts_warrior_idle');
@@ -39,6 +40,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   update(keys) {
     if (this.dying) return;
     const now = this.scene.time.now;
+    // 击退期间跳过输入驱动，保留 takeDamage 设置的击退速度（无敌闪烁由 tween 驱动，不受影响）
+    if (now < this.knockUntil) return;
     const speed = this.speed;
 
     let vx = 0, vy = 0;
@@ -115,6 +118,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     // 击退
     const angle = Phaser.Math.Angle.Between(sx, sy, this.x, this.y);
+    this.knockUntil = now + 140;
     this.setVelocity(Math.cos(angle) * 1520, Math.sin(angle) * 1520);
     scene.time.delayedCall(140, () => { if (!this.dying) this.setVelocity(0, 0); });
 

@@ -29,11 +29,17 @@ export class HUD {
     this.shardEl = document.getElementById('shard-count');
     this.objectiveEl = document.getElementById('objective');
     this.hintEl = document.getElementById('hint');
-    document.addEventListener('pyquest:hud', () => this.render());
+    this._lastShards = null; // 场景重启后首次 render 不误播碎片 gain 弹跳
+    this._onHud = () => this.render();
+    document.addEventListener('pyquest:hud', this._onHud);
     this.render();
   }
 
   show() { this.root.style.display = 'flex'; }
+
+  destroy() {
+    document.removeEventListener('pyquest:hud', this._onHud);
+  }
 
   render() {
     let html = '';
@@ -46,7 +52,7 @@ export class HUD {
     this.heartsEl.innerHTML = html;
 
     const cur = chapterShards();
-    const gained = cur.shards > (this._lastShards ?? 0);
+    const gained = this._lastShards != null && cur.shards > this._lastShards;
     this._lastShards = cur.shards;
     this.shardEl.innerHTML = `${SVG_SHARD} <span>${cur.shards} / ${cur.needed}</span>`;
     if (gained) {

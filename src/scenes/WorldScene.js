@@ -100,6 +100,7 @@ export class WorldScene extends Phaser.Scene {
     this.worldmap = new WorldMap(this);
     // 场景关闭时移除 DOM 监听，防止场景重启后监听器泄漏
     this.events.once('shutdown', () => {
+      this.hud && this.hud.destroy();
       this.dialogue && this.dialogue.destroy();
       this.quiz && this.quiz.destroy();
       this.worldmap && this.worldmap.destroy();
@@ -459,7 +460,14 @@ export class WorldScene extends Phaser.Scene {
       .setDisplaySize(116, 100).setDepth(1500);
     this.tweens.add({ targets: h, y: h.y - 32, duration: 520, yoyo: true, repeat: -1 });
     this.physics.add.overlap(this.player, h, () => {
-      if (G.hearts >= G.maxHearts) { this.floatText(h.x, h.y - 100, '生命已满', '#9fb8ff'); return; }
+      if (G.hearts >= G.maxHearts) {
+        // overlap 每帧触发，满血提示加冷却（约 1.2 秒一条），避免刷屏
+        const now = this.time.now;
+        if (now < (h._fullCd || 0)) return;
+        h._fullCd = now + 1200;
+        this.floatText(h.x, h.y - 100, '生命已满', '#9fb8ff');
+        return;
+      }
       healHearts(1);
       sfx.heal();
       h.destroy();

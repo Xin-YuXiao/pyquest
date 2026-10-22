@@ -41,6 +41,7 @@ export class DialogueBox {
 
   _showLine() {
     const line = this.lines[this.lineIndex];
+    if (line == null) { this.close(); return; } // 空 lines 守卫：直接收起对话
     this.typing = true;
     this.textEl.textContent = '';
     let i = 0;
