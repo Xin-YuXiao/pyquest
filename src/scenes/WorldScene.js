@@ -131,25 +131,13 @@ export class WorldScene extends Phaser.Scene {
     this.onSceneCreated && this.onSceneCreated();
   }
 
-  /** 水面：Tiny Swords 岸边泡沫动画（16 帧循环） */
+  /** 水面瓦片列表（环境粒子用）。岸沫画在地面画布上，不再叠 foam 精灵。 */
   decorateWater(def) {
     const isWater = (v) => v === T.WATER || v === T.WATER2 || v === T.WATER3;
     const waterTiles = [];
     for (let y = 0; y < def.h; y++) {
       for (let x = 0; x < def.w; x++) {
-        if (!isWater(def.grid[y][x])) continue;
-        waterTiles.push({ x, y });
-        // 四邻若有陆地，则在该水瓦片上叠一圈泡沫动画
-        const nb = [[x, y - 1], [x, y + 1], [x - 1, y], [x + 1, y]];
-        const nearLand = nb.some(([nx, ny]) => {
-          const inside = nx >= 0 && ny >= 0 && nx < def.w && ny < def.h;
-          return !inside || !isWater(def.grid[ny][nx]);
-        });
-        if (nearLand) {
-          // 岸边泡沫（64×64 对齐 tile；半透明混合避免硬边方块感）
-          this.add.sprite(x * 128 + 64, y * 128 + 64, 'foam')
-            .setDisplaySize(128, 128).setAlpha(0.85).setDepth(-6).play('ts_foam');
-        }
+        if (isWater(def.grid[y][x])) waterTiles.push({ x, y });
       }
     }
     this.waterTiles = waterTiles;

@@ -1,13 +1,13 @@
 // ============================================================
 // 整图地面画布：Tiny Swords tileset 拼接
-// - 野外（村庄/森林）：TS tilemap 16 草变体随机铺贴（无缝）、
-//   土路用沙黄配色（color4）+ 邻接圆角、水用官方水底色 + 波纹变体
+// - 野外：只铺无缝中心格 (1,1)。图集其余格子带描边，平铺会出半截边。
+//   土路贴死连接边；水面用官方底色 + 沿陆地一侧的岸沫条。
 // - 室内（地牢/洞窟）：程序化深色石砖（TS 深紫配色体系）
-// 岸边泡沫由 WorldScene 叠 Water Foam 动画
+// 灌木/树由场景道具绘制，不再画进地面画布（会被裁成半个）。
 // 碰撞仍由 WorldScene 的静态矩形承担，画布只负责渲染
 // ============================================================
 import { T } from '../data/maps.js';
-import { GRASS_TILES, WATER_TILES, WATER_BG } from '../assets/ts.js';
+import { WATER_BG } from '../assets/ts.js';
 
 const TILE = 128; // tilemap 元素 ×2（TS tile 64px → 128px 网格）
 
@@ -17,147 +17,88 @@ function lcg(seed) {
   return () => (s = (s * 16807) % 2147483647) / 2147483647;
 }
 
-/** 野外：平整大草原 + TS 装饰点缀 */
-function drawOutdoor(ctx, def, tilesets, scene) {
+/** 只铺图集无缝中心格 (1,1)，外扩 1px 吃掉微缝 */
+function blitSeamless(ctx, img, dx, dy) {
+  ctx.drawImage(img, 64, 64, 64, 64, dx - 1, dy - 1, TILE + 2, TILE + 2);
+}
+
+/** 野外：连续草地 + 贴死的土路 + 水面岸沫 */
+function drawOutdoor(ctx, def, tilesets) {
   const grassImg = tilesets[def.key === 'Forest' ? 'forest' : 'grass'];
   const pathImg = tilesets.path;
-  const rand = lcg(def.key === 'Forest' ? 20261001 : 20260916);
 
   const at = (x, y) => (x < 0 || y < 0 || x >= def.w || y >= def.h) ? null : def.grid[y][x];
   const isWater = (v) => v === T.WATER || v === T.WATER2 || v === T.WATER3;
   const isPath = (v) => v === T.PATH;
+  const isLand = (nx, ny) => {
+    const v = at(nx, ny);
+    return v != null && !isWater(v);
+  };
 
-  // ---------- 第一遍：地形 ----------
+  // 先铺满草地，再盖水与路，避免外扩 1px 染到邻格
+  for (let y = 0; y < def.h; y++) {
+    for (let x = 0; x < def.w; x++) {
+      blitSeamless(ctx, grassImg, x * TILE, y * TILE);
+    }
+  }
+
   for (let y = 0; y < def.h; y++) {
     for (let x = 0; x < def.w; x++) {
       const v = def.grid[y][x];
       const dx = x * TILE, dy = y * TILE;
       if (isWater(v)) {
-        // 统一纯底色 + 程序化波纹（TS 水波 tile 有透明区，混铺会产生色块 → 不用）
         ctx.fillStyle = WATER_BG;
         ctx.fillRect(dx, dy, TILE, TILE);
         const r = lcg(x * 7919 + y * 104729 + 17);
         if (r() < 0.5) {
           ctx.fillStyle = 'rgba(140,195,196,0.85)';
-          const wx = dx + 12 + r() * 72, wy = dy + 16 + r() * 88;
+          const wx = dx + 16 + r() * 64, wy = dy + 20 + r() * 72;
           ctx.fillRect(wx, wy, 28 + r() * 20, 6);
           ctx.fillRect(wx + 8, wy + 16 + r() * 12, 16 + r() * 16, 4);
         }
-        if (r() < 0.22) {
-          ctx.fillStyle = 'rgba(60,120,130,0.3)';
-          ctx.fillRect(dx + 20 + r() * 60, dy + 24 + r() * 64, 32 + r() * 24, 12);
-        }
-        if (r() < 0.25) {
-          ctx.fillStyle = 'rgba(234,252,255,0.8)';
-          ctx.fillRect(dx + 16 + r() * 88, dy + 16 + r() * 88, 6, 4);
-        }
       } else if (isPath(v)) {
-        // 沙黄土路：圆角连接（外角内收）
         const nb = {
           l: isPath(at(x - 1, y)), r: isPath(at(x + 1, y)),
           t: isPath(at(x, y - 1)), b: isPath(at(x, y + 1)),
         };
-        const [tx, ty] = GRASS_TILES[Math.floor(rand() * 4)]; // 前 4 个素净变体
+        const corner = (a, b) => (!a && !b ? 28 : 0);
         ctx.save();
         ctx.beginPath();
-        const R = 28;
-        const r = (a, b) => (!a && !b ? R : 0);
-        ctx.roundRect(dx + 4, dy + 4, TILE - 8, TILE - 8,
-          [r(nb.l, nb.t), r(nb.t, nb.r), r(nb.r, nb.b), r(nb.b, nb.l)].map((v) => v || 4));
+        ctx.roundRect(dx, dy, TILE, TILE, [
+          corner(nb.l, nb.t), corner(nb.t, nb.r),
+          corner(nb.r, nb.b), corner(nb.b, nb.l),
+        ]);
         ctx.clip();
-        ctx.drawImage(pathImg, tx * 64, ty * 64, 64, 64, dx, dy, TILE, TILE);
+        blitSeamless(ctx, pathImg, dx, dy);
         ctx.restore();
-      } else {
-        // 平整连续大草原：单一纯草 tile 平铺（无变体混拼 → 完全连续无缝）
-        ctx.drawImage(grassImg, 1 * 64, 1 * 64, 64, 64, dx, dy, TILE, TILE);
-        // 花地瓦片叠加小花（柔和圆形）
-        if (v === T.FLOWER) {
-          const r = lcg(x * 7919 + y * 104729 + 5);
-          for (let i = 0; i < 3; i++) {
-            const fx = dx + 20 + r() * 88, fy = dy + 20 + r() * 88;
-            ctx.fillStyle = ['#ffd257', '#ff8aa0', '#fff5f0', '#e86a92'][Math.floor(r() * 4)];
-            ctx.beginPath();
-            ctx.arc(fx, fy, 5 + r() * 3, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = '#fffbe8';
-            ctx.beginPath();
-            ctx.arc(fx, fy, 2.2, 0, Math.PI * 2);
-            ctx.fill();
-          }
+      } else if (v === T.FLOWER) {
+        const r = lcg(x * 7919 + y * 104729 + 5);
+        for (let i = 0; i < 3; i++) {
+          const fx = dx + 20 + r() * 88, fy = dy + 20 + r() * 88;
+          ctx.fillStyle = ['#ffd257', '#ff8aa0', '#fff5f0', '#e86a92'][Math.floor(r() * 4)];
+          ctx.beginPath();
+          ctx.arc(fx, fy, 5 + r() * 3, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#fffbe8';
+          ctx.beginPath();
+          ctx.arc(fx, fy, 2.2, 0, Math.PI * 2);
+          ctx.fill();
         }
       }
     }
   }
 
-  // ---------- 第二遍：TS 装饰随机点缀（草原/水岸/花地的视觉丰富层） ----------
-  decorateGround(ctx, def, scene, at, isWater, isPath);
-}
-
-/** 草地装饰（静态，画进整图地面）：灌木/岩石 随机散布 */
-function decorateGround(ctx, def, scene, at, isWater, isPath) {
-  const tex = (k) => {
-    const t = scene.textures.get(k);
-    return t && t.getSourceImage ? t.getSourceImage() : null;
-  };
-  const landDecor = [
-    'bush1', 'bush2', 'bush3', 'bush4',       // 灌木（128×128 帧，取首帧）
-    'rock1', 'rock2', 'rock3', 'rock4',       // 岩石（64×64）
-  ];
-  const waterDecor = ['waterRock1', 'waterRock2', 'waterRock3', 'waterRock4']; // 64×64（取首帧）
-
-  // 装饰散布密度：每 ~6 个草地格 1 个装饰（约 16% 格子）
-  const rand = lcg(def.key === 'Forest' ? 777 : 555);
-  for (let y = 0; y < def.h; y++) {
-    for (let x = 0; x < def.w; x++) {
-      const v = def.grid[y][x];
-      if (isWater(v) || isPath(v) || v === T.DWALL || v === T.VOID) continue;
-      if (rand() > 0.16) continue;
-      // 避开出生点附近（前 3 行 / 玩家常走的路两侧不严格限制）
-      const dx = x * TILE, dy = y * TILE;
-      const isBush = rand() < 0.55;
-      const key = isBush
-        ? landDecor[Math.floor(rand() * 4)]
-        : landDecor[4 + Math.floor(rand() * 4)];
-      const img = tex(key);
-      if (!img) continue;
-      // 灌木帧 128×128（取首帧 1/8 宽）；岩石 64×64
-      const sw = isBush ? 128 : 64, sh = isBush ? 128 : 64;
-      // 随机翻转 + 尺寸 0.7~1.0（视觉多样性）
-      const s = 0.7 + rand() * 0.3;
-      const dw = (isBush ? 128 : 64) * s, dh = sh * s;
-      const ox = dx + rand() * (TILE - dw), oy = dy + rand() * (TILE - dh * 0.5) - dh * 0.2;
-      ctx.save();
-      if (rand() < 0.5) { ctx.translate(ox + dw, oy); ctx.scale(-1, 1); ctx.drawImage(img, 0, 0, sw, sh, 0, 0, dw, dh); }
-      else ctx.drawImage(img, 0, 0, sw, sh, ox, oy, dw, dh);
-      ctx.restore();
-    }
-  }
-
-  // 水面装饰：水岩（靠岸水域）+ 橡皮鸭（开阔水面）
+  // 岸沫只画在水格靠陆地的一侧，不贴整帧泡沫精灵
+  const shore = 12;
+  ctx.fillStyle = 'rgba(234,252,255,0.7)';
   for (let y = 0; y < def.h; y++) {
     for (let x = 0; x < def.w; x++) {
       if (!isWater(def.grid[y][x])) continue;
-      const r = lcg(x * 31337 + y * 4242 + 99);
-      // 四邻有陆地 → 候选水岩（10%）
-      const nb = [[x, y - 1], [x, y + 1], [x - 1, y], [x + 1, y]];
-      const nearLand = nb.some(([nx, ny]) => {
-        const inside = nx >= 0 && ny >= 0 && nx < def.w && ny < def.h;
-        return !inside || !isWater(def.grid[ny][nx]);
-      });
       const dx = x * TILE, dy = y * TILE;
-      if (nearLand && r() < 0.1) {
-        const img = tex(waterDecor[Math.floor(r() * 4)]);
-        if (!img) continue;
-        const s = 0.7 + r() * 0.3;
-        // 水岩贴岸摆放（向陆地一侧偏移）
-        ctx.drawImage(img, 0, 0, 64, 64, dx + r() * 40, dy + r() * 40, 64 * s, 64 * s);
-      } else if (!nearLand && r() < 0.05) {
-        // 开阔水面的橡皮鸭（96×32 静态图）
-        const img = tex('duck');
-        if (!img) continue;
-        const s = 0.8 + r() * 0.4;
-        ctx.drawImage(img, dx + 20 + r() * 40, dy + 40 + r() * 40, 96 * s * 0.7, 32 * s * 0.7);
-      }
+      if (isLand(x, y - 1)) ctx.fillRect(dx, dy, TILE, shore);
+      if (isLand(x, y + 1)) ctx.fillRect(dx, dy + TILE - shore, TILE, shore);
+      if (isLand(x - 1, y)) ctx.fillRect(dx, dy, shore, TILE);
+      if (isLand(x + 1, y)) ctx.fillRect(dx + TILE - shore, dy, shore, TILE);
     }
   }
 }
@@ -233,7 +174,7 @@ export function makeGroundTexture(scene, def) {
       ctx.fillStyle = '#93ba4f';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     } else {
-      drawOutdoor(ctx, def, tilesets, scene);
+      drawOutdoor(ctx, def, tilesets);
     }
   }
 
