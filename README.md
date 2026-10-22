@@ -4,7 +4,7 @@
 关卡体系对齐 **P4A@UCAS（Python for Astronomy）八周课程**：一周一章，从 Python 基础一路打到暗物质晕密度轮廓拟合。
 画风致敬《塞尔达传说：织梦岛》Switch 重制版 + 欧美 Q 版卡通：俯视角、大头小身比例、
 描边卡通渲染（帽子/羽毛/肩带/宝珠等层叠细节）、柔和粉彩配色、无像素马赛克的矢量渲染。
-**全部角色以 4 倍尺寸显示**（`src/core/scale.js` 一键调节），环境物件按 2.5 倍跟随缩放。
+**全部角色以 4 倍尺寸显示**，环境物件按 2.5 倍跟随缩放。
 美术采用 [Tiny Swords](https://pixelfrog-assets.itch.io/tiny-swords)（Pixel Frog · Free Pack，本地素材包）
 + 少量同风格程序化贴图（代码碎片/爱心/传送门等游戏专属元素）。
 
@@ -113,7 +113,6 @@ W4-W8 为**三池式**：每章 `w{N}shard`（野外碎片 ×10 基础）/ `w{N}
 src/
 ├── main.js                  # 游戏入口 + 调试句柄 window.__PYQUEST__（按注册表批量注册 16 个章节场景）
 ├── core/state.js            # 全局状态：G.progress[章] 多章进度 + 传送门解锁条件解析
-├── core/scale.js            # 角色/物件全局显示倍率（CS=4 / PS=2.5，一键缩放）
 ├── core/save.js             # localStorage 存档（v2 多章结构 + v1 自动迁移 + 自动存档）
 ├── data/
 │   ├── chapters.js          # 八章注册表：周次/地图/对话/胜利文本/BOSS/题池配置（关卡数据核心）

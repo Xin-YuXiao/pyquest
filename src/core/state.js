@@ -4,7 +4,7 @@
 // 章节配置见 data/chapters.js（八周课程 = 八章）。
 // ============================================================
 
-import { CHAPTERS } from '../data/chapters.js';
+import { CHAPTERS, getChapter } from '../data/chapters.js';
 
 /** 构造一章的初始进度 */
 function freshChapterProgress(ch) {
@@ -50,10 +50,6 @@ export function resetState() {
 export function cp(id = G.current) {
   if (!G.progress[id]) G.progress[id] = freshChapterProgress(getChapter(id));
   return G.progress[id];
-}
-
-export function getChapter(id) {
-  return CHAPTERS.find((c) => c.id === id) || CHAPTERS[0];
 }
 
 /** 当前章节的碎片进度（HUD / 各场景通用） */

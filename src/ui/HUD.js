@@ -1,8 +1,8 @@
 // ============================================================
 // HUD：生命值（爱心）、代码碎片计数、当前目标提示
 // ============================================================
-import { G, chapterShards, cp, getChapter } from '../core/state.js';
-import { CHAPTERS } from '../data/chapters.js';
+import { G, chapterShards, cp } from '../core/state.js';
+import { CHAPTERS, getChapter } from '../data/chapters.js';
 
 const SVG_HEART = (fill, shine) => `
   <svg viewBox="0 0 9 8" shape-rendering="crispEdges">
