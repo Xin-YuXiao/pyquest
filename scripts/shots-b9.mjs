@@ -52,11 +52,7 @@ await closeDialogue();
 check(await page.locator('#dialogue.show').count() === 0, '对话已关闭');
 
 // ---- 2. HUD 特写：碎片胶囊 + 悬挂目标行分离 ----
-await page.evaluate(() => {
-  const G = window.__PYQUEST__.G;
-  G.progress[1].shards = 3;
-  window.__PYQUEST__.active().hud.render();
-});
+await page.evaluate(() => { window.__PYQUEST__.setShards(1, 3); });
 await page.waitForTimeout(500);
 check(await page.locator('.hud-right #objective').count() === 0, '目标文案不在碎片胶囊内');
 check((await page.locator('#objective').textContent()).includes('收集代码碎片'), `目标行: ${await page.locator('#objective').textContent()}`);
@@ -79,9 +75,9 @@ await page.keyboard.press('Tab');
 await page.waitForTimeout(300);
 await closeDialogue();
 await page.evaluate(() => {
-  const G = window.__PYQUEST__.G;
-  const p = G.progress[1];
-  p.shards = 5; p.gateOpen = true; p.bossShielded = false; p.bossDefeated = false;
+  window.__PYQUEST__.applyTestState({
+    progress: { 1: { shards: 5, gateOpen: true, bossShielded: false, bossDefeated: false } },
+  });
   window.__PYQUEST__.active().scene.start('Dungeon');
 });
 await waitForScene('Dungeon');

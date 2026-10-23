@@ -99,11 +99,11 @@ await page.waitForTimeout(300);
 
 // 5b. 世界地图（中期状态：第1章 done，第2章 here，其余 locked）
 await page.evaluate(() => {
-  const G = window.__PYQUEST__.G;
-  const p1 = G.progress[1];
-  p1.shards = 5; p1.gateOpen = true; p1.bossDefeated = true; p1.done = true;
-  G.current = 2;
-  G.answered.add('v1');
+  window.__PYQUEST__.applyTestState({
+    current: 2,
+    answered: ['v1'],
+    progress: { 1: { shards: 5, gateOpen: true, bossDefeated: true, done: true } },
+  });
 });
 await page.keyboard.press('Tab');
 await page.waitForTimeout(600);
@@ -113,8 +113,7 @@ await page.waitForTimeout(300);
 
 // 6. 巢穴 / BOSS 战（数据地牢）
 await page.evaluate(() => {
-  const G = window.__PYQUEST__.G;
-  G.progress[1].gateOpen = true;
+  window.__PYQUEST__.applyTestState({ progress: { 1: { gateOpen: true } } });
   window.__PYQUEST__.active().scene.start('Dungeon', { spawn: 'fromField' });
 });
 await waitForScene('Dungeon');

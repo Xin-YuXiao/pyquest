@@ -47,16 +47,10 @@ const game = new Phaser.Game(config);
 // ---------- 自动存档（HUD 更新 / 关页时写入 localStorage） ----------
 initAutosave();
 
-// ---------- 调试/测试句柄 ----------
-import { G } from './core/state.js';
-window.__PYQUEST__ = {
-  game,
-  G,
-  scene: (key) => game.scene.getScene(key),
-  active: () => sceneKeys
-    .map((k) => game.scene.getScene(k))
-    .find((s) => s && (s.scene.isActive() || s.scene.isPaused())),
-};
+// ---------- 测试接缝（window.__PYQUEST__）：只读查询 + 语义化作弊指令 ----------
+// 面向 E2E 脚本的稳定入口（见 src/core/seam.js）；正常游戏路径不经过它
+import { buildSeam } from './core/seam.js';
+window.__PYQUEST__ = buildSeam(game, sceneKeys);
 
 // ---------- 舞台自适应（保持 3:2，让 DOM UI 与画布重合） ----------
 // #12 移动端断裂修复：DOM UI 的字号 / 间距是绝对像素，stage 被压到手机上的

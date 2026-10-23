@@ -95,11 +95,7 @@ console.log('== 桌面 1200×800 ==');
 
   await page.click('#btn-start');
   await page.waitForTimeout(1300);
-  await page.evaluate(() => {
-    const G = window.__PYQUEST__.G;
-    G.progress[1].shards = 3;
-    window.__PYQUEST__.active().hud.render();
-  });
+  await page.evaluate(() => { window.__PYQUEST__.setShards(1, 3); });
   await page.waitForTimeout(400);
   await page.screenshot({ path: 'scripts/shots/b12-d2-hud.png' });
   console.log('📷 b12-d2-hud.png');
@@ -152,11 +148,7 @@ console.log('== 移动竖屏 375×667 ==');
 
   await page.click('#btn-start');
   await page.waitForTimeout(1300);
-  await page.evaluate(() => {
-    const G = window.__PYQUEST__.G;
-    G.progress[1].shards = 3;
-    window.__PYQUEST__.active().hud.render();
-  });
+  await page.evaluate(() => { window.__PYQUEST__.setShards(1, 3); });
   await page.waitForTimeout(400);
   // HUD 仍锚定画布（stage）顶部：#hud-top 设计 top:10px → 视觉 10×k 之下
   const hudTop = await page.locator('#hud-top').evaluate((el) => el.getBoundingClientRect().top);

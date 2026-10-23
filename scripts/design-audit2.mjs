@@ -24,10 +24,10 @@ await page.waitForTimeout(1400);
 
 // 第1章：碎片集齐、门开、未通关 → BOSS 真实存在
 await page.evaluate(() => {
-  const G = window.__PYQUEST__.G;
-  const p1 = G.progress[1];
-  p1.shards = 5; p1.gateOpen = true; p1.bossDefeated = false; p1.done = false;
-  G.current = 1;
+  window.__PYQUEST__.applyTestState({
+    current: 1,
+    progress: { 1: { shards: 5, gateOpen: true, bossDefeated: false, done: false } },
+  });
   window.__PYQUEST__.active().scene.start('Dungeon', { spawn: 'fromField' });
 });
 await waitForScene('Dungeon');

@@ -26,9 +26,9 @@ async function reachVictory(page) {
   await page.click('#btn-start');
   await page.waitForTimeout(1200);
   await page.evaluate(() => {
-    const G = window.__PYQUEST__.G;
-    const p = G.progress[1];
-    p.shards = 5; p.gateOpen = true; p.bossShielded = false; p.bossDefeated = false;
+    window.__PYQUEST__.applyTestState({
+      progress: { 1: { shards: 5, gateOpen: true, bossShielded: false, bossDefeated: false } },
+    });
     window.__PYQUEST__.active().scene.start('Dungeon');
   });
   await page.waitForFunction(() => {
