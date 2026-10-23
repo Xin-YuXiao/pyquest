@@ -20,6 +20,46 @@ import { wipeTransition } from '../ui/wipe.js';
 import { T } from '../data/maps.js';
 import { makeGroundTexture } from '../textures/ground.js';
 
+// ---------- 交互判定半径（玩法冻结：数值即原字面量，勿改） ----------
+/** 符文石可交互/提示半径（px，世界坐标距离） */
+const INTERACT_RUNE_RADIUS = 260;
+/** 封印石门可交互/提示半径（px；判定锚点为 gate.y + 140） */
+const INTERACT_GATE_RADIUS = 340;
+
+/**
+ * 章节道具描述对象（src/data/chapters.js 的 buildField/buildLair `props` 数组元素）。
+ * 由 WorldScene.spawnProp 消费；交互类道具会进一步转化为 Interactable 供 tryInteract 使用。
+ *
+ * @typedef {Object} PropDef
+ * @property {string} type 道具种类：'tree'|'house'|'npc'|'rune'|'gate'|'torch'|'bush'|'crystal'|'shroom'|'door'|'doorlink'
+ * @property {number} x 世界坐标 x（px）
+ * @property {number} y 世界坐标 y（px，多数贴图以此为锚/基准深度）
+ * @property {string} [id] 仅 type='npc'：'tablet'（引导石碑）|'elder'（长老）等
+ * @property {string} [qid] 仅 type='rune'：题目槽位 id（pickQuestion / G.answered 用）
+ * @property {boolean} [bossRune] 仅 type='rune'：答对后触发 breakBossShield（可选，缺省 false）
+ * @property {boolean} [healRune] 仅 type='rune'：祝福符文，答对回 1 心不产碎片（可选，缺省 false）
+ * @property {string[]} [requires] 仅 type='doorlink'：解锁前置（meetsRequires 判定，缺省视为已锁）
+ * @property {string} [label] 仅 type='doorlink'：提示/对话中的门名称（缺省 '封印之门'）
+ * @property {string[]} [lockLines] 仅 type='doorlink'： locked 时被检查的对话行（缺省内置文案）
+ */
+
+/**
+ * spawnProp 生成的可交互对象（存入 this.interactables，由 tryInteract / updateInteractHint 消费）。
+ *
+ * @typedef {Object} Interactable
+ * @property {'rune'|'doorlink'} kind 交互种类
+ * @property {number} x 交互判定锚点 x
+ * @property {number} y 交互判定锚点 y
+ * @property {boolean} alive 是否仍可交互（符文已领悟 / 门已解锁后置 false 或改 locked）
+ * @property {string} [qid] kind='rune'：题目槽位 id
+ * @property {boolean} [bossRune] kind='rune'
+ * @property {boolean} [healRune] kind='rune'
+ * @property {boolean} [locked] kind='doorlink'：是否仍处封印状态
+ * @property {PropDef} [prop] kind='doorlink'：原始道具描述（label/lockLines 回读用）
+ * @property {Phaser.GameObjects.Image} [sprite] 主贴图（答对后 setTint 置灰用）
+ * @property {Phaser.GameObjects.Rectangle} [body] kind='doorlink' 且 locked 时的阻挡碰撞体
+ */
+
 export class WorldScene extends Phaser.Scene {
   constructor(key) { super(key); }
 
@@ -351,7 +391,7 @@ export class WorldScene extends Phaser.Scene {
       return;
     }
     for (const it of this.interactables) {
-      if (it.kind === 'rune' && dist(it.x, it.y) < 260) {
+      if (it.kind === 'rune' && dist(it.x, it.y) < INTERACT_RUNE_RADIUS) {
         if (!it.alive) { this.floatText(it.x, it.y - 300, '咒语已领悟 ✓', '#3ddad7'); return; }
         this.openRuneQuiz(it);
         return;
@@ -361,7 +401,7 @@ export class WorldScene extends Phaser.Scene {
         return;
       }
     }
-    if (this.gate && !cp(this.ch.id).gateOpen && dist(this.gate.x, this.gate.y + 140) < 340) {
+    if (this.gate && !cp(this.ch.id).gateOpen && dist(this.gate.x, this.gate.y + 140) < INTERACT_GATE_RADIUS) {
       this.tryOpenGate();
     }
   }
@@ -504,7 +544,7 @@ export class WorldScene extends Phaser.Scene {
       hint = this.npc.id === 'elder' ? '按 <kbd>E</kbd> 与长老对话' : '按 <kbd>E</kbd> 阅读石碑';
     } else {
       for (const it of this.interactables) {
-        if (it.kind === 'rune' && dist(it.x, it.y) < 260) {
+        if (it.kind === 'rune' && dist(it.x, it.y) < INTERACT_RUNE_RADIUS) {
           hint = it.alive ? '按 <kbd>E</kbd> 解读符文石' : null;
           break;
         }
@@ -514,7 +554,7 @@ export class WorldScene extends Phaser.Scene {
         }
       }
     }
-    if (!hint && this.gate && !cp(this.ch.id).gateOpen && dist(this.gate.x, this.gate.y + 140) < 340) {
+    if (!hint && this.gate && !cp(this.ch.id).gateOpen && dist(this.gate.x, this.gate.y + 140) < INTERACT_GATE_RADIUS) {
       hint = '按 <kbd>E</kbd> 检查石门';
     }
     this.hud.hint(hint);
