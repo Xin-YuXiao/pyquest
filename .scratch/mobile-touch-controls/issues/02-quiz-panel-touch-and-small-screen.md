@@ -1,6 +1,6 @@
 # 02: 答题面板触控与小屏适配
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: None (can start immediately)
 
@@ -21,3 +21,5 @@ Blocked by: None (can start immediately)
 - [ ] `npm run check` 全绿
 
 ## Comments
+
+- 2026-10-25：feat/mobile-touch 实现：触控时答题面板可滚动、选项与按钮 ≥ 44 真实像素、横屏字号约 1.25×。

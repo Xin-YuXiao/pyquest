@@ -1,6 +1,6 @@
 # 02: 记录每一次符文石作答（答对 / 答错 / 放弃）
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: 01
 
@@ -28,3 +28,5 @@ Blocked by: 01
 - [ ] 现有全部章节 E2E 不受影响；`npm run check` 全绿
 
 ## Comments
+
+- 2026-10-25：feat/mistake-book 实现：每次作答（含答错 / 放弃）写入学习记录；runner 新增「先答错再答对」步骤验证。

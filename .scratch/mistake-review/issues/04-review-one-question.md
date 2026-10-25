@@ -1,6 +1,6 @@
 # 04: 复习一道错题（掌握规则 + 记录）
 
-Status: needs-info
+Status: resolved
 Type: task
 Blocked by: 01, 02, 03
 
@@ -20,3 +20,5 @@ Blocked by: 01, 02, 03
 - [ ] `npm run check` 全绿
 
 ## Comments
+
+- 2026-10-25：feat/mistake-book 实现：复习不扣心、不发碎片，选项打乱，连续答对 2 次 = 已掌握，答错清零。

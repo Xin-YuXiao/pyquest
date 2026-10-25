@@ -25,3 +25,5 @@ Blocked by: None (can start immediately)
 - [ ] `npm run check` 全绿
 
 ## Comments
+
+- 2026-10-25：配置对象化已在 feat/boss-mechanics 完成（bossMechanic 配置 + 机制表）；「浮字改用本章 BOSS 名」见集成分支后续提交。

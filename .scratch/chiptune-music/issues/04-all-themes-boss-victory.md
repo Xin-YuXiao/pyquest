@@ -1,6 +1,6 @@
 # 04: 全部章节主题 + 巢穴变奏 + BOSS 战循环 + 胜利/死亡乐句
 
-Status: needs-info
+Status: resolved
 Type: task
 Blocked by: 02, 03
 
@@ -20,3 +20,5 @@ Blocked by: 02, 03
 - [ ] npm run check 全绿
 
 ## Comments
+
+- 2026-10-25：feat/chiptune-music 实现：11 章各自主题 + 巢穴 / BOSS / 胜利 / 标题共 16 首（曲风按规格推荐方向，03 号 grilling 仍待确认）。

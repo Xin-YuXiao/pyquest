@@ -23,3 +23,5 @@ Blocked by: 01
 - [ ] `npm run check` 全绿
 
 ## Comments
+
+- 2026-10-25：字段（playMs / enteredAt / gateOpenedAt / doneAt）已在 v3 预留，计时逻辑未实现。

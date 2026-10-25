@@ -1,6 +1,6 @@
 # 04: 记录容量上限与存储配额降级
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: 02
 
@@ -19,3 +19,5 @@ Blocked by: 02
 - [ ] `npm run check` 全绿
 
 ## Comments
+
+- 2026-10-25：feat/mistake-book 实现：日志保留最新 3000 条，配额不足按 完整 → 减半 → 无日志 降级，进度字段始终完整。

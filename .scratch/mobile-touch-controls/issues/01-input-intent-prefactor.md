@@ -1,6 +1,6 @@
 # 01: 输入抽象 prefactor：键盘汇入「移动意图 + 动作」
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: None (can start immediately)
 
@@ -22,3 +22,5 @@ Blocked by: None (can start immediately)
 - [ ] `npm run check` 全绿
 
 ## Comments
+
+- 2026-10-25：已在 feat/mobile-touch（bd52a0f）实现并合入 dev：core/input.js 键盘 + 摇杆合并为 8 向；E/J/空格/M 与触控按钮统一走 act(name)。

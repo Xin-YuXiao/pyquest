@@ -33,9 +33,14 @@ npm run check      # 全部验证（lint / 冒烟 / 题库实跑 / 构建 / 全�
 | --- | --- |
 | 方向键 / WASD | 移动 |
 | J / 空格 | 挥剑攻击 |
-| E | 交互（符文石 / NPC / 石门） |
-| Tab | 世界地图（查看各章进度 / 快速传送已解锁章节） |
-| M | 静音开关 |
+| E | 交互（符文石 / NPC / 石门 / 观测台 / 秘藏石碑） |
+| Tab | 世界地图（查看各章进度 / 快速传送已解锁章节 / 错题本入口） |
+| M | 静音开关（音效 + 背景音乐） |
+| N | 只开关背景音乐（设置会记住） |
+| Esc | 关闭观测台 / 秘藏卷轴；在「无限回廊」里按它跳出循环 |
+
+**手机 / 平板**：横屏最佳。左半屏任意位置按住拖动 = 虚拟摇杆；右下角「挥剑」「交互」按钮
+（附近有可交互物时交互键发金光）；右上角世界地图与静音。
 
 ## 🗺️ 游戏流程（64 学时课程 = 两部十一章关卡）
 
@@ -69,10 +74,24 @@ npm run check      # 全部验证（lint / 冒烟 / 题库实跑 / 构建 / 全�
 4. **巢穴**：祝福符文（答对回心）+ **BOSS 符文**（答对破除护盾，才能造成伤害）。
 5. **击败 BOSS** → 本章结算（用时/谜题数/章节进度）→ 前方传送门通往下一章。
 
+## ✨ 新玩法
+
+| 玩法 | 在哪 / 怎么玩 | 教学用意 |
+| --- | --- | --- |
+| **BOSS 招牌机制** | 每章 BOSS 破盾后各有一个与本章知识点呼应的机制，顶部横幅说明规则：第三章正弦弹道、第五章迟缓光环 + 「向量化」加速、第六章梯度下降冲锋（步长衰减）、第七章三个频率分身须按频率从低到高击破、第八章 NFW 引力牵引、第九章「后验更新」预判瞄准、第十章幻觉符文（只有带金印的是真的）、第十一章三途三阶段…… | 把抽象概念变成身体记得住的打法 |
+| **观测站小游戏** | 第八章野外「NFW 拟合台」：拖两个对数滑块调 ρ₀、Rₛ，实时看 χ²/dof，压到 1.5 以下并保持 1 秒即拟合成功（H 键看提示）；第七章「频率调谐台」：扫频率找出 1 / 4 / 7 Hz 三个峰 | 亲手调参数理解拟合与频谱，数字全部对齐题库 dm8 / dm9 / sg6 / st7 |
+| **Python 秘藏** | 每章野外藏一块发光的 `>>>` 石碑（共 11 块），按 E 展开：`import this`、`0.1 + 0.2`、`from __future__ import braces`、`import antigravity`（勇者浮空，可飞越水面）、`while True` 无限回廊（按 Esc 发出 KeyboardInterrupt 跳出）…… 世界地图显示「秘藏 x / 11」 | Python 文化常识；石碑里的每段输出都由本机 python 实跑校验 |
+| **错题本** | 世界地图（Tab）头部「错题本（N）」：答错过的题自动入册，可按章节 / 符文类型筛选，点「复习」重做（选项打乱、不扣心、不发碎片），连续答对 2 次记为「已掌握」 | 答错不再只是扣一颗心；每次作答都记入学习记录 |
+| **背景音乐** | 零素材的程序化 8-bit 音乐：每章野外各有主题、巢穴 BOSS 战、胜利号角；答题时自动压低到 15%；N 键开关 | 有氛围但不打扰答题 |
+| **手机触控** | 见上方「操作」 | 学生用手机也能完整通关 |
+
 ## 💾 存档系统
 
-- 进度**自动保存**到 `localStorage`（键 `pyquest:save:v2`，**v1 旧存档自动迁移**）：
-  生命、当前章节、**每章独立进度**（碎片/封印/BOSS 状态）、已答题目与符文抽题记录。
+- 进度**自动保存**到 `localStorage`（键 `pyquest:save:v3`；**v1 / v2 旧存档自动迁移**，进度完整保留）：
+  生命、当前章节、**每章独立进度**（碎片/封印/BOSS 状态）、已答题目与符文抽题记录，
+  以及**学习记录**（每次作答：题目、所选项、对错、用时、第几次尝试）、已发现的秘藏、观测日志。
+- 只有点了「开始 / 继续冒险」之后才自动存档（标题画面刷新或关页不会再用空进度覆盖存档）；
+  读不出来的存档会原样挪到 `pyquest:save:broken`，不会被直接丢掉。
 - 标题画面会显示 **「继续冒险 · 第N章」**（按最新通关章节落点）；
   「新的冒险」覆盖存档重新开始（有确认提示）。
 - 通关结算中的「重新开始」会清档重置。
@@ -131,7 +150,12 @@ W4-W11 为**三池式**：每章 `w{N}shard`（野外碎片 ×10 基础）/ `w{N
 src/
 ├── main.js                  # 游戏入口：按注册表批量注册 22 个章节场景 + 挂载测试接缝 window.__PYQUEST__
 ├── core/state.js            # 全局状态：G.progress[章] 多章进度 + 传送门解锁条件解析
-├── core/save.js             # localStorage 存档（v2 多章结构 + v1 自动迁移 + 自动存档）
+├── core/save.js             # localStorage 存档 v3：序列化 / 迁移（v1→v2→v3）/ 校验 / 水合四个纯函数 + 配额降级写入
+├── core/records.js          # 学习记录：每次作答（对错 / 所选项 / 用时 / 尝试次数）与每题汇总
+├── core/mistakes.js         # 错题本视图与复习掌握规则（连续答对 2 次 = 已掌握）
+├── core/input.js            # 输入抽象：键盘 + 触控摇杆合并为 8 向移动；交互 / 攻击 / 地图 / 静音为语义动作
+├── core/observatory.js      # 观测站纯数学层：NFW 数据与 χ²、频谱调谐、观测日志
+├── core/bossMath.js         # BOSS 机制公式（正弦弹道 / NFW 引力 / 后验瞄准权重 / 学习率衰减）
 ├── core/phase.js            # 章内阶段（新来/收集/集齐/门开/通关）：NPC 台词、HUD、世界地图的单一推断来源
 ├── core/quiz.js             # 答题行为层：随机抽题 pickQuestion + Python 语法高亮
 ├── core/seam.js             # 测试接缝：window.__PYQUEST__ 只读查询 + 语义动作（E2E 专用）
@@ -139,24 +163,33 @@ src/
 │   ├── chapters.js          # 十一章注册表：周次/地图/对话/胜利文本/BOSS/题池配置（关卡数据核心）
 │   ├── maps.js              # 地图构建器：W1/W2 手工地图 + W3-W11 通用生成器（theme 驱动）
 │   ├── quizBank.js          # Python 题库（251 题 · 34 个同难度题池）+ 槽位映射（题面权威源，ADR-0001）
-│   └── quizData.js          # 兼容 re-export 枢纽（旧 import 路径，新代码直接用 quizBank / core/quiz）
+│   ├── quizData.js          # 兼容 re-export 枢纽（旧 import 路径，新代码直接用 quizBank / core/quiz）
+│   ├── bossMechanics.js     # 11 个 BOSS 招牌机制的种类与参数表（章节配置的 bossMechanic 引用）
+│   └── secrets.js           # 11 个 Python 秘藏彩蛋（REPL 片段 + 讲解）与确定性选址
 ├── assets/ts.js             # Tiny Swords 素材清单/加载/动画（素材本体在 assets/TinySwordsFreePack/，未入库）
 ├── textures/pixelArt.js     # 程序化补充贴图（代码碎片/爱心/传送门/石门等）
 ├── textures/ground.js       # 整图地面画布（草地 → 水/土路 → 岸沫分层绘制）
 ├── audio/sfx.js             # WebAudio 程序化 8-bit 音效
+├── audio/music.js           # 背景音乐音序器（音频时钟预排音符、交叉淡入、答题压低、切后台暂停）
+├── audio/tracks.js          # 16 首程序化曲目（紧凑记谱 + 编译器）与章节曲目映射
 ├── entities/
 │   ├── Player.js            # 玩家：移动/挥剑/受击/死亡（回本章野外重生）
 │   ├── Slime.js             # 史莱姆 AI：游荡/追击/掉落（red / crimson 变体）
 │   ├── BossSlime.js         # BOSS 之一：护盾/召唤帮手（W1/W3/W5/W7/W9/W11 章）
-│   └── BossSnake.js         # BOSS 之二：体节跟随/断尾/突咬（W2/W4/W6/W8/W10 章）
+│   ├── BossSnake.js         # BOSS 之二：体节跟随/断尾/突咬（W2/W4/W6/W8/W10 章）
+│   └── bossMechanics.js     # BOSS 招牌机制运行时（按章节配置挂到两种 BOSS 原型上）
 └── scenes/
     ├── BootScene.js         # 生成贴图动画 + 标题画面（继续冒险按最新章节落点）
     ├── WorldScene.js        # 世界基类：地图/交互/传送门封印/答题接线（章节驱动）
-    └── ChapterScene.js      # 通用章节场景：FieldScene（野外）+ LairScene（巢穴）+ 工厂
-ui/                          # DOM 覆盖层：HUD、对话框、答题面板、结算（章节配置驱动）
+    ├── ChapterScene.js      # 通用章节场景：FieldScene（野外）+ LairScene（巢穴）+ 工厂
+    └── secrets.js           # 秘藏石碑交互（浮空 / 无限回廊等特效）
+ui/                          # DOM 覆盖层：HUD、对话框、答题面板（主线 / 复习两种模式）、结算、
+                             # 错题本、观测台、秘藏卷轴、BOSS 机制横幅、触控层、音乐开关
 scripts/
 ├── smoke.mjs                # 无头冒烟测试（贴图/全部章节地图/题库/题池/抽题校验）
 ├── verify-quiz.mjs          # 题库自动校验（用本机 python 执行输出确定的题目，比对 stdout）
+├── verify-secrets.mjs       # 秘藏彩蛋里展示的 Python 输出逐条用真 python 复现核对
+├── fixtures/                # 真实的 v1 / v2 存档样本（迁移测试用）
 ├── gen-ts-stubs.mjs         # 无素材环境（CI）生成 Tiny Swords 纯色占位图，让 E2E 可跑
 ├── run-e2e.mjs              # E2E 总入口（npm run test:e2e）：复用或临时启动 dev server，逐章跑并汇总
 ├── e2e/lib/runner.mjs       # 章节 E2E 共享运行器：各章脚本只声明 labels + steps
@@ -170,7 +203,8 @@ scripts/
 ├── e2e-ch8.mjs              # 第八章 E2E（深空晕环/核心符文/NFW 幻龙/衔接第二部第九章）
 ├── e2e-ch9.mjs              # 第九章 E2E（统计圣所/后验回廊/贝叶斯祭司/衔接第十章）
 ├── e2e-ch10.mjs             # 第十章 E2E（灵思之塔/验证回廊/幻言魔像/衔接第十一章）
-└── e2e-ch11.mjs             # 第十一章 E2E（毕业试炼/三途之门/三途守门人/全部通关）
+├── e2e-ch11.mjs             # 第十一章 E2E（毕业试炼/三途之门/三途守门人/全部通关）
+└── e2e-<功能>.mjs           # 功能 E2E（自动发现）：boss-mechanics / observatory / secrets / review / music / mobile
 ```
 
 ## 🎨 画面技术（Tiny Swords 素材 + 程序化补充）
@@ -212,9 +246,10 @@ npm run check                # lint → test → build → test:e2e
 
 ```bash
 npm run lint                 # ESLint（flat config，仅 recommended 规则，不管格式）
-npm test                     # smoke（全部章节地图 + 题库校验）+ verify-quiz（python 实跑题目比对 stdout）
+npm test                     # smoke（地图 / 题库 / 存档迁移 / 学习记录 / 各玩法数据）+ verify-quiz + verify-secrets（python 实跑核对）
 npm run test:e2e             # 全部章节 E2E：5173 上已有 dev server 就复用，没有就临时起一个、跑完关掉
 npm run test:e2e -- 9 10 11  # 只跑指定章节
+npm run test:e2e -- review music  # 只跑指定功能（scripts/e2e-<功能>.mjs 自动发现）
 npm run stubs                # 没有 Tiny Swords 素材时先生成占位图（检测到真实素材包会跳过）
 ```
 
@@ -249,7 +284,8 @@ node scripts/e2e-ch11.mjs    # E2E：第十一章（毕业试炼/三途之门/�
 - [ ] W4-W8 题量进一步充实（可选扩展至每章 40-60 题：FITS 实操、emcee 漫步、NFW 拟合数值题）
 - [ ] Pyodide 沙盒：W6-8 真实代码执行判分（跑 numpy/scipy 拟合 NFW）
 - [ ] 八个课程 Project 作为通关后「毕业试炼」隐藏关卡
-- [ ] 移动端虚拟摇杆；难度曲线（爱心上限/商店金币）
+- [x] ~~移动端虚拟摇杆~~ ✅（触控层 + 答题面板触控适配）
+- [ ] 难度曲线（爱心上限/商店金币）——规格见 `.scratch/difficulty-economy/`
 
 ### 第二部（64 学时扩展，详见 `docs/part2-plan.md`）
 
@@ -257,6 +293,13 @@ node scripts/e2e-ch11.mjs    # E2E：第十一章（毕业试炼/三途之门/�
 - [x] ~~第十章 · 灵思之塔（vibe coding 工具方法论，四选一符文落地）~~ ✅
 - [x] ~~第十一章 · 毕业试炼（project-driven study 实战收尾）~~ ✅
 - [ ] 第十章对话式编程 UI（模拟 prompt → 迭代 → 验证）
+
+### 已上线的新玩法与后续规划
+
+- [x] ~~BOSS 招牌机制、观测站小游戏、Python 秘藏、错题本 + 学习记录、程序化背景音乐、移动端触控~~ ✅（见「新玩法」）
+- 完整 backlog（33 个 effort · 193 张工单，含 Pyodide 代码沙盒、代码拼图、课堂投屏模式、学习报告、
+  星系分类台、引力沙盒、写代码驱动勇者等）与设计依据见 [`.scratch/README.md`](.scratch/README.md)、
+  [`.scratch/INSPIRATION.md`](.scratch/INSPIRATION.md)
 
 ## 📄 许可证
 

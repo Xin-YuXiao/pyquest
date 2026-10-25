@@ -12,19 +12,20 @@
 - **Blocked by**：同目录写编号，跨 effort 写相对路径；所有阻塞都已校验可解析、无环。
 - 每个 spec 都有「待决策」小节：每条都给了推荐选项和理由，助教可以直接选「按推荐」。
 
-## 正在实现（第一波，分支在 fork 上）
+## 第一波已实现（全部合入集成分支 `dev`）
 
-| 分支 | 对应 effort | 说明 |
-| --- | --- | --- |
-| `fix/highlight-strings` | custom-quiz-packs/01 | **已推送**：修复代码高亮破坏字符串字面量（54 题题面出现可见残片 `str">`） |
-| `feat/boss-mechanics` | boss-signature-mechanics | 11 个 BOSS 各一个与本章知识点呼应的招牌机制 |
-| `feat/python-secrets` | world-secrets | 各章野外的 Python 文化彩蛋（`import this`、`import antigravity`…）+ 秘藏计数 |
-| `feat/chiptune-music` | chiptune-music | 零素材程序化背景音乐，答题时自动压低 |
-| `feat/observatory` | observatory-minigames | 第八章 NFW 拟合台、第七章频率调谐台 |
-| `feat/mobile-touch` | mobile-touch-controls | 虚拟摇杆 + 触控按钮（upstream 路线图） |
-| `feat/mistake-book` | learning-records + mistake-review | 作答记录（含答错）+ 错题本复习 |
+| 分支 | 对应 effort | 内容 | 关闭的工单 |
+| --- | --- | --- | --- |
+| `fix/highlight-strings` | custom-quiz-packs/01（部分） | 修复代码高亮破坏字符串字面量（54 题题面出现可见残片 `str">`） | — |
+| `feat/boss-mechanics` | boss-signature-mechanics | 11 个 BOSS 各一个与本章知识点呼应的招牌机制；顺带修复「巢穴里点取消会让游戏崩溃」 | 03、05、06、07 |
+| `feat/python-secrets` | world-secrets | 11 个 Python 文化彩蛋 + 秘藏计数；输出由真 python 复现核对 | 05、06 |
+| `feat/chiptune-music` | chiptune-music | 16 首程序化背景音乐，答题时压低 | 02、04 |
+| `feat/observatory` | observatory-minigames | 第八章 NFW 拟合台、第七章频率调谐台 | 02 |
+| `feat/mobile-touch` | mobile-touch-controls | 虚拟摇杆 + 触控按钮 + 答题面板触控适配（upstream 路线图） | 01-06 |
+| `feat/mistake-book` | learning-records + mistake-review | 存档 v3 + 作答记录（含答错）+ 错题本复习；顺带修复「标题画面刷新会用空进度覆盖存档」 | LR 01、02、04；MR 02、03、04 |
 
-第一波实现**先按各 spec「待决策」的推荐方案落地**；对应的 grilling 工单仍保留，助教确认后如有调整再改。
+第一波**先按各 spec「待决策」的推荐方案落地**；对应的 grilling 工单仍保留并已在 Comments 里注明，
+助教试玩确认后如需调整再改。各工单的实现说明见其 Comments。
 
 ## 全部 effort
 
@@ -147,7 +148,7 @@ story-and-companions/01 · vibe-coding-dialogue/01 · world-secrets/01。
 | 代码高亮把字符串字面量弄坏 | 54 题题面多出可见的 `str">` | **已修**（`fix/highlight-strings`） |
 | 70% 的正确答案在第 1 个选项 | 学生可以蒙 | quiz-bank-lint/06、07 |
 | 答错最多扣到 1 心、同一符文题目不变 | 四个选项挨个试几乎没有代价 | difficulty-economy、challenge-modes、achievements-codex |
-| 只记录答对，答错不留痕 | 没有错题本、没有学习报告 | learning-records（第一波实现中） |
+| 只记录答对，答错不留痕 | 没有错题本、没有学习报告 | **已修**（`feat/mistake-book`：作答记录 + 错题本；学习报告待做） |
 | 第三章起的 BOSS 浮字仍写死第一、二章的名字 | 贝叶斯祭司会喊「循环之王召唤了帮手」 | boss-signature-mechanics/01 |
 | 胜利页「冒险用时」包含关掉游戏的时间 | 隔天续玩用时虚高 | learning-records/03 |
 | Google Fonts / jsdelivr 外链字体 | 国内网络常加载不到；画布飘字可能永久用回退字体 | self-hosted-fonts |
@@ -155,3 +156,13 @@ story-and-companions/01 · vibe-coding-dialogue/01 · world-secrets/01。
 | 构建产物把整个 `assets/`（含本地 Tiny Swords、未使用的 cc0）都打进去 | 公开部署会再分发素材、体积虚大 | public-deploy/03、bundle-performance/04 |
 | 一次通关最多见到题库的 42%（106 个符文槽 / 251 题） | 题库扩充增加的是「同学之间的差异」，不是单人练习量 | challenge-modes、achievements-codex、quiz-expansion-w4-w8 |
 | verify-quiz 只覆盖 56 道可执行题（W1-W3 只有 8 道） | 大量题目输出没被机器核对过 | quiz-bank-lint/04、05 |
+
+### 第一波实现过程中新发现并已修复的问题
+
+| 问题 | 影响 | 修复 |
+| --- | --- | --- |
+| 每个场景都给全局的确认 / 取消按钮加监听且从不移除 | 进巢穴后打开符文点「取消」，整个游戏卡死 | `feat/boss-mechanics` 818eae4 |
+| 自动存档在标题画面就已挂上 | 在标题画面刷新 / 关页会用空进度覆盖真实存档 | `feat/mistake-book` aefc823（建议单独提给 upstream） |
+| 测试接缝 clearMinions 边遍历边删 | 每隔一只小怪漏清，E2E 偶发不确定 | `feat/boss-mechanics` d28d5b6 |
+| 按键反馈提示被逐帧交互提示立刻清掉 | M 静音提示从来看不见 | `feat/chiptune-music` 610a63c |
+| E2E 读档后固定等 1.4 秒 | 机器负载高时点到还没就绪的按钮，偶发失败 | `feat/mistake-book` 9deaba7 |

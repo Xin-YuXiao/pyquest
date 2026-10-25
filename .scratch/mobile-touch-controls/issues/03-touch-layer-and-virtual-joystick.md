@@ -1,6 +1,6 @@
 # 03: 触控层骨架 + 虚拟摇杆移动
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: 01
 
@@ -24,3 +24,5 @@ Blocked by: 01
 - [ ] `npm run check` 全绿
 
 ## Comments
+
+- 2026-10-25：feat/mobile-touch 实现：左半屏浮动摇杆、多点触控；集成时补上观测台 / 秘藏卷轴 / 错题本打开时收起触控层。

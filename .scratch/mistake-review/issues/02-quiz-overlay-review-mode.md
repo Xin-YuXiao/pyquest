@@ -1,6 +1,6 @@
 # 02: 答题面板支持「复习模式」（prefactor）
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: None (can start immediately)
 
@@ -24,3 +24,5 @@ Blocked by: None (can start immediately)
 - [ ] `npm run check` 全绿
 
 ## Comments
+
+- 2026-10-25：feat/mistake-book 实现：答题面板 main / review 两种模式；集成时补上复习结束恢复背景音乐音量。

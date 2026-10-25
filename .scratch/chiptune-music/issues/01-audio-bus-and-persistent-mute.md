@@ -20,3 +20,5 @@ Blocked by: None (can start immediately)
 - [ ] npm run check 全绿
 
 ## Comments
+
+- 2026-10-25：已做：M 同时静音音效与音乐；N 开关音乐并持久化（pyquest:settings:music）。未做：静音状态持久化、独立音频总线。

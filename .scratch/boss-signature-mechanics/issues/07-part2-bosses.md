@@ -1,6 +1,6 @@
 # 07: 铺开：第二部 BOSS 机制（第九、十、十一章）
 
-Status: needs-info
+Status: resolved
 Type: task
 Blocked by: 02, 03
 
@@ -20,3 +20,5 @@ Blocked by: 02, 03
 - [ ] `npm run check` 全绿
 
 ## Comments
+
+- 2026-10-25：feat/boss-mechanics 实现：第九 / 十 / 十一章机制（后验瞄准、幻觉符文、三途三阶段）。

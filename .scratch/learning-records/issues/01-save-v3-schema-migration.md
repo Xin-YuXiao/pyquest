@@ -1,6 +1,6 @@
 # 01: 存档 v3 schema + v2→v3 迁移（含作答记录字段）
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: ../core-unit-tests/issues/01
 
@@ -29,3 +29,5 @@ Blocked by: ../core-unit-tests/issues/01
 - [ ] `npm run check` 全绿
 
 ## Comments
+
+- 2026-10-25：feat/mistake-book 实现：存档 v3 + v1→v2→v3 纯函数迁移，真实 v1/v2 样本 fixtures。偏离规格：迁移测试写在 smoke 第 9 节（vitest 尚未引入），等 core-unit-tests/01 落地后可迁移。集成时 secrets / observatory 两个可选字段已并入 v3。

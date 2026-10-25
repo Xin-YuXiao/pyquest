@@ -23,3 +23,5 @@ Blocked by: None (can start immediately)
 - [ ] 02-06 工单 Status 按结论更新
 
 ## Comments
+
+- 2026-10-25：第一波彩蛋已按推荐清单实现（见 feat/python-secrets）；隐藏宝箱（秘藏题）部分仍待拍板。

@@ -1,6 +1,6 @@
 # 05: 彩蛋样板：`import this` 石碑 + 彩蛋记录持久化
 
-Status: needs-info
+Status: resolved
 Type: task
 Blocked by: 01, ../learning-records/issues/01
 
@@ -18,3 +18,5 @@ Blocked by: 01, ../learning-records/issues/01
 - [ ] `npm run check` 全绿
 
 ## Comments
+
+- 2026-10-25：feat/python-secrets 实现：秘藏框架 + 持久化（存档 secrets 字段）+ 世界地图「秘藏 x / 11」。

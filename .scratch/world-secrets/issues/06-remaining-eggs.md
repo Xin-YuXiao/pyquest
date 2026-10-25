@@ -1,6 +1,6 @@
 # 06: 其余 Python 彩蛋（按 grilling 确认的清单）
 
-Status: needs-info
+Status: resolved
 Type: task
 Blocked by: 05
 
@@ -24,3 +24,5 @@ Blocked by: 05
 - [ ] `npm run check` 全绿
 
 ## Comments
+
+- 2026-10-25：feat/python-secrets 实现：11 章各一个彩蛋；verify-secrets 用真 python 复现每段 REPL 输出。

@@ -22,3 +22,5 @@ Blocked by: None (can start immediately)
 - [ ] 02-07 工单 Status 按结论更新
 
 ## Comments
+
+- 2026-10-25：第一波实现了 NFW 拟合台与频率调谐台（采用推荐：可选、不阻塞主线、奖励回满爱心）；调谐台用了 4 秒 Hann 窗探测（题库未覆盖窗函数），请助教确认讲解口径。

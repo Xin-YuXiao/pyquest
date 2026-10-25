@@ -1,6 +1,6 @@
 # 04: 攻击键 / 交互键 + 按输入方式切换的提示文案
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: 03
 
@@ -22,3 +22,5 @@ Blocked by: 03
 - [ ] 现有 11 章 E2E 原样通过；`npm run check` 全绿
 
 ## Comments
+
+- 2026-10-25：feat/mobile-touch 实现：挥剑 / 交互按钮（可交互时发金光），提示文案按输入方式显示「点 交互 / 按 E」。

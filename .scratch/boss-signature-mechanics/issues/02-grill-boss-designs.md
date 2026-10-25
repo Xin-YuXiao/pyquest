@@ -24,3 +24,5 @@ Blocked by: None (can start immediately)
 - [ ] 后续实现工单（03-07）的 Status 按结论从 needs-info 改为 ready-for-agent（或 wontfix）
 
 ## Comments
+
+- 2026-10-25：11 个机制已按规格推荐方案实现（数值只经测试验证、未经人工试玩调优），请助教试玩后确认或调整。

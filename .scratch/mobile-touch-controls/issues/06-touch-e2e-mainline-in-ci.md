@@ -1,6 +1,6 @@
 # 06: 触屏 E2E 主线进 CI
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: 02, 04, 05
 
@@ -22,3 +22,5 @@ Blocked by: 02, 04, 05
 - [ ] `npm run check` 全绿，CI 绿
 
 ## Comments
+
+- 2026-10-25：scripts/e2e-mobile.mjs（37 断言，真实触摸事件，手机横屏 / 小屏 / 桌面三种视口），由 run-e2e 自动发现进 CI。

@@ -1,6 +1,6 @@
 # 03: 样板：傅里叶魅影「频率分身」（第七章）
 
-Status: needs-info
+Status: resolved
 Type: task
 Blocked by: 01, 02
 
@@ -25,3 +25,5 @@ Blocked by: 01, 02
 - [ ] `npm run check` 全绿
 
 ## Comments
+
+- 2026-10-25：feat/boss-mechanics 实现：第七章频谱分身（按频率从低到高击破，错序复原，有复原上限防卡死）。

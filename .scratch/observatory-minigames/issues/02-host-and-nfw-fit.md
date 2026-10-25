@@ -1,6 +1,6 @@
 # 02: 观测站框架 + 样板：NFW 拟合滑块（第八章）
 
-Status: needs-info
+Status: resolved
 Type: task
 Blocked by: 01, ../learning-records/issues/01
 
@@ -24,3 +24,5 @@ Blocked by: 01, ../learning-records/issues/01
 - [ ] `npm run check` 全绿
 
 ## Comments
+
+- 2026-10-25：feat/observatory 实现：观测台框架 + 第八章 NFW 拟合台（数字对齐 dm8 / dm9 / st7），观测日志写入存档。

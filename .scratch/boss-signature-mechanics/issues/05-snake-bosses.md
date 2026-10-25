@@ -1,6 +1,6 @@
 # 05: 铺开：巨蟒系 BOSS 机制（第二、四、六、八章）
 
-Status: needs-info
+Status: resolved
 Type: task
 Blocked by: 02, 03
 
@@ -24,3 +24,5 @@ Blocked by: 02, 03
 - [ ] `npm run check` 全绿
 
 ## Comments
+
+- 2026-10-25：feat/boss-mechanics 实现：第二 / 四 / 六 / 八章机制（循环倒数、单位符印、梯度冲锋、NFW 引力）。

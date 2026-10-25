@@ -1,6 +1,6 @@
 # 06: 铺开：史莱姆系第一部 BOSS 机制（第一、三、五章）
 
-Status: needs-info
+Status: resolved
 Type: task
 Blocked by: 02, 03
 
@@ -21,3 +21,5 @@ Blocked by: 02, 03
 - [ ] `npm run check` 全绿
 
 ## Comments
+
+- 2026-10-25：feat/boss-mechanics 实现：第一 / 三 / 五章机制（列表召唤、正弦混沌弹、迟缓光环 + 向量化 buff）。

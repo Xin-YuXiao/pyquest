@@ -1,6 +1,6 @@
 # 03: 错题本列表（世界地图入口 + 筛选）
 
-Status: needs-info
+Status: resolved
 Type: task
 Blocked by: 01, ../learning-records/issues/02
 
@@ -24,3 +24,5 @@ Blocked by: 01, ../learning-records/issues/02
 - [ ] `npm run check` 全绿
 
 ## Comments
+
+- 2026-10-25：feat/mistake-book 实现：世界地图头部「错题本（N）」入口，按章 / 符文类型 / 知识点筛选，待复习 / 已掌握两页。

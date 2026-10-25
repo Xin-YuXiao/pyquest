@@ -1,6 +1,6 @@
 # 05: 地图 / 静音按钮 + 世界地图可点关闭
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: 03
 
@@ -19,3 +19,5 @@ Blocked by: 03
 - [ ] `npm run check` 全绿
 
 ## Comments
+
+- 2026-10-25：feat/mobile-touch 实现：右上角地图与静音按钮；地图打开时只保留地图按钮用于关闭。

@@ -21,3 +21,5 @@ Blocked by: None (can start immediately)
 - [ ] 本 effort 中 Status 为 needs-info 的工单改为 ready-for-agent
 
 ## Comments
+
+- 2026-10-25：第一波实现先采用规格推荐（不扣心 / 连续 2 次掌握 / 入口在世界地图 / 不做到期提醒），请助教确认或调整。

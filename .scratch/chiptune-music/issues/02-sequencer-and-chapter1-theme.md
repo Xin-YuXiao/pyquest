@@ -1,6 +1,6 @@
 # 02: 序列器 + 第一章野外主题 + 答题压低（样板）
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: 01
 
@@ -23,3 +23,5 @@ Blocked by: 01
 - [ ] npm run check 全绿
 
 ## Comments
+
+- 2026-10-25：feat/chiptune-music 实现：音频时钟预排的音序器、答题压低到 15%、场景交叉淡入。
