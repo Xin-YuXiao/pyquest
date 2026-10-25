@@ -1,0 +1,130 @@
+{
+  "v": 2,
+  "savedAt": 1792942004851,
+  "startTime": 1792941990230,
+  "hearts": 5,
+  "maxHearts": 6,
+  "current": 3,
+  "answered": [
+    "v1",
+    "v2",
+    "v3",
+    "v4",
+    "v5",
+    "d1",
+    "d2",
+    "d4",
+    "d5",
+    "boss",
+    "f1",
+    "f2",
+    "f3",
+    "f4",
+    "f5",
+    "f6",
+    "l1",
+    "l2",
+    "l3",
+    "l4",
+    "l5",
+    "l6",
+    "boss2",
+    "c3s1"
+  ],
+  "qAnswered": [
+    "np11"
+  ],
+  "runeRolls": {
+    "c3s2": "np1"
+  },
+  "progress": {
+    "1": {
+      "shards": 5,
+      "shardsNeeded": 5,
+      "gateOpen": true,
+      "bossShielded": false,
+      "bossDefeated": true,
+      "done": true
+    },
+    "2": {
+      "shards": 5,
+      "shardsNeeded": 5,
+      "gateOpen": true,
+      "bossShielded": false,
+      "bossDefeated": true,
+      "done": true
+    },
+    "3": {
+      "shards": 1,
+      "shardsNeeded": 5,
+      "gateOpen": false,
+      "bossShielded": true,
+      "bossDefeated": false,
+      "done": false
+    },
+    "4": {
+      "shards": 0,
+      "shardsNeeded": 3,
+      "gateOpen": false,
+      "bossShielded": true,
+      "bossDefeated": false,
+      "done": false
+    },
+    "5": {
+      "shards": 0,
+      "shardsNeeded": 3,
+      "gateOpen": false,
+      "bossShielded": true,
+      "bossDefeated": false,
+      "done": false
+    },
+    "6": {
+      "shards": 0,
+      "shardsNeeded": 3,
+      "gateOpen": false,
+      "bossShielded": true,
+      "bossDefeated": false,
+      "done": false
+    },
+    "7": {
+      "shards": 0,
+      "shardsNeeded": 3,
+      "gateOpen": false,
+      "bossShielded": true,
+      "bossDefeated": false,
+      "done": false
+    },
+    "8": {
+      "shards": 0,
+      "shardsNeeded": 3,
+      "gateOpen": false,
+      "bossShielded": true,
+      "bossDefeated": false,
+      "done": false
+    },
+    "9": {
+      "shards": 0,
+      "shardsNeeded": 3,
+      "gateOpen": false,
+      "bossShielded": true,
+      "bossDefeated": false,
+      "done": false
+    },
+    "10": {
+      "shards": 0,
+      "shardsNeeded": 3,
+      "gateOpen": false,
+      "bossShielded": true,
+      "bossDefeated": false,
+      "done": false
+    },
+    "11": {
+      "shards": 0,
+      "shardsNeeded": 3,
+      "gateOpen": false,
+      "bossShielded": true,
+      "bossDefeated": false,
+      "done": false
+    }
+  }
+}
