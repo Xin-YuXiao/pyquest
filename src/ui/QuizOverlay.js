@@ -1,8 +1,16 @@
 // ============================================================
 // 答题面板：选择题 / 代码填空，暂停游戏世界，纯 DOM 交互
+// 两种模式（open 的 mode 参数）：
+//   main   —— 主线符文石：答错扣心，答对执行奖励回调（碎片/回心/破盾）
+//   review —— 错题本复习：不扣心、不执行奖励、不暂停/恢复场景（由世界地图持有暂停），
+//             选项打乱展示，答对答错都展示解析
+// 每次「确认」/ 未作答就「取消」都把作答事实交给学习记录（core/records.js），
+// 本面板只负责计时（页面隐藏期间暂停计时）。
 // ============================================================
 import { highlight } from '../data/quizData.js';
+import { optionOrder } from '../core/quiz.js';
 import { damageHearts, chapterShards } from '../core/state.js';
+import { recordAttempt, recordSkip } from '../core/records.js';
 import { sfx } from '../audio/sfx.js';
 import { SVG_SHARD } from './HUD.js';
 
@@ -28,7 +36,10 @@ export class QuizOverlay {
     this.scene = scene;
     this.isOpen = false;
     this.q = null;
-    this.selected = -1;
+    this.selected = -1;       // 展示下标（复习模式下选项被打乱，判定时经 order 映射回原始下标）
+    this.order = [];          // order[展示下标] = 原始下标
+    this.mode = 'main';       // main | review
+    this.attempts = 0;        // 本次打开面板内的提交次数（0 次就取消 = 放弃）
     this.phase = 'answering'; // answering | correct
     this._flightToken = 0;    // 碎片飞行代次（快速连续答题时作废旧飞行的定时器/DOM）
     this._flightEls = [];     // 飞行中的碎片 / 金光脉冲元素
@@ -54,15 +65,49 @@ export class QuizOverlay {
       else if (e.key === 'Enter') this.confirm();
     };
     document.addEventListener('keydown', this._keyHandler);
+
+    // 作答计时：页面隐藏（切窗口查资料）期间不计入用时
+    this._onVisibility = () => {
+      if (!this.isOpen) return;
+      const now = performance.now();
+      if (document.hidden) this._hiddenAt = now;
+      else if (this._hiddenAt != null) { this._hiddenMs += now - this._hiddenAt; this._hiddenAt = null; }
+    };
+    document.addEventListener('visibilitychange', this._onVisibility);
   }
 
-  open(q, { onCorrect, onCancel } = {}) {
+  _startTimer() {
+    this._t0 = performance.now();
+    this._hiddenMs = 0;
+    this._hiddenAt = document.hidden ? this._t0 : null;
+  }
+
+  /** 距上次计时起点的有效用时（毫秒；学习记录侧再按上限截断） */
+  _elapsed() {
+    const now = performance.now();
+    const hidden = this._hiddenMs + (this._hiddenAt != null ? now - this._hiddenAt : 0);
+    return Math.max(0, now - this._t0 - hidden);
+  }
+
+  /**
+   * 打开答题面板。
+   * main：slot / kind 标明是哪块符文石（kind: shard 碎片 / heal 祝福 / boss）；
+   * review：onDone 在复习面板关闭后回调（答对领完或中途取消都会调）。
+   */
+  open(q, { onCorrect, onCancel, onDone, mode = 'main', slot = '', kind = 'shard' } = {}) {
     this.isOpen = true;
     this.q = q;
     this.selected = -1;
     this.phase = 'answering';
+    this.mode = mode;
+    this.slot = mode === 'review' ? '' : slot;
+    this.kind = mode === 'review' ? 'review' : kind;
+    this.attempts = 0;
+    this.order = optionOrder(q.options.length, mode === 'review');
     this.onCorrect = onCorrect || null;
     this.onCancel = onCancel || null;
+    this.onDone = onDone || null;
+    this._startTimer();
 
     // 复位上一次「碎片入袋」飞行的残留（快速连续答题时飞行可能未结束）
     clearTimeout(this._flightT1);
@@ -75,9 +120,12 @@ export class QuizOverlay {
     this.backdrop.classList.remove('fading');
     this.backdrop.style.pointerEvents = ''; // 复位飞行期间的透传设置
 
-    this.scene.scene.pause();
+    // 复习模式：世界地图已暂停场景，面板叠在错题本之上，不再暂停/恢复
+    if (mode === 'main') this.scene.scene.pause();
+    this.backdrop.classList.toggle('review', mode === 'review');
+    this.panel.dataset.mode = mode;
 
-    this.chapterEl.textContent = q.chapter;
+    this.chapterEl.textContent = mode === 'review' ? `复习 · ${q.chapter}` : q.chapter;
     this.chapterEl.classList.toggle('boss', !!q.chapterBoss);
     this.promptEl.textContent = q.prompt;
     this.codeEl.innerHTML = highlight(q.code);
@@ -85,13 +133,14 @@ export class QuizOverlay {
     this.feedbackEl.className = '';
     this.confirmBtn.disabled = true;
     this.confirmBtn.textContent = '确认咒语';
+    this.cancelBtn.textContent = mode === 'review' ? '返回错题本' : '先不回答';
     this.cancelBtn.style.display = 'inline-block';
 
     this.optionsEl.innerHTML = '';
-    q.options.forEach((opt, i) => {
+    this.order.forEach((orig, i) => {
       const btn = document.createElement('button');
       btn.className = 'opt';
-      btn.innerHTML = `<b style="color:#8a6335">${i + 1}. </b><code>${esc(opt)}</code>`;
+      btn.innerHTML = `<b style="color:#8a6335">${i + 1}. </b><code>${esc(q.options[orig])}</code>`;
       btn.addEventListener('click', () => this.select(i));
       this.optionsEl.appendChild(btn);
     });
@@ -107,9 +156,9 @@ export class QuizOverlay {
       el.classList.remove('right', 'wrong');
     });
     this.confirmBtn.disabled = false;
-    // 填空题：把选中的词填进空槽
+    // 填空题：把选中的词填进空槽（按展示下标映射回原始选项）
     const blank = document.getElementById('quiz-blank');
-    if (blank && this.q.fill) blank.textContent = this.q.options[i];
+    if (blank && this.q.fill) blank.textContent = this.q.options[this.order[i]];
     sfx.talk();
   }
 
@@ -118,20 +167,26 @@ export class QuizOverlay {
     if (this.phase === 'correct') { this._collect(); return; }
     if (this.selected < 0) return;
 
-    const correct = this.selected === this.q.answer;
+    const pick = this.order[this.selected]; // 原始下标
+    const correct = pick === this.q.answer;
     const btn = this.optionsEl.children[this.selected];
+    const review = this.mode === 'review';
 
+    this.attempts += 1;
+    recordAttempt({ qid: this.q.id, slot: this.slot, kind: this.kind, pick, ok: correct, ms: this._elapsed() });
+    this._startTimer(); // 同一面板内再次作答：从这一刻重新计时
+
+    const explain = this.q.explain
+      ? `<div class="fb-hint"><span class="fb-hint-label">解析</span>${esc(this.q.explain)}</div>`
+      : '';
     if (correct) {
       this.phase = 'correct';
       btn.classList.add('right');
       this.feedbackEl.className = 'ok';
       // 反馈分层（#8）：首行结果，次行「解析」内嵌条（教学内容，绿系）
       this.feedbackEl.innerHTML =
-        '<div class="fb-line">✨ 咒语生效了！</div>' +
-        (this.q.explain
-          ? `<div class="fb-hint"><span class="fb-hint-label">解析</span>${esc(this.q.explain)}</div>`
-          : '');
-      this.confirmBtn.textContent = '领取奖励';
+        `<div class="fb-line">${review ? '✨ 答对了！' : '✨ 咒语生效了！'}</div>${explain}`;
+      this.confirmBtn.textContent = review ? '完成复习' : '领取奖励';
       this.cancelBtn.style.display = 'none';
       sfx.correct();
     } else {
@@ -141,13 +196,15 @@ export class QuizOverlay {
       this.confirmBtn.disabled = true;
       this.feedbackEl.className = 'bad';
       // 反馈分层（#8）：首行 失败+惩罚（红），次行「提示」内嵌条（教学内容，棕系）
-      this.feedbackEl.innerHTML =
-        '<div class="fb-line">咒语失败了…… 生命 -1</div>' +
-        `<div class="fb-hint"><span class="fb-hint-label">提示</span>${esc(this._hint())}</div>`;
+      // 复习模式不扣心，并直接给出解析（复习的目的是弄懂，而不是闯关）
+      this.feedbackEl.innerHTML = review
+        ? `<div class="fb-line">还不对，再想想（复习不扣心）</div>${explain}`
+        : '<div class="fb-line">咒语失败了…… 生命 -1</div>' +
+          `<div class="fb-hint"><span class="fb-hint-label">提示</span>${esc(this._hint())}</div>`;
       this.panel.classList.remove('shake');
       void this.panel.offsetWidth; // 重启动画
       this.panel.classList.add('shake');
-      damageHearts(1);
+      if (!review) damageHearts(1);
       sfx.wrong();
     }
   }
@@ -184,6 +241,11 @@ export class QuizOverlay {
   // 若本次答对产出碎片，则视觉上延后约 1.2s 兑付（面板碎裂 → 碎片飞向计数器）。
   _collect() {
     this.isOpen = false;
+    if (this.mode === 'review') { // 复习：无奖励、无碎片飞行，直接回到错题本
+      this._closeVisuals();
+      this._finishReview();
+      return;
+    }
     this.scene.scene.resume();
     const cb = this.onCorrect;
     this.onCorrect = null;
@@ -296,13 +358,27 @@ export class QuizOverlay {
   }
 
   close(cancelled) {
+    if (!this.isOpen) return;
+    // 一次都没提交就关闭 = 放弃（单独计数，不算作答次数）
+    if (cancelled && this.attempts === 0 && this.q) {
+      recordSkip({ qid: this.q.id, slot: this.slot, kind: this.kind, ms: this._elapsed() });
+    }
     this.isOpen = false;
     this.backdrop.classList.remove('show');
+    if (this.mode === 'review') { this._finishReview(); return; }
     this.scene.scene.resume();
     if (cancelled && this.onCancel) { const cb = this.onCancel; this.onCancel = null; cb(); }
   }
 
+  _finishReview() {
+    this.backdrop.classList.remove('review');
+    const cb = this.onDone;
+    this.onDone = null;
+    if (cb) cb();
+  }
+
   destroy() {
     document.removeEventListener('keydown', this._keyHandler);
+    document.removeEventListener('visibilitychange', this._onVisibility);
   }
 }

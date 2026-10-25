@@ -1,0 +1,107 @@
+/* ================= 错题本（世界地图之上的一层羊皮纸面板） =================
+   层级：世界地图 40 < 错题本 44 < 复习模式答题面板 46（#quiz-backdrop.review） */
+#mistake-book {
+  position: absolute; inset: 0;
+  display: none; align-items: center; justify-content: center;
+  background: rgba(18, 12, 26, .45);
+  z-index: 44;
+}
+#mistake-book.show { display: flex; }
+#quiz-backdrop.review { z-index: 46; }
+#quiz[data-mode="review"] { border-color: var(--teal); }
+
+.mb-panel {
+  width: min(760px, 92%);
+  max-height: 92%;
+  display: flex; flex-direction: column;
+  background: linear-gradient(180deg, #fff9ec 0%, #f7ebd3 100%);
+  border: 3px solid var(--panel-border);
+  border-radius: var(--r-lg);
+  box-shadow: 0 9px 0 rgba(0, 0, 0, .28), 0 26px 50px rgba(0, 0, 0, .42), inset 0 1px 0 #fffdf6;
+  padding: 12px 14px 10px;
+  animation: pop .18s ease-out;
+}
+.mb-head { display: flex; align-items: center; gap: 12px; margin: 0 2px 8px; }
+.mb-title { font-size: var(--fs-display); color: #4a3323; letter-spacing: 3px; text-shadow: 0 1px 0 #fffdf6; }
+.mb-sub { font-family: var(--font-kai); font-size: var(--fs-caption); color: #9a7f5a; }
+.mb-sub b { color: #bf8a26; }
+.mb-close {
+  margin-left: auto; width: 30px; height: 30px; border-radius: 50%;
+  border: 2px solid var(--panel-border); background: #fff; color: var(--ink);
+  font-size: 15px; cursor: pointer;
+}
+.mb-close:hover { background: #fdeaea; }
+
+.mb-tabs { display: flex; gap: 6px; margin-bottom: 8px; }
+.mb-tab {
+  font-family: var(--font-kai); font-size: var(--fs-body);
+  padding: 4px 14px; border-radius: 999px; cursor: pointer;
+  border: 2px solid #d8c193; background: #fff; color: var(--ink);
+}
+.mb-tab.on { border-color: var(--teal); background: #e7fbfa; color: #0b4f4d; }
+
+.mb-filters { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.mb-filters select {
+  font-family: var(--font-kai); font-size: var(--fs-caption);
+  border: 2px solid #d8c193; border-radius: 8px; background: #fff; color: var(--ink);
+  padding: 3px 6px; max-width: 220px;
+}
+
+.mb-list {
+  flex: 1; min-height: 160px; overflow-y: auto;
+  background: #f3e3c4; border-radius: 12px;
+  box-shadow: inset 0 0 0 2px #dcc59c, inset 0 4px 18px rgba(120, 85, 40, .14);
+  padding: 8px;
+}
+.mb-group {
+  font-size: var(--fs-caption); color: #7d5c2b; letter-spacing: 1px;
+  margin: 6px 4px 4px;
+}
+.mb-group:first-child { margin-top: 0; }
+.mb-row {
+  display: flex; align-items: center; gap: 10px;
+  background: #fff; border: 2px solid #e2cfa6; border-radius: 10px;
+  padding: 7px 10px; margin-bottom: 6px;
+}
+.mb-row.missing { opacity: .6; }
+.mb-main { flex: 1; min-width: 0; }
+.mb-tags { display: flex; gap: 6px; margin-bottom: 2px; }
+.mb-topic, .mb-kind {
+  font-size: 11px; border-radius: 6px; padding: 0 7px;
+}
+.mb-topic { background: var(--teal); color: #083b3a; }
+.mb-kind { background: #efe1c2; color: #6b4f2e; }
+.mb-sum {
+  font-family: var(--font-kai); font-size: var(--fs-body); line-height: 1.45;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.mb-meta { font-size: var(--fs-caption); color: #8a7258; margin-top: 2px; }
+.mb-ok { color: #2e7d32; margin-left: 6px; }
+.mb-bad { color: #c62828; margin-left: 6px; }
+.mb-dots { margin-left: 8px; color: #bf8a26; letter-spacing: 1px; }
+.mb-review { font-size: var(--fs-body); padding: 5px 14px; white-space: nowrap; }
+.mb-empty {
+  font-family: var(--font-kai); font-size: var(--fs-body); color: #8a7258;
+  text-align: center; line-height: 1.7; padding: 36px 24px;
+}
+.mb-foot { font-family: var(--font-kai); font-size: var(--fs-caption); color: #9a7f5a; margin: 8px 4px 0; }
+
+/* 世界地图头部的入口按钮 */
+.map-mistakes {
+  margin-left: auto;
+  font-family: var(--font-kai); font-size: var(--fs-body);
+  padding: 4px 12px; border-radius: 999px; cursor: pointer;
+  border: 2px solid var(--panel-border); background: #fff; color: var(--ink);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, .15);
+}
+.map-mistakes:hover { background: #fff3d6; }
+.map-mistakes.has { border-color: var(--accent); color: #a8323a; }
+
+.portrait .mb-panel { width: 94%; }
+.portrait .mb-title { font-size: 30px; }
+.portrait .mb-sum, .portrait .mb-tab, .portrait .mb-review { font-size: 20px; }
+.portrait .map-mistakes { font-size: 20px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mb-panel { animation: none; }
+}

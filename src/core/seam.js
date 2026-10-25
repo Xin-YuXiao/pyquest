@@ -2,9 +2,10 @@
 // 测试接缝（test seam）：window.__PYQUEST__ 的语义化实现
 //
 // 只暴露两类入口，不再直接暴露可写的全局状态 G：
-//   只读查询 —— scene(key) / active() / state()
-//     · state() 返回纯数据快照（Set → 数组、progress 深拷贝），
+//   只读查询 —— scene(key) / active() / state() / mistakes() / quizInfo()
+//     · state() 返回纯数据快照（Set → 数组、progress / 学习记录深拷贝），
 //       可安全跨 Playwright evaluate 序列化
+//     · mistakes() 错题本视图；quizInfo() 答题面板模式与正确项展示下标
 //   语义动作 —— teleport / godmode / clearMinions / pinBoss /
 //     slayBoss / gotoChapter / setShards / applyTestState
 //     每个动作一个明确语义，脚本侧无法绕过它们直接改写进度。
@@ -14,6 +15,8 @@
 // ============================================================
 import { G, updateHud } from './state.js';
 import { CHAPTERS, getChapter } from '../data/chapters.js';
+import { QUESTIONS } from '../data/quizBank.js';
+import { buildMistakeEntries, pendingCount } from './mistakes.js';
 
 export function buildSeam(game, sceneKeys) {
   // ---------- 只读查询 ----------
@@ -32,6 +35,30 @@ export function buildSeam(game, sceneKeys) {
       qAnswered: [...G.qAnswered],
       runeRolls: { ...G.runeRolls },
       progress: JSON.parse(JSON.stringify(G.progress)),
+      playMs: G.playMs,
+      records: JSON.parse(JSON.stringify(G.records)),
+    };
+  }
+
+  /** 错题本视图快照：{ pending: 待复习数, entries: 条目列表 }（与错题本界面同一份视图函数） */
+  function mistakes() {
+    const entries = buildMistakeEntries(G.records.stats, QUESTIONS);
+    return { pending: pendingCount(entries), entries };
+  }
+
+  /** 当前场景答题面板的只读状态：模式、题目、正确项的展示下标（复习模式选项被打乱） */
+  function quizInfo() {
+    const s = active();
+    const q = s && s.quiz;
+    if (!q || !q.q) return { isOpen: false };
+    return {
+      isOpen: q.isOpen,
+      mode: q.mode,
+      qid: q.q.id,
+      phase: q.phase,
+      attempts: q.attempts,
+      answerAt: q.order.indexOf(q.q.answer),
+      optionCount: q.order.length,
     };
   }
 
@@ -118,7 +145,7 @@ export function buildSeam(game, sceneKeys) {
   }
 
   return {
-    scene, active, state,
+    scene, active, state, mistakes, quizInfo,
     teleport, godmode, clearMinions, pinBoss, slayBoss,
     gotoChapter, setShards, applyTestState,
   };

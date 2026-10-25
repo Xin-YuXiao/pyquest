@@ -3,11 +3,21 @@
 // 2) 验证全部章节地图构建器输出（尺寸、越界、必需要素、传送门链）
 // 3) 验证题库引用完整、题池同难度、槽位映射完整、随机抽题行为
 // 4) 验证 W4-W11 三池式结构（24 个通用池齐备 / tier 对齐 / 旧池不残留 / 章节映射）
+// 5) 验证存档 v3：v1/v2 真实样本迁移、校验、水合、配额降级（纯函数，不需要浏览器）
+// 6) 验证学习记录与错题本：作答汇总规则、日志裁剪、复习掌握规则、选项打乱映射、错题视图
+import { readFileSync } from 'node:fs';
 import { generateAllTextures } from '../src/textures/pixelArt.js';
 import { makeGroundTexture } from '../src/textures/ground.js';
 import { CHAPTERS } from '../src/data/chapters.js';
 import { QUESTIONS, pickQuestion, highlight, POOLS, SLOT_POOL } from '../src/data/quizData.js';
-import { G } from '../src/core/state.js';
+import { G, resetState } from '../src/core/state.js';
+import {
+  serialize, migrate, parseSave, validate, hydrate, readSave, writeSave,
+  SAVE_KEY, LEGACY_KEYS, BROKEN_KEY,
+} from '../src/core/save.js';
+import { applyAttempt, applyReview, snapshotOf, LOG_CAP, MASTERY_STREAK, OK } from '../src/core/records.js';
+import { buildMistakeEntries, filterMistakes, filterOptions, pendingCount } from '../src/core/mistakes.js';
+import { optionOrder } from '../src/core/quiz.js';
 
 let errors = 0;
 const fail = (msg) => { errors++; console.error('  ✗', msg); };
@@ -249,6 +259,180 @@ try {
   if (qLast.id !== pool[pool.length - 1]) fail(`已答过的题仍被抽到（期望 ${pool[pool.length - 1]}，实际 ${qLast.id}）`);
   ok('随机抽题：同池同难度、重开不变题、已答不重复、同池不撞题');
 } catch (e) { fail(`随机抽题异常: ${e.message}`); }
+
+// ---- 5. 存档 v3（纯函数：迁移 / 校验 / 水合 / 读写降级） ----
+console.log('[5] 存档 v3 迁移与读写');
+/** 假存储：failWhen(key, value) 为真时 setItem 抛配额异常 */
+function fakeStorage(init = {}, failWhen = null) {
+  const data = { ...init };
+  return {
+    data,
+    getItem: (k) => (k in data ? data[k] : null),
+    setItem: (k, v) => {
+      if (failWhen && failWhen(k, String(v))) throw new Error('QuotaExceededError');
+      data[k] = String(v);
+    },
+    removeItem: (k) => { delete data[k]; },
+  };
+}
+const PROGRESS_FIELDS = ['shards', 'gateOpen', 'bossShielded', 'bossDefeated', 'done'];
+const sameSet = (a, b) => a.size === b.length && b.every((x) => a.has(x));
+try {
+  // 5a. v2 真实样本（用 v2 版本真实玩出）→ v3：进度逐字段一致，学习记录为空、时间点为 null
+  const v2 = JSON.parse(readFileSync(new URL('./fixtures/save-v2.json', import.meta.url), 'utf8'));
+  const m2 = migrate(JSON.parse(JSON.stringify(v2)));
+  if (!m2 || m2.v !== 3) fail('v2 样本迁移后不是 v3');
+  if (validate(m2).length) fail(`v2 样本迁移结果校验不通过：${validate(m2).join('；')}`);
+  resetState();
+  hydrate(G, m2);
+  if (G.hearts !== v2.hearts || G.maxHearts !== v2.maxHearts || G.current !== v2.current) fail('v2→v3 心数/当前章不一致');
+  if (!sameSet(G.answered, v2.answered) || !sameSet(G.qAnswered, v2.qAnswered)) fail('v2→v3 已破解槽位/已答题目不一致');
+  if (JSON.stringify(G.runeRolls) !== JSON.stringify(v2.runeRolls)) fail('v2→v3 符文石抽题记录不一致');
+  for (const [id, p] of Object.entries(v2.progress)) {
+    for (const f of PROGRESS_FIELDS) if (G.progress[id][f] !== p[f]) fail(`v2→v3 第 ${id} 章 ${f} 不一致`);
+    if (G.progress[id].enteredAt !== null || G.progress[id].doneAt !== null) fail(`v2→v3 第 ${id} 章时间点应为 null`);
+  }
+  if (G.records.log.length || Object.keys(G.records.stats).length || G.playMs !== 0) fail('v2→v3 学习记录应从空开始');
+  ok('v2 真实样本 → v3：进度逐字段一致、学习记录为空、章节时间点为 null');
+
+  // 5b. v1 样本 → v2 → v3（两章时代的扁平字段）
+  const v1 = JSON.parse(readFileSync(new URL('./fixtures/save-v1.json', import.meta.url), 'utf8'));
+  resetState();
+  hydrate(G, migrate(v1));
+  const p1 = G.progress[1], p2 = G.progress[2];
+  if (!(p1.done && p1.gateOpen && !p1.bossShielded && p1.bossDefeated && p1.shards === v1.shards)) fail('v1→v3 第一章进度不一致');
+  if (!(p2.shards === v1.ch2Shards && !p2.gateOpen && p2.bossShielded && !p2.done)) fail('v1→v3 第二章进度不一致');
+  if (G.current !== 2 || G.hearts !== v1.hearts || !sameSet(G.answered, v1.answered)) fail('v1→v3 当前章/心数/槽位不一致');
+  if (JSON.stringify(G.runeRolls) !== JSON.stringify(v1.runeRolls)) fail('v1→v3 抽题记录不一致');
+  ok('v1 样本 → v2 → v3：两章进度、当前章、心数、槽位与抽题记录全部保留');
+
+  // 5c. v3 往返不变（序列化 → 解析 → 水合 → 再序列化）
+  const s1 = serialize(G, 123);
+  resetState();
+  hydrate(G, parseSave(JSON.stringify(s1)));
+  if (JSON.stringify(serialize(G, 123)) !== JSON.stringify(s1)) fail('v3 存档往返后内容变化');
+  if (validate(s1).length) fail(`v3 序列化结果校验不通过：${validate(s1).join('；')}`);
+  ok('v3 往返不变，序列化结果通过校验');
+
+  // 5d. 损坏 / 未知版本 / 缺字段
+  if (parseSave('{not json') !== null || parseSave('{"v":9}') !== null || migrate([]) !== null || migrate(null) !== null) {
+    fail('损坏 JSON / 未知版本号应返回 null');
+  }
+  if (!validate({ v: 3, hearts: -1 }).length) fail('校验应能发现残缺存档的问题');
+  resetState();
+  hydrate(G, migrate({ v: 2 }));
+  if (G.hearts !== 6 || G.current !== 1 || G.records.log.length !== 0) fail('缺字段存档应按初始值补齐');
+  ok('损坏 JSON / 未知版本返回 null，缺字段按初始值补齐，校验能指出问题');
+
+  // 5e. 读档顺序 v3 → v2 → v1；读不出来的原文挪去 BROKEN_KEY 后继续找
+  const st1 = fakeStorage({ [SAVE_KEY]: '{broken', [LEGACY_KEYS[0]]: JSON.stringify(v2) });
+  const r1 = readSave(st1);
+  if (!r1 || r1.key !== LEGACY_KEYS[0] || st1.data[BROKEN_KEY] !== '{broken') fail('v3 损坏时应回退读 v2 并保留损坏原文');
+  const r2 = readSave(fakeStorage({ [LEGACY_KEYS[1]]: JSON.stringify(v1) }));
+  if (!r2 || r2.data.v !== 3 || r2.data.current !== 2) fail('只有 v1 存档时应迁移读出');
+  if (readSave(null) !== null || readSave(fakeStorage({})) !== null) fail('无存储 / 无存档时应返回 null');
+  ok('读档顺序 v3 → v2 → v1，损坏原文挪去抢救键，无档返回 null');
+
+  // 5f. 写档：成功后删旧键；配额不足逐级降级（日志砍半 → 不含日志），进度字段始终写入
+  resetState();
+  G.progress[1].shards = 4;
+  for (let i = 0; i < 40; i++) {
+    applyAttempt(G.records, { t: i, q: 'v2', s: 'v1', k: 'shard', ch: 1, pool: 'w1field', tier: 1, pick: 0, ok: i % 2, ms: 1 });
+  }
+  const st2 = fakeStorage({ [LEGACY_KEYS[0]]: 'old', [LEGACY_KEYS[1]]: 'older' });
+  const w1 = writeSave(st2, serialize(G));
+  if (!w1 || w1.level !== 'full' || LEGACY_KEYS.some((k) => k in st2.data)) fail('正常写档应为 full 并删除旧版本键');
+  const full = st2.data[SAVE_KEY].length;
+  const st3 = fakeStorage({}, (k, v) => v.length >= full);
+  const w2 = writeSave(st3, serialize(G));
+  const saved3 = JSON.parse(st3.data[SAVE_KEY]);
+  if (!w2 || w2.level !== 'half' || saved3.records.log.length !== 20 || saved3.records.dropped !== 20) fail('配额不足应先把日志砍半');
+  if (saved3.progress[1].shards !== 4) fail('降级写档丢了进度');
+  const st4 = fakeStorage({}, (k, v) => v.includes('"log":[{'));
+  const w3 = writeSave(st4, serialize(G));
+  if (!w3 || w3.level !== 'nolog' || JSON.parse(st4.data[SAVE_KEY]).progress[1].shards !== 4) fail('再不行应写不含日志的存档且进度完整');
+  if (writeSave(fakeStorage({}, () => true), serialize(G)) !== null || writeSave(null, serialize(G)) !== null) {
+    fail('存储完全不可用时应返回 null 且不抛异常');
+  }
+  ok('写档删旧键；配额不足 full → half → nolog 逐级降级，进度始终写入；存储不可用不抛异常');
+} catch (e) { fail(`存档 v3 校验异常: ${e.message}`); }
+
+// ---- 6. 学习记录与错题本（纯函数） ----
+console.log('[6] 学习记录与错题本');
+try {
+  const [qa, qb, qc] = POOLS.w1field;
+  const rec = { stats: {}, log: [], dropped: 0 };
+  const at = (t, q, ok, k = 'shard', s = 'v1') => applyAttempt(rec, { t, q, s, k, ...snapshotOf(q, s), pick: 0, ok, ms: 10 });
+
+  // 6a. 主线汇总：错 → 对（尝试序号 1、2，首答错）；放弃单独计数不算尝试；solvedAt 只写一次
+  const e1 = at(1, qa, OK.WRONG);
+  const e2 = at(2, qa, OK.RIGHT);
+  const e3 = at(3, qa, OK.SKIP);
+  at(4, qa, OK.RIGHT);
+  const sa = rec.stats[qa];
+  if (e1.a !== 1 || e2.a !== 2 || e3.a !== 0) fail(`尝试序号应为 1/2/0（实际 ${e1.a}/${e2.a}/${e3.a}）`);
+  if (sa.n !== 3 || sa.w !== 1 || sa.sk !== 1 || sa.first !== 'w' || sa.solvedAt !== 2 || sa.lastOk !== true) {
+    fail(`主线汇总不符：${JSON.stringify(sa)}`);
+  }
+  if (e1.ch !== 1 || e1.pool !== 'w1field' || e1.tier !== QUESTIONS[qa].tier) fail('作答记录缺少章/题池/tier 快照');
+  ok('主线汇总：错→对尝试序号 1/2、首答为错、放弃单独计数、首次答对时间只写一次、带章/题池/tier 快照');
+
+  // 6b. 复习：只改复习状态 rv，不改主线汇总；连续答对达阈值即掌握，答错清零并退回
+  for (let i = 0; i < MASTERY_STREAK; i++) at(10 + i, qa, OK.RIGHT, 'review', '');
+  if (!rec.stats[qa].rv.mastered || rec.stats[qa].n !== 3) fail('复习连续答对应达成掌握且不改主线次数');
+  at(20, qa, OK.WRONG, 'review', '');
+  if (rec.stats[qa].rv.mastered || rec.stats[qa].rv.streak !== 0 || rec.stats[qa].w !== 1) fail('已掌握后复习答错应退回待复习、不计主线错误');
+  const rv = applyReview(applyReview(null, false, 1), true, 2);
+  if (rv.streak !== 1 || rv.mastered || rv.n !== 2) fail('复习状态转换不符（错→对 应为连续 1、未掌握）');
+  ok(`复习：连续答对 ${MASTERY_STREAK} 次即掌握，复习答错清零并退回，主线汇总不受影响`);
+
+  // 6c. 日志上限：超出丢最老的并累加 dropped，汇总不裁剪；3500 条体积 < 600 KB
+  const big = { stats: {}, log: [], dropped: 0 };
+  for (let i = 0; i < 3500; i++) {
+    applyAttempt(big, { t: 1760000000000 + i, q: POOLS.w4shard[i % 10], s: 'c4s1', k: 'shard', ch: 4, pool: 'w4shard', tier: 11, pick: i % 4, ok: i % 3 ? 1 : 0, ms: 12345 });
+  }
+  const totalN = Object.values(big.stats).reduce((s, x) => s + x.n, 0);
+  if (big.log.length !== LOG_CAP || big.dropped !== 3500 - LOG_CAP || totalN !== 3500) fail('日志裁剪不符（应保留最新 3000 条、汇总不裁剪）');
+  if (big.log[0].t !== 1760000000000 + 500) fail('裁剪应丢最老的记录');
+  const kb = JSON.stringify(big).length / 1024;
+  if (kb >= 600) fail(`3500 条记录序列化体积过大（${kb.toFixed(0)} KB）`);
+  ok(`日志上限 ${LOG_CAP} 条：丢最老的并累加 dropped、汇总不裁剪；3500 条记录约 ${kb.toFixed(0)} KB`);
+
+  // 6d. 选项打乱：主线保持原序；复习为随机排列，按展示下标映射回原始下标判定
+  if (optionOrder(4).join() !== '0,1,2,3') fail('主线选项顺序应保持不变');
+  let seq = 0;
+  const fixedRand = () => [0.9, 0.1, 0.5][seq++ % 3];
+  const ord = optionOrder(4, true, fixedRand);
+  if ([...ord].sort().join() !== '0,1,2,3') fail('打乱结果不是排列');
+  const q0 = QUESTIONS[qb];
+  if (ord[ord.indexOf(q0.answer)] !== q0.answer) fail('展示下标 → 原始下标映射错误');
+  let moved = false;
+  for (let i = 0; i < 30; i++) if (optionOrder(4, true).join() !== '0,1,2,3') moved = true;
+  if (!moved) fail('复习模式选项从未被打乱');
+  ok('选项打乱：主线原序、复习为排列，展示下标可正确映射回原始答案');
+
+  // 6e. 错题视图：曾错入册（后来答对也保留）、下线题标「题目已更新」且不计数、页签与三组筛选
+  at(30, qb, OK.WRONG, 'boss', 'boss');
+  at(31, qc, OK.RIGHT); // 一次答对的题不入册
+  rec.stats.zz_gone = { n: 1, w: 1, sk: 0, first: 'w', lastAt: 5, lastOk: false, ch: 1, k: 'shard', rv: null };
+  const entries = buildMistakeEntries(rec.stats, QUESTIONS);
+  const ids = entries.map((e) => e.qid);
+  if (!ids.includes(qa) || !ids.includes(qb) || ids.includes(qc)) fail(`错题入册不符：${ids.join(',')}`);
+  const gone = entries.find((e) => e.qid === 'zz_gone');
+  if (!gone || !gone.missing || gone.summary !== '题目已更新') fail('下线题应标为「题目已更新」');
+  if (pendingCount(entries) !== 2) fail(`待复习数应为 2（实际 ${pendingCount(entries)}，下线题不计）`);
+  if (filterMistakes(entries, { kind: 'boss' }).map((e) => e.qid).join() !== qb) fail('按符文类型筛选不符');
+  if (filterMistakes(entries, { ch: '2' }).length !== 0) fail('按章筛选不符');
+  if (filterMistakes(entries, { topic: QUESTIONS[qa].chapter }).every((e) => e.topic !== QUESTIONS[qa].chapter)) fail('按知识点筛选不符');
+  at(40, qb, OK.RIGHT, 'review', ''); at(41, qb, OK.RIGHT, 'review', '');
+  const after = buildMistakeEntries(rec.stats, QUESTIONS);
+  if (filterMistakes(after, { tab: 'mastered' }).map((e) => e.qid).join() !== qb) fail('已掌握页签应只含掌握的题');
+  if (filterMistakes(after, { tab: 'pending' }).some((e) => e.qid === qb)) fail('掌握后应移出待复习');
+  const fo = filterOptions(after);
+  if (!fo.chapters.includes(1) || !fo.kinds.includes('boss')) fail('筛选可选值不完整');
+  ok('错题视图：曾错入册、下线题不计数、待复习/已掌握页签、章/符文类型/知识点筛选');
+} catch (e) { fail(`学习记录 / 错题本校验异常: ${e.message}`); }
+resetState();
 
 console.log(errors === 0 ? '\n全部通过 ✔' : `\n${errors} 个错误 ✘`);
 process.exit(errors === 0 ? 0 : 1);

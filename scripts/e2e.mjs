@@ -184,8 +184,10 @@ check((await page.locator('#btn-next').textContent()).includes('第二章'), '�
 await shot('09-victory');
 
 // ---- 存档已自动写入 localStorage ----
-const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('pyquest:save:v2') || 'null'));
-check(!!saved && saved.progress[1].done === true, '通关进度已自动存档（v2 多章结构）');
+const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('pyquest:save:v3') || 'null'));
+check(!!saved && saved.v === 3 && saved.progress[1].done === true, '通关进度已自动存档（v3 多章结构）');
+// 前面在符文 v2 上答错过一次：学习记录里有这条错误作答
+check(!!saved && saved.records.log.some((e) => e.s === 'v2' && e.ok === 0), '答错的作答已写入学习记录');
 
 // ---- 进入第二章 ----
 await page.click('#btn-next');

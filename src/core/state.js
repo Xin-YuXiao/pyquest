@@ -15,6 +15,10 @@ function freshChapterProgress(ch) {
     bossShielded: true,   // BOSS 是否处于护盾状态
     bossDefeated: false,
     done: false,          // 本章通关（击败 BOSS）
+    // 章节时间点（存档 v3 起）：首次进入 / 开门 / 通关的时间戳，未知为 null
+    enteredAt: null,
+    gateOpenedAt: null,
+    doneAt: null,
   };
 }
 
@@ -22,6 +26,16 @@ function buildAllProgress() {
   const p = {};
   for (const ch of CHAPTERS) p[ch.id] = freshChapterProgress(ch);
   return p;
+}
+
+/**
+ * 学习记录的空结构（存档 v3 起，见 core/records.js）：
+ *   stats   —— 每题汇总 { [qid]: {...} }，永不裁剪
+ *   log     —— 原始作答日志（环形，超上限丢最老的）
+ *   dropped —— 因上限被裁掉的日志条数
+ */
+export function freshRecords() {
+  return { stats: {}, log: [], dropped: 0 };
 }
 
 export const G = {
@@ -33,6 +47,8 @@ export const G = {
   current: 1,            // 玩家当前所在章节 id
   progress: buildAllProgress(),
   startTime: Date.now(),
+  playMs: 0,             // 有效游玩时长（存档 v3 起预留；计时见 learning-records 后续工单）
+  records: freshRecords(), // 学习记录：作答日志 + 每题汇总（core/records.js 维护）
 };
 
 export function resetState() {
@@ -44,6 +60,8 @@ export function resetState() {
   G.current = 1;
   G.progress = buildAllProgress();
   G.startTime = Date.now();
+  G.playMs = 0;
+  G.records = freshRecords();
 }
 
 /** 取某章进度（默认当前章） */
