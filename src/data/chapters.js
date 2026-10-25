@@ -158,6 +158,7 @@ export const CHAPTERS = [
     },
     npcKind: 'tablet', npcName: '科学石碑',
     pools: { shard: 'w3shard', heal: 'w3heal', lair: 'w3heal', boss: 'w3boss' },
+    observatory: 'montecarlo', // 野外观测台：蒙特卡洛估 π（core/stations.js）
     theme: {
       palette: 'grass', seed: 20260301, w: 34, h: 26,
       healRunes: 2, slimeVariant: 'red', slimes: 5,

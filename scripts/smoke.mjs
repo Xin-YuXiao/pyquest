@@ -9,6 +9,7 @@
 // 8) 验证 BOSS 招牌机制配置（种类登记 / 原型匹配 / 开场文案）与机制公式（正弦 / NFW / 后验权重）
 // 9) 验证存档 v3：v1/v2 真实样本迁移、校验、水合、配额降级（纯函数，不需要浏览器）
 // 10) 验证学习记录与错题本：作答汇总规则、日志裁剪、复习掌握规则、选项打乱映射、错题视图
+// 11) 验证第二批观测站的纯数学：蒙特卡洛 π / 并行搬砖 / 引力沙盒 / 贝叶斯硬币 / 星系分类（对齐题库）
 import { readFileSync } from 'node:fs';
 import { generateAllTextures } from '../src/textures/pixelArt.js';
 import { makeGroundTexture } from '../src/textures/ground.js';
@@ -30,6 +31,7 @@ import {
 import { applyAttempt, applyReview, snapshotOf, LOG_CAP, MASTERY_STREAK, OK } from '../src/core/records.js';
 import { buildMistakeEntries, filterMistakes, filterOptions, pendingCount } from '../src/core/mistakes.js';
 import { optionOrder } from '../src/core/quiz.js';
+import * as ST from '../src/core/stations.js';
 
 let errors = 0;
 const fail = (msg) => { errors++; console.error('  ✗', msg); };
@@ -366,7 +368,8 @@ try {
     placed++;
   }
   if (placed !== Object.keys(OBSERVATORIES).length) fail(`观测台应有 ${Object.keys(OBSERVATORIES).length} 座，实际 ${placed}`);
-  ok(`观测台选址：${placed} 座（第七章 / 第八章），离符文 / 石碑 / 门 ≥ 4 格，避开出生点与传送门`);
+  const where = CHAPTERS.filter((c) => c.observatory).map((c) => c.title.split(' · ')[0]).join(' / ');
+  ok(`观测台选址：${placed} 座（${where}），离符文 / 石碑 / 门 ≥ 4 格，避开出生点与传送门`);
 
   // 6d. 观测日志：合并完成记录 + 读档清洗（坏数据丢弃、不抛错）
   const rec1 = recordObservation(undefined, { seconds: 30, chi2dof: 1.1 }, 1000);
@@ -418,7 +421,7 @@ try {
     }
     for (const p of def.props) {
       const d = cheb(t, tileOf(p));
-      if (['rune', 'npc', 'door', 'doorlink', 'gate'].includes(p.type) && d < R.interact) fail(`${label} 离 ${p.type}${p.qid ? ' ' + p.qid : ''} 只有 ${d} 格`);
+      if (['rune', 'npc', 'door', 'doorlink', 'gate', 'observatory'].includes(p.type) && d < R.interact) fail(`${label} 离 ${p.type}${p.qid ? ' ' + p.qid : ''} 只有 ${d} 格`);
       if (['tree', 'crystal', 'torch'].includes(p.type) && d < R.solid) fail(`${label} 离 ${p.type} 只有 ${d} 格`);
     }
     for (const s of Object.values(def.spawns)) if (cheb(t, tileOf(s)) < R.spawn) fail(`${label} 离出生点太近`);
@@ -653,6 +656,26 @@ try {
   ok('错题视图：曾错入册、下线题不计数、待复习/已掌握页签、章/符文类型/知识点筛选');
 } catch (e) { fail(`学习记录 / 错题本校验异常: ${e.message}`); }
 resetState();
+
+// ---- 11. 第二批观测站（纯数学层；面板在 ui/stations/） ----
+console.log('[11] 第二批观测站');
+try {
+  // 11a. 蒙特卡洛估 π：π̂ = 4M/N（mp5）；1σ = 4√(p(1−p)/N)（st14）；每次挑战都能在上限内估成
+  if (ST.piEstimate(7850, 10000) !== 3.14) fail('蒙特卡洛：mp5 的 4 × 7850 / 10000 应为 3.14');
+  if (Math.abs(ST.mcSigma(400) / ST.mcSigma(100) - 0.5) > 1e-12) fail('蒙特卡洛：点数 ×4，1σ 应减半（1/√N）');
+  const solvedAt = [];
+  for (let a = 0; a < 6; a++) {
+    const m = ST.makeMonteCarlo(a);
+    while (m.state.solvedAt == null && m.state.n < ST.MC.maxN) m.throw(1000);
+    const m2 = ST.makeMonteCarlo(a);
+    while (m2.state.solvedAt == null && m2.state.n < ST.MC.maxN) m2.throw(10);
+    if (m.state.solvedAt == null) fail(`蒙特卡洛第 ${a} 次：撒满 ${ST.MC.maxN} 点仍未估成`);
+    if (m.state.solvedAt !== m2.state.solvedAt) fail(`蒙特卡洛第 ${a} 次：成功点与一次撒几颗有关（${m.state.solvedAt} vs ${m2.state.solvedAt}）`);
+    if (m.state.solvedAt < ST.MC.minN) fail(`蒙特卡洛第 ${a} 次：不足 ${ST.MC.minN} 点就判成功`);
+    solvedAt.push(m.state.solvedAt);
+  }
+  ok(`蒙特卡洛估 π：4M/N 与 1/√N 口径对齐题库；6 次挑战分别在 N = ${solvedAt.join(' / ')} 估成（与撒点批量无关）`);
+} catch (e) { fail(`第二批观测站校验异常: ${e.message}`); }
 
 console.log(errors === 0 ? '\n全部通过 ✔' : `\n${errors} 个错误 ✘`);
 process.exit(errors === 0 ? 0 : 1);

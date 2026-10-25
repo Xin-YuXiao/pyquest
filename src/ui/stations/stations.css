@@ -1,0 +1,30 @@
+/* ============================================================
+   第二批观测台（ui/stations/*.js）：沿用观测站面板（observatory.css）的羊皮纸 token，
+   这里只补各台专属的图形与按钮样式
+   ============================================================ */
+.st-row { display: flex; gap: 8px; align-items: stretch; }
+.st-row > * { min-width: 0; }
+.st-actions { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 2px; }
+.st-actions .btn { font-size: var(--fs-body); padding: 5px 12px; white-space: nowrap; }
+.st-actions .btn.on, .st-actions .btn[aria-pressed="true"] { background: #fff3c4; border-color: #d99a28; }
+.st-actions .btn:disabled { opacity: .45; cursor: not-allowed; }
+.st-actions kbd { font-size: 11px; margin-left: 2px; }
+
+/* ---------- 蒙特卡洛估 π ---------- */
+.st-mc-canvas { width: 248px; height: 248px; border-radius: 10px; flex: none; image-rendering: pixelated; }
+.st-mc-plot { flex: 1; }
+.st-mc-sigma { fill: none; stroke: #ff9db8; stroke-width: 1.6; stroke-dasharray: 5 4; }
+.st-mc-tol { stroke: #b5e48c; stroke-width: 1.2; stroke-dasharray: 3 3; }
+.st-mc-err { fill: none; stroke: #8fd6ff; stroke-width: 2; }
+
+/* ---------- 混淆矩阵（星系分类台） ---------- */
+.st-matrix { border-collapse: collapse; font-size: var(--fs-body); }
+.st-matrix caption { text-align: left; font-weight: bold; padding-bottom: 2px; }
+.st-matrix th, .st-matrix td { border: 1px solid #d8c193; padding: 2px 8px; text-align: center; }
+.st-matrix th.corner { font-size: var(--fs-caption); font-weight: normal; color: #6b5a4a; }
+.st-matrix td.diag { background: #d7f3d0; font-weight: bold; }
+.st-matrix td.off { background: #ffe0e0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .st-actions .btn { transition: none; }
+}
