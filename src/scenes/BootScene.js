@@ -8,7 +8,7 @@ import { loadTSAssets, createTSAnimations } from '../assets/ts.js';
 import { initTitle } from '../ui/modal.js';
 import { resetState, furthestChapter } from '../core/state.js';
 import { getChapter } from '../data/chapters.js';
-import { clearSave, loadGame } from '../core/save.js';
+import { clearSave, loadGame, armAutosave } from '../core/save.js';
 
 export default class BootScene extends Phaser.Scene {
   constructor() { super('Boot'); }
@@ -26,10 +26,12 @@ export default class BootScene extends Phaser.Scene {
       onNew: () => {
         clearSave();
         resetState();
+        armAutosave();
         this.scene.start('Village', { spawn: 'start' });
       },
       onContinue: () => {
         if (!loadGame()) { clearSave(); resetState(); }
+        armAutosave(); // 读档完成后才允许写档（标题画面不写，防空进度覆盖存档）
         // 按存档进度决定落点：最新可推进章节的野外
         const ch = getChapter(furthestChapter());
         const spawn = ch.id === 1 ? 'start' : 'fromPrev';

@@ -34,6 +34,20 @@ export function pickQuestion(slotId) {
   return { id: qid, ...QUESTIONS[qid] };
 }
 
+/**
+ * 选项展示顺序：order[展示下标] = 原始下标。
+ * 主线保持原顺序；复习模式打乱（Fisher-Yates），防止「记住选第 3 个」。
+ */
+export function optionOrder(n, shuffle = false, rand = Math.random) {
+  const order = Array.from({ length: n }, (_, i) => i);
+  if (!shuffle) return order;
+  for (let i = n - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  return order;
+}
+
 // ---------- 极简 Python 语法高亮 ----------
 const KEYWORDS = /\b(for|while|in|if|elif|else|def|return|import|from|and|or|not|True|False|as|lambda)\b/g;
 const FUNCS = /\b(print|range|len|append|int|str|input|np|plt|array|arange|linspace|zeros|ones|mean|sum|rand|argmax|reshape|scatter|hist|xlabel|ylabel|savefig|fits|units|u|SkyCoord|quad|dblquad|curve_fit|solve_ivp|brentq|interp1d|fft|rfft|eig|cov|convolve|Pool|jit|ma|compressed|logical_not|isfinite|Bcast|gradient|inner|solve)\b/g;

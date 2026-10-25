@@ -1,0 +1,19 @@
+{
+  "v": 1,
+  "savedAt": 1760000000000,
+  "startTime": 1759990000000,
+  "hearts": 4,
+  "maxHearts": 6,
+  "shards": 5,
+  "gateOpen": true,
+  "bossShielded": false,
+  "bossDefeated": true,
+  "ch1Done": true,
+  "ch2Shards": 2,
+  "ch2GateOpen": false,
+  "boss2Shielded": true,
+  "ch2Done": false,
+  "answered": ["v1", "v2", "v3", "v4", "v5", "d1", "boss", "f1", "f2"],
+  "qAnswered": ["v2", "v5", "s1", "o1", "s3", "l2", "lb1", "f1", "f3"],
+  "runeRolls": { "f3": "f5" }
+}

@@ -60,7 +60,7 @@ const paused = () => evalRetry(() => window.__PYQUEST__.active().scene.isPaused(
 const tele = (x, y) => evalRetry(([tx, ty]) => window.__PYQUEST__.teleport(tx, ty), [x, y]);
 const setHearts = (n) => evalRetry((h) => window.__PYQUEST__.setHearts(h), n);
 const savedObservatory = () => page.evaluate(() => {
-  const raw = localStorage.getItem('pyquest:save:v2');
+  const raw = localStorage.getItem('pyquest:save:v3');
   return raw ? JSON.parse(raw).observatory || null : null;
 });
 

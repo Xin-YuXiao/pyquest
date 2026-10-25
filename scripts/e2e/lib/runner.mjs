@@ -6,6 +6,9 @@
 //   新游戏 → gotoChapter 跳章 → 集碎片 → 封印门（不足/集齐）→ 进巢穴 →
 //   祝福符文 → BOSS 符文破盾 → 挥剑命中（蛇：断尾两击）→ 击败通关 →
 //   存档 → 下一章衔接（ch3：抽题/世界地图）→ 刷新续玩
+// 学习记录 / 错题本 / 存档迁移专项步骤（scripts/e2e-review.mjs 使用）：
+//   collectShards{wrongFirst} 先真实答错一次 → mistakeBook 错题本与复习 →
+//   recordsSaved → reviewPersisted；legacyResume 注入 v1/v2 老存档读档
 //
 // 交互路径保持真实：答题走真实 DOM 点击（选项 → 确认 → 反馈 → 领取），
 // 开门/开符文走真实键盘 E，攻击走真实键盘 J；
@@ -17,8 +20,11 @@
 // 稳定性护栏见 evalRetry / quizClick / click（状态校验 + 有界重试），仅测试侧。
 // ============================================================
 import { chromium } from 'playwright';
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, readFileSync } from 'node:fs';
 import { CHAPTERS } from '../../../src/data/chapters.js';
+
+/** 老存档样本（scripts/fixtures/save-v{1,2}.json，v2 为旧版本真实玩出） */
+const fixture = (v) => JSON.parse(readFileSync(new URL(`../../fixtures/save-v${v}.json`, import.meta.url), 'utf8'));
 
 export async function runChapterE2E(spec) {
   const CH = CHAPTERS.find((c) => c.id === spec.chapterId);
@@ -36,6 +42,7 @@ export async function runChapterE2E(spec) {
   const steps = [];
   let failed = false;
   let assertions = 0;
+  let wrongQid = null; // collectShards{wrongFirst} 答错过的题，供错题本步骤使用
 
   const browser = await chromium.launch();
   // 视口高度 900：#stage 按「宽/960」等比缩放，宽度受限时游戏渲染与 1000×700
@@ -111,6 +118,16 @@ export async function runChapterE2E(spec) {
     const s = window.__PYQUEST__ && window.__PYQUEST__.scene(k);
     return !!(s && s.player);
   }, key, { timeout: 6000 });
+  /** 等标题画面就绪：BootScene.create 跑完（按钮文案与点击处理都已挂好）才算。
+   *  代替刷新后的固定等待——机器负载高时启动远超 1.4s，固定等待会读到 index.html
+   *  里的默认文案「开始冒险」、点击也落在尚未挂处理函数的按钮上 */
+  const waitForTitle = async () => {
+    await page.waitForFunction(() => {
+      const s = window.__PYQUEST__ && window.__PYQUEST__.scene('Boot');
+      return !!(s && s.sys.isActive());
+    }, null, { timeout: 30000 });
+    await page.waitForTimeout(200);
+  };
 
   /** 为符文选一个安全的靠近点：距目标符文 < 260，且避开其他符文/封印门（282）、
    *  引导石碑（302）、水晶实体（180）与地图边界——防止 E 被邻近交互抢占 */
@@ -189,10 +206,23 @@ export async function runChapterE2E(spec) {
     throw new Error(`openRune: ${label}（${r.qid}）5 个候选点均无法打开答题面板`);
   }
 
+  /** 真实点击一个错误选项并确认（答错路径：扣心 / 反馈 / 学习记录），面板保持打开 */
+  async function answerWrong(label) {
+    const info = await evalRetry(() => window.__PYQUEST__.quizInfo());
+    const wrongIdx = (info.answerAt + 1) % info.optionCount;
+    await quizClick(`#quiz-options .opt:nth-child(${wrongIdx + 1})`,
+      () => page.evaluate((i) => window.__PYQUEST__.active().quiz.selected === i, wrongIdx));
+    await quizClick('#quiz-confirm',
+      () => page.evaluate((n) => window.__PYQUEST__.quizInfo().attempts >= n, info.attempts + 1));
+    await page.waitForTimeout(300);
+    check(await page.locator('#quiz-feedback.bad').count() === 1, `${label} 答错给出反馈`);
+  }
+
   /** 点击选项 → 确认 → 领取奖励（两段确认）。题目从题池随机抽取，正确项动态读取；
-   *  每步点击后校验面板状态（selected / phase / isOpen），卡死时自动补点 */
+   *  每步点击后校验面板状态（selected / phase / isOpen），卡死时自动补点。
+   *  正确项取展示下标（复习模式选项被打乱，主线与原始下标一致） */
   async function answerCorrect(label) {
-    const ansIdx = await evalRetry(() => window.__PYQUEST__.active().quiz.q.answer);
+    const ansIdx = await evalRetry(() => window.__PYQUEST__.quizInfo().answerAt);
     await quizClick(`#quiz-options .opt:nth-child(${ansIdx + 1})`,
       () => page.evaluate((i) => window.__PYQUEST__.active().quiz.selected === i, ansIdx));
     await quizClick('#quiz-confirm',
@@ -226,9 +256,10 @@ export async function runChapterE2E(spec) {
       await page.goto(BASE, { waitUntil: 'networkidle' });
       await page.evaluate(() => localStorage.clear());
       await page.reload({ waitUntil: 'networkidle' });
-      await page.waitForTimeout(1400);
+      await waitForTitle();
       await click('#btn-start');
-      await page.waitForTimeout(1200);
+      await waitForScene(CHAPTERS[0].fieldKey);
+      await page.waitForTimeout(700);
       check(await activeKey() === CHAPTERS[0].fieldKey, '新游戏从村庄开始');
     },
 
@@ -242,17 +273,37 @@ export async function runChapterE2E(spec) {
       if (step.shot) await shot(step.shot);
     },
 
-    /** 野外碎片符文全答（badge=true 时断言题目来自本章题池），集齐碎片 */
+    /** 野外碎片符文全答（badge=true 时断言题目来自本章题池），集齐碎片。
+     *  wrongFirst=true：第一块符文先真实答错一次再答对，断言扣心与学习记录 */
     async collectShards(step) {
       const shardRunes = FIELD.props.filter((p) => p.type === 'rune' && !p.healRune && !p.bossRune);
       check(shardRunes.length === CH.shardsNeeded, `${L.place}有 ${CH.shardsNeeded} 块碎片符文（实际 ${shardRunes.length}）`);
-      for (const r of shardRunes) {
+      for (const [i, r] of shardRunes.entries()) {
         await openRune(FIELD, r, `符文 ${r.qid}`);
         if (step.badge) {
           const badge = await page.locator('#quiz-chapter').textContent();
           check(badge.includes(L.badge), `题目来自${L.badge}题池（${badge}）`);
         }
+        const wrongHere = step.wrongFirst && i === 0;
+        if (wrongHere) {
+          wrongQid = (await evalRetry(() => window.__PYQUEST__.quizInfo())).qid;
+          const h0 = (await state()).hearts;
+          await answerWrong(`符文 ${r.qid}`);
+          const h1 = (await state()).hearts;
+          check(h1 === Math.max(1, h0 - 1), `答错扣 1 心（${h0} → ${h1}）`);
+        }
         await answerCorrect(`${r.qid}（${L.pool}随机题）`);
+        if (wrongHere) {
+          const rec = (await state()).records;
+          const mine = rec.log.filter((e) => e.q === wrongQid);
+          check(mine.length === 2 && mine[0].ok === 0 && mine[1].ok === 1 && mine[0].a === 1 && mine[1].a === 2,
+            `学习记录：${wrongQid} 先错后对两条，尝试序号 1、2`);
+          check(mine[0].s === r.qid && mine[0].k === 'shard' && mine[0].ch === CH.id && typeof mine[0].ms === 'number',
+            '学习记录带符文槽、符文类型、章快照与用时');
+          const st = rec.stats[wrongQid];
+          check(!!st && st.n === 2 && st.w === 1 && st.first === 'w' && st.lastOk === true,
+            '每题汇总：作答 2 次、错 1 次、首答为错、最近一次答对');
+        }
         if (process.env.E2E_TRACE) {
           const t = await page.evaluate((slot) => {
             const st = window.__PYQUEST__.state();
@@ -414,12 +465,152 @@ export async function runChapterE2E(spec) {
       if (step.shot) await shot(step.shot);
     },
 
-    /** 通关进度已自动写入 localStorage（ch2 额外断言 gateOpen） */
+    /** 通关进度已自动写入 localStorage（ch2 额外断言 gateOpen）；v3 结构含学习记录 */
     async saveCheck(step) {
-      const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('pyquest:save:v2') || 'null'));
-      const ok = !!saved && saved.progress[CH.id].done === true
-        && (!step.gateOpen || saved.progress[CH.id].gateOpen === true);
-      check(ok, `${CH_NUM}进度已自动存档（v2）`);
+      const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('pyquest:save:v3') || 'null'));
+      const ok = !!saved && saved.v === 3 && saved.progress[CH.id].done === true
+        && (!step.gateOpen || saved.progress[CH.id].gateOpen === true)
+        && !!saved.records && Array.isArray(saved.records.log) && typeof saved.records.stats === 'object';
+      check(ok, `${CH_NUM}进度已自动存档（v3，含学习记录）`);
+    },
+
+    /** 注入 v1 / v2 老存档样本 → 继续冒险：落点章节、进度完整、学习记录为空、自动升级为 v3 */
+    async legacyResume(step) {
+      const v = step.version;
+      const d = fixture(v);
+      // 老存档里的进度（v1 是两章时代的扁平字段）
+      const prog = v === 1
+        ? { 1: { done: d.ch1Done, shards: d.shards }, 2: { done: d.ch2Done, shards: d.ch2Shards } }
+        : d.progress;
+      let n = 1;
+      for (const ch of CHAPTERS) if (prog[ch.id] && prog[ch.id].done) n = Math.min(CHAPTERS.length, ch.id + 1);
+      if (!(prog[1] && prog[1].done)) n = 1;
+      const target = CHAPTERS.find((c) => c.id === n);
+
+      await page.goto(BASE, { waitUntil: 'networkidle' });
+      await page.evaluate(([k, raw]) => { localStorage.clear(); localStorage.setItem(k, raw); },
+        [`pyquest:save:v${v}`, JSON.stringify(d)]);
+      await page.reload({ waitUntil: 'networkidle' });
+      await waitForTitle();
+      // 回归：标题画面刷新 / 关页时不得用空白进度覆盖存档（旧版本 beforeunload 自动存档会覆盖）
+      const kept = await page.evaluate((k) => localStorage.getItem(k), `pyquest:save:v${v}`);
+      check(kept === JSON.stringify(d), `v${v} 老存档：标题画面刷新后存档原样保留（未被空进度覆盖）`);
+      const btnText = (await page.locator('#btn-start').textContent()).trim();
+      check(btnText.includes(`第${n}章`), `v${v} 老存档：标题显示「${btnText}」`);
+      await click('#btn-start');
+      await waitForScene(target.fieldKey);
+      await page.waitForTimeout(800);
+      check(await activeKey() === target.fieldKey, `v${v} 老存档读档后落到${target.fieldName}`);
+      const g = await state();
+      check(Object.entries(prog).every(([id, p]) => g.progress[id].done === !!p.done && g.progress[id].shards === p.shards),
+        `v${v} 老存档各章碎片与通关状态完整`);
+      check(g.hearts === (d.hearts ?? 6) && d.answered.every((a) => g.answered.includes(a))
+        && JSON.stringify(g.runeRolls) === JSON.stringify(d.runeRolls || {}),
+        `v${v} 老存档心数、已破解符文、符文石抽题记录保留`);
+      check(g.records.log.length === 0 && Object.keys(g.records.stats).length === 0, `v${v} 老存档迁移后学习记录为空`);
+      await page.waitForFunction(() => !!localStorage.getItem('pyquest:save:v3'), null, { timeout: 5000 }).catch(() => {});
+      const keys = await page.evaluate(() => ({
+        v3: JSON.parse(localStorage.getItem('pyquest:save:v3') || 'null'),
+        old: !!localStorage.getItem('pyquest:save:v2') || !!localStorage.getItem('pyquest:save:v1'),
+      }));
+      check(!!keys.v3 && keys.v3.v === 3 && Array.isArray(keys.v3.records.log) && !keys.old,
+        `v${v} 老存档自动升级为 v3（旧版本键已删除）`);
+    },
+
+    /** 还没有错题时：入口显示「错题本（0）」，打开是空状态提示（Esc 关闭） */
+    async mistakeBookEmpty() {
+      await page.keyboard.press('Tab');
+      await page.waitForTimeout(400);
+      const btn0 = (await page.locator('#map-mistakes').textContent()).trim();
+      check(btn0.includes('（0）'), `没有错题时入口显示「${btn0}」`);
+      await click('#map-mistakes');
+      await page.waitForTimeout(300);
+      check(await page.locator('#mistake-book.show .mb-empty').count() === 1, '错题本为空时显示空状态提示');
+      await page.keyboard.press('Escape');
+      await page.waitForTimeout(200);
+      check(await page.locator('#mistake-book.show').count() === 0, 'Esc 关闭错题本');
+      await page.keyboard.press('Tab');
+      await page.waitForTimeout(300);
+    },
+
+    /** 错题本：入口计数 → 列表 → 复习（错不扣心 / 对不产碎片）→ 再复习掌握 → 页签与关闭 */
+    async mistakeBook(step) {
+      const qid = wrongQid;
+      const before = await state();
+      await page.keyboard.press('Tab');
+      await page.waitForTimeout(400);
+      check(await page.locator('#map-backdrop.show').count() === 1, 'Tab 呼出世界地图');
+      const btn1 = (await page.locator('#map-mistakes').textContent()).trim();
+      check(btn1.includes('（1）'), `世界地图显示「${btn1}」`);
+      await click('#map-mistakes');
+      await page.waitForTimeout(300);
+      check(await page.locator('#mistake-book.show').count() === 1, '打开错题本');
+      const row = page.locator(`#mistake-book .mb-row[data-qid="${qid}"]`);
+      check(await row.count() === 1, `错题本收录答错过的 ${qid}（后来答对也保留）`);
+      check((await row.textContent()).includes('错 1 次'), '错题本显示「错 1 次」');
+      if (step.shot) await shot(step.shot);
+
+      // 复习一次：先答错（不扣心、给出解析）→ 再答对（不产碎片）
+      await click(`#mistake-book .mb-review[data-qid="${qid}"]`);
+      await page.waitForTimeout(400);
+      const info = await evalRetry(() => window.__PYQUEST__.quizInfo());
+      check(info.isOpen && info.mode === 'review' && info.qid === qid, '复习面板以复习模式打开');
+      await answerWrong('复习');
+      check((await state()).hearts === before.hearts, '复习答错不扣心');
+      check((await page.locator('#quiz-feedback').textContent()).includes('解析'), '复习答错也展示解析');
+      if (step.shot) await shot(`${step.shot}-review`);
+      await answerCorrect('复习');
+      const mid = await state();
+      const sameMain = mid.hearts === before.hearts
+        && JSON.stringify(mid.progress) === JSON.stringify(before.progress)
+        && JSON.stringify(mid.answered) === JSON.stringify(before.answered)
+        && JSON.stringify(mid.qAnswered) === JSON.stringify(before.qAnswered)
+        && JSON.stringify(mid.runeRolls) === JSON.stringify(before.runeRolls);
+      check(sameMain, '复习不改变主线（碎片 / 心 / 符文石 / 已答题目 / 抽题记录）');
+      check(await page.locator(`#mistake-book .mb-row[data-qid="${qid}"]`).getAttribute('data-streak') === '1',
+        '复习错→对后进度 1 / 2');
+      const reviews = mid.records.log.filter((e) => e.k === 'review' && e.q === qid);
+      check(reviews.length === 2 && reviews.every((e) => e.s === ''), '复习作答写入学习记录（类型 review、无槽位）');
+
+      // 再复习一次答对 → 已掌握，移出待复习
+      await click(`#mistake-book .mb-review[data-qid="${qid}"]`);
+      await page.waitForTimeout(400);
+      await answerCorrect('再次复习');
+      const m = await evalRetry(() => window.__PYQUEST__.mistakes());
+      const e = m.entries.find((x) => x.qid === qid);
+      check(!!e && e.mastered && m.pending === 0, '连续答对 2 次 → 已掌握，待复习数归 0');
+      check(await page.locator('#mistake-book .mb-empty').count() === 1, '待复习页签显示空状态');
+      check((await page.locator('#map-mistakes').textContent()).includes('（0）'), '世界地图按钮更新为「错题本（0）」');
+      await click('#mistake-book .mb-tab[data-tab="mastered"]');
+      await page.waitForTimeout(200);
+      check(await page.locator(`#mistake-book .mb-row[data-qid="${qid}"][data-mastered="true"]`).count() === 1,
+        '「已掌握」页签列出该题');
+
+      // 关闭：✕ 回到世界地图，Tab 关闭地图
+      await click('#mistake-book .mb-close');
+      await page.waitForTimeout(200);
+      check(await page.locator('#mistake-book.show').count() === 0
+        && await page.locator('#map-backdrop.show').count() === 1, '关闭错题本回到世界地图');
+      await page.keyboard.press('Tab');
+      await page.waitForTimeout(300);
+      check(await page.locator('#map-backdrop.show').count() === 0, '再按 Tab 关闭地图');
+    },
+
+    /** 学习记录随自动存档写入 v3（主线 + 复习作答都在） */
+    async recordsSaved() {
+      const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('pyquest:save:v3') || 'null'));
+      const log = (saved && saved.records && saved.records.log) || [];
+      check(log.some((e) => e.q === wrongQid && e.ok === 0 && e.k === 'shard') && log.some((e) => e.k === 'review'),
+        '学习记录（主线答错 + 复习）已写入 v3 存档');
+    },
+
+    /** 刷新读档后：复习状态与复习记录保留 */
+    async reviewPersisted() {
+      const m = await evalRetry(() => window.__PYQUEST__.mistakes());
+      const e = m.entries.find((x) => x.qid === wrongQid);
+      check(!!e && e.mastered && e.wrong === 1, '刷新读档后错题本状态保留（曾错 1 次、已掌握）');
+      const rec = (await state()).records;
+      check(rec.log.some((x) => x.k === 'review' && x.q === wrongQid), '刷新读档后复习记录保留');
     },
 
     /** 下一章衔接：btn-next → 下一章野外（终章则返回村庄） */
@@ -498,7 +689,7 @@ export async function runChapterE2E(spec) {
     /** 刷新 → 继续冒险：标题按钮落点、读档进度与场景还原 */
     async resume(step) {
       await page.reload({ waitUntil: 'networkidle' });
-      await page.waitForTimeout(1400);
+      await waitForTitle();
       const btnText = (await page.locator('#btn-start').textContent()).trim();
       check(btnText.includes(L.resumeBtn), `标题画面显示「${btnText}」`);
       if (step.newGameBtn) {
@@ -506,7 +697,8 @@ export async function runChapterE2E(spec) {
         check(btnNewVisible, '「新的冒险」按钮出现');
       }
       await click('#btn-start'); // 继续冒险 → 读档
-      await page.waitForTimeout(1200);
+      await waitForScene(L.resumeScene).catch(() => {}); // 落点不对时交给下面的断言报告
+      await page.waitForTimeout(700);
       if (L.resumeDone) {
         const gResume = await state();
         check(L.resumeDone.ids.every((id) => gResume.progress[id].done === true), L.resumeDone.label);

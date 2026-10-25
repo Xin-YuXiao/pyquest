@@ -33,7 +33,7 @@ export function initTitle({ onNew, onContinue }) {
     });
     btnNew.style.display = '';
     btnNew.addEventListener('click', () => {
-      if (!window.confirm('开始新的冒险会覆盖当前存档，确定吗？')) return;
+      if (!window.confirm('开始新的冒险会覆盖当前存档（学习记录与错题本也会一起清除），确定吗？')) return;
       el.classList.add('hidden');
       onNew();
     });
@@ -79,7 +79,7 @@ export function showVictory(ch, { onNext } = {}) {
   };
   btnRestart.onclick = () => {
     // 对齐标题界面「新的冒险」的安全标准：清档前确认
-    if (!window.confirm('确定要放弃这次冒险吗？全部冒险进度将被清除。')) return;
+    if (!window.confirm('确定要放弃这次冒险吗？全部冒险进度、学习记录与错题本将被清除。')) return;
     clearSave();
     location.reload();
   };

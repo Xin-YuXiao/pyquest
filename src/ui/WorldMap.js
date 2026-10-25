@@ -6,11 +6,14 @@
 // - 解锁规则与传送门一致：通关前一章节即解锁，点击地标快速传送
 //   到该章野外（塞尔达式圆形转场）
 // - 头部显示秘藏（Python 彩蛋）发现数；已发现秘藏的章节地标带 ✦
+// - 头部「错题本（N）」入口：N = 曾错且未掌握的题数（错题本见 MistakeBook.js）
 // ============================================================
 import { G, cp } from '../core/state.js';
 import { phaseOf, PHASE } from '../core/phase.js';
 import { CHAPTERS } from '../data/chapters.js';
 import { SECRET_TOTAL, countFound, secretForChapter } from '../data/secrets.js';
+import { pendingCount } from '../core/mistakes.js';
+import { MistakeBook, mistakeEntries } from './MistakeBook.js';
 import { sfx } from '../audio/sfx.js';
 import { wipeTransition } from './wipe.js';
 import { ICON } from './icons.js';
@@ -329,6 +332,16 @@ export class WorldMap {
     this.pathEl = document.getElementById('map-path');
     this.subEl = document.getElementById('map-sub');
 
+    // 错题本入口：按钮节点跨场景复用（只建一次），点击回调由 _renderBookBtn 覆盖式绑定到当前实例
+    this.book = new MistakeBook(scene, { onChange: () => this._renderBookBtn() });
+    this.bookBtn = document.getElementById('map-mistakes');
+    if (!this.bookBtn) {
+      this.bookBtn = document.createElement('button');
+      this.bookBtn.id = 'map-mistakes';
+      this.bookBtn.className = 'map-mistakes';
+      document.querySelector('.map-title').after(this.bookBtn);
+    }
+
     this._keyHandler = (e) => {
       if (e.key !== 'Tab') return;
       e.preventDefault();
@@ -347,6 +360,8 @@ export class WorldMap {
   }
 
   toggle() {
+    // 错题本里的复习面板打开时 Tab 不响应（先答完或返回错题本）
+    if (this.scene.quiz && this.scene.quiz.isOpen) return;
     if (this.isOpen) this.close();
     else this.open();
   }
@@ -372,9 +387,19 @@ export class WorldMap {
 
   close() {
     if (!this.isOpen) return;
+    this.book.close();
     this.isOpen = false;
     this.backdrop.classList.remove('show');
     this.scene.scene.resume();
+  }
+
+  /** 错题本按钮：显示待复习数，点击打开错题本（叠在地图之上，场景保持暂停） */
+  _renderBookBtn() {
+    const n = pendingCount(mistakeEntries());
+    this.bookBtn.textContent = `错题本（${n}）`;
+    this.bookBtn.dataset.count = n;
+    this.bookBtn.classList.toggle('has', n > 0);
+    this.bookBtn.onclick = () => { if (this.isOpen) this.book.open(); };
   }
 
   /** 章节解锁规则：第 1 章常开，其余需前一章节通关（跨章规则，不属于章内 Phase） */
@@ -416,6 +441,7 @@ export class WorldMap {
   render() {
     const doneCount = CHAPTERS.filter((c) => phaseOf(c.id) === PHASE.DONE).length;
     this.subEl.innerHTML = `P4A 学程 · 第一部 + 第二部<span class="dot-sep"></span>已通关 <b>${doneCount} / ${CHAPTERS.length}</b><span class="dot-sep"></span>秘藏 <b>${countFound(G.secrets)} / ${SECRET_TOTAL}</b><span class="dot-sep"></span><kbd>Tab</kbd> 关闭`;
+    this._renderBookBtn();
 
     // 连线：目的地已通关 = 金色实线；已解锁未通关 = 流动金色点线；未解锁 = 暗色虚线
     const segs = CHAPTERS.slice(0, -1).map((ch, i) => {
@@ -497,5 +523,6 @@ export class WorldMap {
   destroy() {
     document.removeEventListener('keydown', this._keyHandler);
     this._ro.disconnect();
+    this.book.destroy();
   }
 }

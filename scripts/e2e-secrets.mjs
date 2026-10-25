@@ -148,8 +148,8 @@ try {
   await page.keyboard.press('Escape');
   check(await untilScroll(false), 'Esc 收起卷轴');
 
-  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('pyquest:save:v2') || 'null'));
-  check(!!saved && Array.isArray(saved.secrets) && saved.secrets.includes('hello-world'), '发现记录已自动写档（v2 存档 secrets 字段）');
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('pyquest:save:v3') || 'null'));
+  check(!!saved && Array.isArray(saved.secrets) && saved.secrets.includes('hello-world'), '发现记录已自动写档（v3 存档 secrets 字段）');
 
   // 世界地图
   await page.keyboard.press('Tab');

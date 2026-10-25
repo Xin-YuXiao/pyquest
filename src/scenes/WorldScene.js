@@ -465,6 +465,8 @@ export class WorldScene extends Phaser.Scene {
     const q = pickQuestion(it.qid); // 同难度题池随机抽题（答对前固定不变）
     saveGame(); // 抽中的题目绑定到这块符文石，立即存档
     this.quiz.open(q, {
+      slot: it.qid,                                              // 学习记录：哪块符文石
+      kind: it.bossRune ? 'boss' : it.healRune ? 'heal' : 'shard', // 学习记录：符文类型
       onCorrect: () => {
         markRuneSolved(it.qid, q.id); // 槽位破解 + 题目记为已用
         it.alive = false;
