@@ -9,6 +9,8 @@
 // 8) 验证 BOSS 招牌机制配置（种类登记 / 原型匹配 / 开场文案）与机制公式（正弦 / NFW / 后验权重）
 // 9) 验证存档 v3：v1/v2 真实样本迁移、校验、水合、配额降级（纯函数，不需要浏览器）
 // 10) 验证学习记录与错题本：作答汇总规则、日志裁剪、复习掌握规则、选项打乱映射、错题视图
+// 11) 验证试炼塔：解锁与题源、选题优先级（错题 → 久未见 → 随机）、楼层规划与推进、
+//     楼层布局合法、塔内作答入学习记录、战绩累计与存档（主线爱心隔离）
 import { readFileSync } from 'node:fs';
 import { generateAllTextures } from '../src/textures/pixelArt.js';
 import { makeGroundTexture } from '../src/textures/ground.js';
@@ -30,6 +32,12 @@ import {
 import { applyAttempt, applyReview, snapshotOf, LOG_CAP, MASTERY_STREAK, OK } from '../src/core/records.js';
 import { buildMistakeEntries, filterMistakes, filterOptions, pendingCount } from '../src/core/mistakes.js';
 import { optionOrder } from '../src/core/quiz.js';
+import {
+  TOWER_UNLOCK_CH, GUARDIAN_EVERY, STALE_MS, towerUnlocked, clearedChapterIds, towerCandidates,
+  pickTowerQuestions, floorPlan, nextStop, pickGuardianChapter, newRun, floorCleared, assignSlots,
+  sanitizeTowerStats, statsOnStart, statsOnFloor, statsOnAnswer, runSummary, towerHud,
+} from '../src/core/tower.js';
+import { buildTowerFloor, TOWER_INTERACT_GAP, T } from '../src/data/maps.js';
 
 let errors = 0;
 const fail = (msg) => { errors++; console.error('  ✗', msg); };
@@ -652,6 +660,158 @@ try {
   if (!fo.chapters.includes(1) || !fo.kinds.includes('boss')) fail('筛选可选值不完整');
   ok('错题视图：曾错入册、下线题不计数、待复习/已掌握页签、章/符文类型/知识点筛选');
 } catch (e) { fail(`学习记录 / 错题本校验异常: ${e.message}`); }
+resetState();
+
+// ---- 11. 试炼塔（纯函数：解锁 / 选题 / 楼层 / 布局 / 记录 / 战绩与存档） ----
+console.log('[11] 试炼塔');
+try {
+  // 11a. 解锁与题源：第三章通关才开放；题源 = 已通关章节的全部题池（去重）
+  const prog = (ids) => Object.fromEntries(CHAPTERS.map((c) => [c.id, { done: ids.includes(c.id) }]));
+  if (towerUnlocked(prog([1, 2]))) fail('第三章未通关时试炼塔不应开放');
+  if (!towerUnlocked(prog([1, 2, TOWER_UNLOCK_CH]))) fail('第三章通关后试炼塔应开放');
+  if (clearedChapterIds(prog([1, 3, 5])).join() !== '1,3,5') fail('已通关章节列表不符');
+  const cands = towerCandidates([1, 2, 3]);
+  const expectPools = new Set([1, 2, 3].flatMap((id) => Object.values(CHAPTERS.find((c) => c.id === id).pools)));
+  const expectIds = new Set([...expectPools].flatMap((p) => POOLS[p]));
+  if (cands.length !== expectIds.size || cands.some((q) => !expectIds.has(q))) fail('题源应恰为第 1-3 章各题池的题（去重）');
+  if (new Set(cands).size !== cands.length) fail('题源有重复题');
+  ok(`解锁与题源：第三章通关才开放；第 1-3 章题源 ${cands.length} 题，不混入未通关章节`);
+
+  // 11b. 选题优先级：错题本待复习 → 久未见 → 随机；本次挑战已出过的题先排除；同种子结果一致
+  const now = 10 * STALE_MS;
+  const [m1, m2, mastered, old1, old2, recent] = cands;
+  const stats = {
+    [m1]: { w: 1, lastAt: now - 10, rv: null },
+    [m2]: { w: 3, lastAt: now - 10, rv: { streak: 1, mastered: false } },
+    [mastered]: { w: 2, lastAt: now - 10, rv: { streak: 2, mastered: true, at: now - 5 } },
+    [old1]: { w: 0, lastAt: now - 3 * STALE_MS },
+    [old2]: { w: 0, lastAt: now - 2 * STALE_MS },
+    [recent]: { w: 0, lastAt: now - 1000 },
+  };
+  const picks = pickTowerQuestions({ candidates: cands, stats, count: 5, now, seed: 42 });
+  const order = picks.map((p) => p.qid);
+  if (order[0] !== m2 || order[1] !== m1) fail(`错题应最先出、答错次数多的在前：${order.slice(0, 2).join(',')}`);
+  if (order[2] !== old1 || order[3] !== old2) fail(`其次应是久未见的题（越久越前）：${order.slice(2, 4).join(',')}`);
+  if (order.includes(mastered) && order.indexOf(mastered) < 4) fail('已掌握的错题不应按错题优先');
+  if (!picks[0].review || !picks[1].review || picks[2].review) fail('review 标记应只落在错题本待复习题上');
+  if (JSON.stringify(pickTowerQuestions({ candidates: cands, stats, count: 5, now, seed: 42 })) !== JSON.stringify(picks)) fail('同种子选题应确定');
+  const exclude = pickTowerQuestions({ candidates: cands, stats, used: [m1, m2], count: 2, now, seed: 42 }).map((p) => p.qid);
+  if (exclude.includes(m1) || exclude.includes(m2)) fail('本次挑战已出过的题应先排除');
+  const tiny = pickTowerQuestions({ candidates: [m1, old1], stats, used: [m1, old1], count: 2, now, seed: 1 });
+  if (tiny.length !== 2) fail('题源用尽时应放回已出过的题兜底');
+  const seeds = new Set([1, 2, 3, 4, 5].map((sd) => pickTowerQuestions({ candidates: cands, stats: {}, count: 3, now, seed: sd }).map((p) => p.qid).join()));
+  if (seeds.size < 2) fail('无记录时不同种子应抽到不同的题（随机层）');
+  ok('选题：错题本待复习（错多在前）→ 久未见（越久越前）→ 随机；排除已出过的题、用尽兜底、同种子确定');
+
+  // 11c. 楼层规划与推进：每 5 层守层者、每 3 层升档；守层者层之后是休息平台
+  if (!floorPlan(GUARDIAN_EVERY).guardian || floorPlan(GUARDIAN_EVERY + 1).guardian) fail('守层者应只在 5 的倍数层');
+  if (floorPlan(1).runes !== 2 || floorPlan(3).runes !== 3 || floorPlan(5).runes !== 0 || floorPlan(5).healRunes !== 1) fail('塔符文数量规划不符');
+  if (!(floorPlan(4).slimes > floorPlan(3).slimes) || floorPlan(1).crimson !== 0 || floorPlan(7).crimson !== 1) fail('每 3 层小怪应变多变硬');
+  if (floorPlan(10).bonusHp !== 1 || floorPlan(10).speedMul <= 1) fail('tier ≥ 3 起小怪应加血加速');
+  if (floorPlan(40).slimes > 7) fail('小怪数量应有上限');
+  if (new Set([1, 2, 3].map((f) => floorPlan(f).palette)).size !== 3) fail('地貌应按层轮换');
+  const s5 = nextStop({ floor: 5, rest: false });
+  if (!s5.rest || s5.floor !== 5) fail('第 5 层之后应进休息平台');
+  const s5r = nextStop(s5);
+  if (s5r.rest || s5r.floor !== 6) fail('休息平台之后应上第 6 层');
+  if (nextStop({ floor: 2, rest: false }).floor !== 3) fail('普通层之后应直接上一层');
+  const gch = pickGuardianChapter([1, 2, 3], 99);
+  if (![1, 2, 3].includes(gch) || pickGuardianChapter([1, 2, 3], 99) !== gch || pickGuardianChapter([], 1) !== null) fail('守层者只能借已通关章节的 BOSS、且确定');
+  ok('楼层：普通层 2→3 块符文、每 3 层小怪升档（有上限）、每 5 层守层者 + 休息平台、地貌轮换');
+
+  // 11d. 本层是否通过：塔符文全部答对 / 守层者倒下 / 休息平台随时可走
+  const run = newRun({ seed: 7, main: { hearts: 3 }, cleared: [1, 2, 3], startBest: 4 });
+  run.floorState = { assign: assignSlots(['t1r1', 't1r2'], [{ qid: m1, review: true }, { qid: old1, review: false }]), towerSlots: ['t1r1', 't1r2'], guardian: false, solved: [] };
+  if (floorCleared(run)) fail('没答符文时不应通过');
+  run.floorState.solved.push('t1r1');
+  if (floorCleared(run) || !towerHud(run).objective.includes('1 / 2')) fail('答对一半时不应通过，HUD 显示 1 / 2');
+  run.floorState.solved.push('t1r2');
+  if (!floorCleared(run)) fail('塔符文全部答对应通过');
+  if (run.floorState.assign.t1r1.qid !== m1) fail('错题应落在第一块塔符文上');
+  const g = { ...run, floorState: { assign: {}, towerSlots: [], guardian: true, solved: [], guardianDown: false } };
+  if (floorCleared(g)) fail('守层者未倒下不应通过');
+  g.floorState.guardianDown = true;
+  if (!floorCleared(g)) fail('守层者倒下应通过');
+  if (!floorCleared({ ...run, rest: true })) fail('休息平台应随时可上楼');
+  if (!towerHud(run).badge.includes('试炼塔 第 1 层')) fail('HUD 徽章应为「试炼塔 第 N 层」');
+  ok('本层通过判定：塔符文全部答对 / 守层者倒下 / 休息平台；HUD 显示层数与进度');
+
+  // 11e. 楼层布局：每种楼层在多种子下都合法——在地图内、不压碰撞瓦片、与阶梯 / 出塔门 / 篝火至少隔 3 格
+  let layouts = 0;
+  for (const f of [1, 2, 3, 4, 5, 6, 9, 10, 15]) {
+    for (const seed of [1, 7, 12345, 99991]) {
+      for (const rest of f % GUARDIAN_EVERY === 0 ? [false, true] : [false]) {
+        const plan = floorPlan(f);
+        const d = buildTowerFloor({ plan, seed, rest, bossType: 'snake' });
+        layouts++;
+        const tile = (p) => ({ tx: Math.floor(p.x / 128), ty: Math.floor(p.y / 128) });
+        const anchors = d.props.filter((p) => ['tower_stairs', 'tower_exit', 'tower_campfire'].includes(p.type)).map(tile);
+        const runes = d.props.filter((p) => p.type === 'rune');
+        const label = `第 ${f} 层${rest ? '休息平台' : ''} seed=${seed}`;
+        if (!d.props.some((p) => p.type === 'tower_stairs') || !d.props.some((p) => p.type === 'tower_exit')) fail(`${label} 缺阶梯或出塔门`);
+        if (rest) {
+          if (runes.length || d.slimes.length || !d.props.some((p) => p.type === 'tower_campfire')) fail(`${label} 休息平台应只有篝火`);
+          continue;
+        }
+        const need = plan.runes + plan.healRunes + (plan.guardian ? 1 : 0);
+        if (runes.length !== need) fail(`${label} 符文数 ${runes.length} ≠ ${need}`);
+        if (new Set(runes.map((r) => r.qid)).size !== runes.length) fail(`${label} 符文槽 id 重复`);
+        if (plan.guardian !== !!d.boss || plan.guardian !== runes.some((r) => r.bossRune)) fail(`${label} 守层者与 BOSS 符文不匹配`);
+        for (const r of runes) {
+          const { tx, ty } = tile(r);
+          if (tx < 1 || ty < 1 || tx >= d.w - 1 || ty >= d.h - 1) fail(`${label} 符文 ${r.qid} 越界`);
+          if (d.colliding.includes(d.grid[ty][tx])) fail(`${label} 符文 ${r.qid} 压在碰撞瓦片上`);
+          if (anchors.some((a) => Math.max(Math.abs(a.tx - tx), Math.abs(a.ty - ty)) < TOWER_INTERACT_GAP)) fail(`${label} 符文 ${r.qid} 离阶梯 / 出塔门太近`);
+        }
+        const sp = tile(d.spawns.fromBelow);
+        if (d.grid[sp.ty][sp.tx] === T.VOID || d.grid[sp.ty][sp.tx] === T.DWALL) fail(`${label} 出生点不可走`);
+        for (const s of d.slimes) {
+          const t = tile(s);
+          if (Math.max(Math.abs(t.tx - sp.tx), Math.abs(t.ty - sp.ty)) <= 4) fail(`${label} 史莱姆离出生点太近`);
+        }
+        if (d.slimes.length !== plan.slimes) fail(`${label} 史莱姆数 ${d.slimes.length} ≠ ${plan.slimes}`);
+      }
+    }
+  }
+  ok(`楼层布局：${layouts} 种层号 × 种子组合全部合法（符文 / 守层者 / 史莱姆 / 篝火齐备且互不抢交互）`);
+
+  // 11f. 塔内作答入学习记录：错题本里的题按复习规则推进连击；新题塔里答错 = 入错题本
+  const rec = { stats: {}, log: [], dropped: 0 };
+  applyAttempt(rec, { t: 1, q: m1, s: 'v1', k: 'shard', ch: 1, pool: 'w1field', tier: 1, pick: 0, ok: OK.WRONG, ms: 1 });
+  applyAttempt(rec, { t: 2, q: m1, s: 't1r1', k: 'tower', ch: 1, pool: 'w1field', tier: 1, pick: 1, ok: OK.RIGHT, ms: 1 });
+  if (!rec.stats[m1].rv || rec.stats[m1].rv.streak !== 1 || rec.stats[m1].n !== 1) fail('错题在塔里答对应推进掌握连击、不改主线次数');
+  applyAttempt(rec, { t: 3, q: m1, s: 't2r1', k: 'tower', ch: 1, pool: 'w1field', tier: 1, pick: 1, ok: OK.RIGHT, ms: 1 });
+  if (!rec.stats[m1].rv.mastered) fail(`错题在塔里连续答对 ${MASTERY_STREAK} 次应「已掌握」`);
+  applyAttempt(rec, { t: 4, q: old1, s: 't2r2', k: 'tower', ch: 1, pool: 'w1field', tier: 1, pick: 3, ok: OK.WRONG, ms: 1 });
+  if (rec.stats[old1].w !== 1 || rec.stats[old1].tw.n !== 1 || rec.stats[old1].k !== 'tower') fail('新题在塔里答错应入错题本（kind = tower）');
+  applyAttempt(rec, { t: 5, q: recent, s: 't2r3', k: 'tower', ch: 1, pool: 'w1field', tier: 1, pick: 0, ok: OK.RIGHT, ms: 1 });
+  if (rec.stats[recent].w !== 0 || rec.stats[recent].tw.ok !== 1) fail('新题在塔里答对只计塔内次数');
+  const book = buildMistakeEntries(rec.stats, QUESTIONS).map((e) => e.qid);
+  if (!book.includes(old1) || book.includes(recent)) fail('错题本应收塔里答错的新题、不收答对的题');
+  ok('塔内作答：错题按复习同规则推进连击直到掌握；塔里答错的新题入错题本；答对只计塔内次数');
+
+  // 11g. 战绩累计与存档：挑战次数 / 最佳层数 / 答题数；进行中的挑战写档用主线爱心
+  let st = sanitizeTowerStats({ best: 3, runs: -1, answered: 'x', correct: 9 });
+  if (st.best !== 3 || st.runs !== 0 || st.answered !== 0 || st.correct !== 0) fail('塔战绩清洗不符');
+  st = statsOnAnswer(statsOnAnswer(statsOnFloor(statsOnStart(st), 6), true), false);
+  if (st.runs !== 1 || st.best !== 6 || st.answered !== 2 || st.correct !== 1) fail('塔战绩累计不符');
+  const sum = runSummary({ ...run, floor: 6, correct: 3, total: 4, reviewed: [m1] }, st, 'defeat');
+  if (sum.accuracy !== 75 || sum.reviewed !== 1 || !sum.newBest || sum.best !== 6) fail('结算摘要不符');
+  resetState();
+  G.hearts = 2;
+  G.tower = st;
+  G.towerRun = newRun({ seed: 1, main: { hearts: 5 }, cleared: [1, 2, 3] });
+  const saved = serialize(G, 1);
+  if (saved.hearts !== 5) fail(`挑战进行中写档应写主线爱心 5（实际 ${saved.hearts}）`);
+  if (validate(saved).length) fail(`含塔战绩的存档校验不通过：${validate(saved).join('；')}`);
+  resetState();
+  hydrate(G, migrate(JSON.parse(JSON.stringify(saved))));
+  if (G.tower.best !== 6 || G.tower.runs !== 1 || G.towerRun !== null || G.hearts !== 5) fail('塔战绩读档不符 / 读档后不应残留进行中的挑战');
+  resetState();
+  hydrate(G, migrate({ v: 2 }));
+  if (G.tower.best !== 0 || G.tower.runs !== 0) fail('旧档缺省塔战绩应为空');
+  ok('战绩：清洗 / 累计 / 结算摘要；挑战中写档只写主线爱心，读档不残留挑战，旧档缺省为空');
+} catch (e) { fail(`试炼塔校验异常: ${e.message}`); }
 resetState();
 
 console.log(errors === 0 ? '\n全部通过 ✔' : `\n${errors} 个错误 ✘`);
