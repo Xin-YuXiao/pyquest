@@ -246,8 +246,8 @@ export class WorldScene extends Phaser.Scene {
       this.tweens.add({ targets: p, y: p.y - 128, x: p.x + Phaser.Math.Between(-32, 32), alpha: 0, duration: 950, onComplete: () => p.destroy() });
       return;
     }
-    // 村庄：花粉漂浮 + 水面波光
-    if (this.waterTiles && Math.random() < 0.35) {
+    // 村庄：花粉漂浮 + 水面波光（没有水面的草地图只飘花粉：空数组 GetRandom 会返回 null）
+    if (this.waterTiles && this.waterTiles.length && Math.random() < 0.35) {
       const w = Phaser.Utils.Array.GetRandom(this.waterTiles);
       const p = this.add.image(w.x * 128 + Phaser.Math.Between(16, 112), w.y * 128 + Phaser.Math.Between(16, 112), 'particle')
         .setTint(0xeafcff).setAlpha(0.95).setScale(6.6).setDepth(-5);
