@@ -337,8 +337,11 @@ export function buildCave(ch) {
 // 自动铺设碎片符文，qid 采用 c{章}s{n} / c{章}h{n} / c{章}boss / c{章}l{n}
 // ============================================================
 
-// 在一片网格上按伪随机散布符文，保证彼此与出生点有间距
-function scatterSlots(rand, w, h, count, margin, forbidden) {
+// 在一片网格上按伪随机散布符文，保证彼此与出生点有间距。
+// keepOut（可选）：{ tx, ty, r } 列表 —— 候选点必须离这些位置超过 r 格
+// （史莱姆散布用：出生即接敌的史莱姆会把玩家一路物理推挤进传送门，
+//   W9 seed 20260901 实测 2 秒内被推进「回上一章」门，场景被切走）
+function scatterSlots(rand, w, h, count, margin, forbidden, keepOut = []) {
   const spots = [];
   let guard = 0;
   while (spots.length < count && guard < 4000) {
@@ -347,6 +350,7 @@ function scatterSlots(rand, w, h, count, margin, forbidden) {
     const ty = margin + Math.floor(rand() * (h - margin * 2));
     const key = `${tx},${ty}`;
     if (forbidden.has(key)) continue;
+    if (keepOut.some((k) => Math.abs(k.tx - tx) <= k.r && Math.abs(k.ty - ty) <= k.r)) continue;
     if (spots.some((s) => Math.abs(s.tx - tx) <= 2 && Math.abs(s.ty - ty) <= 2)) continue;
     spots.push({ tx, ty });
     forbidden.add(key);
@@ -443,7 +447,14 @@ export function buildField(ch) {
 
   const shardSpots = scatterSlots(rand, w, h, ch.shardsNeeded, 3, forbidden);
   const healSpots = scatterSlots(rand, w, h, th.healRunes ?? 2, 3, forbidden);
-  const slimeSpots = scatterSlots(rand, w, h, th.slimes ?? 4, 4, forbidden);
+  // 史莱姆禁入区：所有出生点周边 4 格 + 两侧章节传送门周边 3 格
+  // （防出生即接敌被推挤进传送门；r=4 格 = 512px，覆盖史莱姆的索敌半径）
+  const keepOut = Object.values(spawns).map((s) => ({
+    tx: Math.floor(s.x / 128), ty: Math.floor(s.y / 128), r: 4,
+  }));
+  if (ch.prevKey) keepOut.push({ tx: 5, ty: h - 2, r: 3 }); // 回上一章传送门
+  if (ch.nextKey) keepOut.push({ tx: w - 2, ty: midY, r: 3 }); // 去下一章传送门
+  const slimeSpots = scatterSlots(rand, w, h, th.slimes ?? 4, 4, forbidden, keepOut);
 
   const props = [];
   // 引导石碑（十字路口旁）
