@@ -52,7 +52,8 @@ export function buildSeam(game, sceneKeys) {
   /** 清空指定场景的小怪（保留 BOSS），保证答题环节确定性 */
   function clearMinions(sceneKey) {
     const s = scene(sceneKey);
-    s.slimeGroup.children.iterate((sl) => {
+    // 先拷贝再销毁：destroy 会把成员移出组，边遍历边删会跳过相邻的小怪
+    s.slimeGroup.getChildren().slice().forEach((sl) => {
       if (sl && !sl.isBoss) { sl.dead = true; sl.destroy(); }
     });
   }
