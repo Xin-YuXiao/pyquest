@@ -3,11 +3,16 @@
 // 2) 验证全部章节地图构建器输出（尺寸、越界、必需要素、传送门链）
 // 3) 验证题库引用完整、题池同难度、槽位映射完整、随机抽题行为
 // 4) 验证 W4-W11 三池式结构（24 个通用池齐备 / tier 对齐 / 旧池不残留 / 章节映射）
+// 5) 验证观测站小游戏：NFW / 频谱数学对齐题库（dm8 / dm9 / sg6 / st7）、观测台选址、观测日志
 import { generateAllTextures } from '../src/textures/pixelArt.js';
 import { makeGroundTexture } from '../src/textures/ground.js';
 import { CHAPTERS } from '../src/data/chapters.js';
 import { QUESTIONS, pickQuestion, highlight, POOLS, SLOT_POOL } from '../src/data/quizData.js';
 import { G } from '../src/core/state.js';
+import {
+  OBSERVATORIES, NFW, TUNING, makeNfwData, nfwDensity, nfwChi2, nfwChi2dof, nfwLogSlope,
+  makeTuner, findPeaks, readoutMagnitude, amplitudeOf, recordObservation, sanitizeObservationLog,
+} from '../src/core/observatory.js';
 
 let errors = 0;
 const fail = (msg) => { errors++; console.error('  ✗', msg); };
@@ -48,7 +53,7 @@ try {
     'portal_door', 'crystal', 'shroom',
     'gate_closed', 'gate_open', 'torch_0',
     'slash_0', 'slash_1', 'slash_2',
-    'particle'];
+    'particle', 'observatory'];
   for (const k of need) if (!textures[k]) fail(`缺少贴图 ${k}`);
 } catch (e) { fail(`贴图生成抛出异常: ${e.message}`); }
 
@@ -249,6 +254,90 @@ try {
   if (qLast.id !== pool[pool.length - 1]) fail(`已答过的题仍被抽到（期望 ${pool[pool.length - 1]}，实际 ${qLast.id}）`);
   ok('随机抽题：同池同难度、重开不变题、已答不重复、同池不撞题');
 } catch (e) { fail(`随机抽题异常: ${e.message}`); }
+
+// ---- 5. 观测站小游戏（纯数学层 + 观测台选址 + 观测日志） ----
+console.log('[5] 观测站小游戏');
+try {
+  // 5a. NFW 拟合台：讲义数字与题库同口径（dm8 ρ(Rₛ)=ρ₀/4、dm9 外区 r⁻³、st7 χ²/dof）
+  if (Math.abs(nfwDensity(0.3, 5, 0.3) - 1.25) > 1e-12) fail('NFW：r = Rₛ 处应为 ρ₀/4 = 1.25（dm8）');
+  const r9 = Math.round((nfwDensity(30, 5, 0.3) / nfwDensity(3, 5, 0.3)) * 1e4) / 1e4;
+  if (r9 !== 0.0012) fail(`NFW：半径 3 → 30 密度比应为 0.0012（dm9），实际 ${r9}`);
+  const inner = nfwLogSlope(0.003, 5, 0.3), outer = nfwLogSlope(30, 5, 0.3);
+  if (Math.abs(inner + 1) > 0.05 || Math.abs(outer + 3) > 0.05) fail(`NFW：内 / 外区对数斜率应 ≈ −1 / −3（实际 ${inner.toFixed(3)} / ${outer.toFixed(3)}）`);
+  const d0 = makeNfwData(0);
+  if (d0.truth.rho0 !== 5 || d0.truth.rs !== 0.3) fail('NFW：首次挑战真值应为讲义数字 ρ₀=5、Rₛ=0.3');
+  if (JSON.stringify(makeNfwData(0)) !== JSON.stringify(d0)) fail('NFW：同一次挑战的数据应确定性一致');
+  const chi = nfwChi2(d0.points, 5, 0.3);
+  if (Math.abs(nfwChi2dof(d0.points, 5, 0.3) - chi / (d0.points.length - 2)) > 1e-12) fail('NFW：χ²/dof 应为 χ² / (N − 2)（st7）');
+  const onGrid = (v, spec) => 10 ** (spec.min + Math.round((Math.log10(v) - spec.min) / NFW.step) * NFW.step);
+  for (let a = 0; a < 6; a++) {
+    const { truth, points } = makeNfwData(a);
+    const lr = Math.log10(truth.rho0), ls = Math.log10(truth.rs);
+    if (lr < NFW.logRho0.min || lr > NFW.logRho0.max || ls < NFW.logRs.min || ls > NFW.logRs.max) fail(`NFW 第 ${a} 次：真值超出滑块范围`);
+    const atTruth = nfwChi2dof(points, truth.rho0, truth.rs);
+    const atGrid = nfwChi2dof(points, onGrid(truth.rho0, NFW.logRho0), onGrid(truth.rs, NFW.logRs));
+    const atStart = nfwChi2dof(points, 10 ** NFW.logRho0.start, 10 ** NFW.logRs.start);
+    if (atTruth >= NFW.passChi2dof) fail(`NFW 第 ${a} 次：真值处 χ²/dof = ${atTruth.toFixed(2)} 未过线（数据噪声种子需调整）`);
+    if (atGrid >= NFW.passChi2dof) fail(`NFW 第 ${a} 次：滑块网格上离真值最近的点 χ²/dof = ${atGrid.toFixed(2)} 未过线（键盘调不到）`);
+    if (atStart < 5) fail(`NFW 第 ${a} 次：滑块起点 χ²/dof = ${atStart.toFixed(2)}，开局就太接近了`);
+  }
+  ok('NFW 拟合台：ρ(Rₛ)=ρ₀/4、外区 r⁻³、χ²/dof 口径对齐题库；6 组挑战真值可达、起点远离');
+
+  // 5b. 频率调谐台：sg6 原题读数 3000 / 1000 / 500 → 振幅 3 / 1 / 0.5；调谐表恰好 3 根尖峰在 1 / 4 / 7 Hz
+  const mags = [1, 4, 7].map((f) => Math.round(readoutMagnitude(f)));
+  if (mags.join(' ') !== '3000 1000 500') fail(`调谐台：sg6 读数应为 3000 1000 500，实际 ${mags.join(' ')}`);
+  const amps = [1, 4, 7].map((f) => amplitudeOf(readoutMagnitude(f), TUNING.sr * TUNING.readoutDuration));
+  if (amps.some((a, i) => Math.abs(a - TUNING.tones[i].a) > 1e-9)) fail(`调谐台：A = 2|X|/N 应还原振幅 3 / 1 / 0.5，实际 ${amps.join(' / ')}`);
+  const tuner = makeTuner();
+  const peaks = findPeaks(tuner);
+  if (peaks.map((p) => p.f).join(',') !== '1,4,7') fail(`调谐台：尖峰应恰为 1 / 4 / 7 Hz，实际 ${peaks.map((p) => p.f).join(' / ')}`);
+  if (peaks.some((p, i) => Math.abs(p.amp - TUNING.tones[i].a) > 0.01)) fail('调谐台：尖峰处调谐表读数应 ≈ 振幅 3 / 1 / 0.5');
+  let side = 0;
+  for (let f = 0; f <= 10.0001; f += 0.05) {
+    if (TUNING.tones.every((t) => Math.abs(f - t.f) > 0.55)) side = Math.max(side, tuner(+f.toFixed(4)));
+  }
+  if (side >= TUNING.peakFloor / 2) fail(`调谐台：尖峰之外的旁瓣 ${side.toFixed(3)} 太高（应远低于尖峰门槛 ${TUNING.peakFloor}）`);
+  ok(`频率调谐台：sg6 读数 ${mags.join(' / ')} → 振幅 3 / 1 / 0.5；调谐表尖峰 1 / 4 / 7 Hz，旁瓣 ≤ ${side.toFixed(3)}`);
+
+  // 5c. 观测台选址：登记的章节恰好 1 座，离符文 / 石碑 ≥ 4 格，不在碰撞瓦片上，远离出生点与传送门
+  let placed = 0;
+  for (const ch of CHAPTERS) {
+    const field = ch.buildField(ch);
+    const obs = field.props.filter((p) => p.type === 'observatory');
+    if (!ch.observatory) { if (obs.length) fail(`${ch.fieldKey} 未登记观测台却生成了 ${obs.length} 座`); continue; }
+    if (!OBSERVATORIES[ch.observatory]) { fail(`${ch.fieldKey} 登记了未知观测台 ${ch.observatory}`); continue; }
+    if (obs.length !== 1) { fail(`${ch.fieldKey} 观测台数量 ${obs.length} != 1`); continue; }
+    const o = obs[0];
+    const tx = Math.floor(o.x / 128), ty = Math.floor(o.y / 128);
+    if (o.kind !== ch.observatory) fail(`${ch.fieldKey} 观测台 kind ${o.kind} != ${ch.observatory}`);
+    if (field.colliding.includes(field.grid[ty][tx])) fail(`${ch.fieldKey} 观测台落在碰撞瓦片上`);
+    const cheb = (p) => Math.max(Math.abs(Math.floor(p.x / 128) - tx), Math.abs(Math.floor(p.y / 128) - ty));
+    field.props.filter((p) => p.type === 'rune' || p.type === 'npc' || p.type === 'doorlink').forEach((p) => {
+      if (cheb(p) < 4) fail(`${ch.fieldKey} 观测台离 ${p.type}${p.qid ? ` ${p.qid}` : ''} 只有 ${cheb(p)} 格（< 4，交互会抢键）`);
+    });
+    Object.entries(field.spawns).forEach(([k, s]) => { if (cheb(s) <= 4) fail(`${ch.fieldKey} 观测台离出生点 ${k} 太近`); });
+    (field.portals || []).forEach((p) => {
+      const r = p.rect;
+      const dx = Math.max(r.x - o.x, 0, o.x - (r.x + r.w)), dy = Math.max(r.y - o.y, 0, o.y - (r.y + r.h));
+      if (Math.hypot(dx, dy) < 520) fail(`${ch.fieldKey} 观测台离传送门「${p.label}」太近（${Math.round(Math.hypot(dx, dy))}px）`);
+    });
+    placed++;
+  }
+  if (placed !== Object.keys(OBSERVATORIES).length) fail(`观测台应有 ${Object.keys(OBSERVATORIES).length} 座，实际 ${placed}`);
+  ok(`观测台选址：${placed} 座（第七章 / 第八章），离符文 / 石碑 / 门 ≥ 4 格，避开出生点与传送门`);
+
+  // 5d. 观测日志：合并完成记录 + 读档清洗（坏数据丢弃、不抛错）
+  const rec1 = recordObservation(undefined, { seconds: 30, chi2dof: 1.1 }, 1000);
+  const rec2 = recordObservation(rec1, { seconds: 20, chi2dof: 1.3 }, 2000);
+  if (rec1.clears !== 1 || rec1.firstAt !== 1000 || rec1.bestSeconds !== 30) fail('观测日志：首次记录字段不对');
+  if (rec2.clears !== 2 || rec2.firstAt !== 1000 || rec2.bestSeconds !== 20 || rec2.bestChi2dof !== 1.1) fail('观测日志：第二次应累计次数、保留首次时间与最好成绩');
+  const roundTrip = sanitizeObservationLog(JSON.parse(JSON.stringify({ nfw: rec2, bogus: { solved: true }, tuning: { solved: false } })));
+  if (Object.keys(roundTrip).join(',') !== 'nfw' || roundTrip.nfw.clears !== 2) fail('观测日志：读档清洗应只保留已登记且完成过的记录');
+  for (const bad of [null, 42, 'x', [], { nfw: 'oops' }]) {
+    if (Object.keys(sanitizeObservationLog(bad)).length) fail(`观测日志：坏数据 ${JSON.stringify(bad)} 应清洗为空`);
+  }
+  ok('观测日志：完成次数 / 首次时间 / 最好成绩合并正确，读档清洗丢弃坏数据');
+} catch (e) { fail(`观测站小游戏异常: ${e.message}`); }
 
 console.log(errors === 0 ? '\n全部通过 ✔' : `\n${errors} 个错误 ✘`);
 process.exit(errors === 0 ? 0 : 1);
