@@ -5,12 +5,15 @@
 // - 迁移链 v1 → v2 → v3 逐级纯函数升级；首次成功写入 v3 后才删除旧键
 // - 分层：序列化（G → 存档对象）/ 迁移（旧版本 → v3）/ 校验（问题列表）/
 //   水合（存档对象 → G）四个纯函数 + 一层薄的 localStorage 读写
-// - 可选字段 secrets（已发现的秘藏）/ observatory（观测日志）：旧档缺省为空，读档时清洗
+// - 可选字段 secrets（已发现的秘藏）/ observatory（观测日志）/ tower（试炼塔累计战绩）：
+//   旧档缺省为空，读档时清洗
+// - 试炼塔挑战进行中写档：爱心写进塔前的主线爱心（塔里的伤害不进主线存档，见 core/tower.js）
 // - saveGame()：HUD / 学习记录变化、关页、切后台时自动写档
 // ============================================================
 import { G, resetState, freshRecords } from './state.js';
 import { CHAPTERS } from '../data/chapters.js';
 import { sanitizeObservationLog } from './observatory.js';
+import { sanitizeTowerStats } from './tower.js';
 
 export const SAVE_VERSION = 3;
 export const SAVE_KEY = 'pyquest:save:v3';
@@ -44,7 +47,7 @@ export function serialize(g, now = Date.now()) {
     savedAt: now,
     startTime: g.startTime,
     playMs: g.playMs || 0,
-    hearts: g.hearts,
+    hearts: g.towerRun ? g.towerRun.main.hearts : g.hearts, // 塔内写主线爱心（状态隔离）
     maxHearts: g.maxHearts,
     current: g.current,
     answered: [...g.answered],
@@ -53,6 +56,7 @@ export function serialize(g, now = Date.now()) {
     progress,
     secrets: [...(g.secrets || [])],                                // 可选：已发现的秘藏 id
     observatory: JSON.parse(JSON.stringify(g.observatory || {})),  // 可选：观测日志
+    tower: sanitizeTowerStats(g.tower),                             // 可选：试炼塔累计战绩
     records: {
       stats: JSON.parse(JSON.stringify(r.stats)),
       log: r.log.slice(),
@@ -151,6 +155,7 @@ export function validate(d) {
   if (typeof d.playMs !== 'number' || d.playMs < 0) problems.push('playMs 不是非负数');
   if (d.secrets !== undefined && !isStrArr(d.secrets)) problems.push('secrets 不是字符串数组');
   if (d.observatory !== undefined && !isPlainObj(d.observatory)) problems.push('observatory 不是对象');
+  if (d.tower !== undefined && !isPlainObj(d.tower)) problems.push('tower 不是对象');
   const r = d.records;
   if (!isPlainObj(r)) problems.push('records 不是对象');
   else {
@@ -196,6 +201,8 @@ export function hydrate(g, d) {
   }
   g.secrets = new Set(isStrArr(d.secrets) ? d.secrets : []);
   g.observatory = sanitizeObservationLog(d.observatory);
+  g.tower = sanitizeTowerStats(d.tower);
+  g.towerRun = null; // 进行中的塔挑战不跨会话（读档总是回到主线）
   g.records = sanitizeRecords(d.records);
   return g;
 }

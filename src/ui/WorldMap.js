@@ -7,6 +7,7 @@
 //   到该章野外（塞尔达式圆形转场）
 // - 头部显示秘藏（Python 彩蛋）发现数；已发现秘藏的章节地标带 ✦
 // - 头部「错题本（N）」入口：N = 曾错且未掌握的题数（错题本见 MistakeBook.js）
+// - 「试炼塔」地标（章节之外，类名 map-tower 不计入章节节点）：第三章通关后开放，点击开一局爬塔
 // ============================================================
 import { G, cp } from '../core/state.js';
 import { phaseOf, PHASE } from '../core/phase.js';
@@ -17,6 +18,7 @@ import { MistakeBook, mistakeEntries } from './MistakeBook.js';
 import { sfx } from '../audio/sfx.js';
 import { wipeTransition } from './wipe.js';
 import { ICON } from './icons.js';
+import { TOWER_KEY, towerUnlocked, startRun } from '../core/tower.js';
 
 const MAP_W = 1000;
 
@@ -37,6 +39,8 @@ const NODE_POS = {
   10: [50, 8],
   11: [28, 12],
 };
+// 试炼塔地标：地图西侧雾丘旁（与章节地标及其名称牌都不重叠）
+const TOWER_POS = [8, 30];
 
 // ---------- 静态地图美术（羊皮纸 + 地形 + landmark） ----------
 const ART = `
@@ -369,6 +373,8 @@ export class WorldMap {
   open() {
     if (this.isOpen) return;
     const s = this.scene;
+    // 场景可以整体禁用世界地图（试炼塔：离开要走出塔之门结算）
+    if (s.blockWorldMap && s.blockWorldMap()) return;
     // 答题 / 对话 / 观测台 / 转场 / 濒死期间不打开
     if (s.quiz && s.quiz.isOpen) return;
     if (s.dialogue && s.dialogue.isOpen) return;
@@ -505,6 +511,34 @@ export class WorldMap {
       else btn.disabled = true; // 未解锁：不可点击、不进键盘焦点，也不再显示可点击手势
       layer.appendChild(btn);
     });
+
+    layer.appendChild(this._towerNode());
+  }
+
+  /** 试炼塔地标：第三章通关前锁定；开放后显示个人最佳层数 */
+  _towerNode() {
+    const open = towerUnlocked(G.progress);
+    const best = G.tower.best;
+    const btn = document.createElement('button');
+    btn.className = `map-tower${open ? '' : ' locked'}`;
+    btn.dataset.id = 'tower';
+    btn.style.setProperty('--x', TOWER_POS[0]);
+    btn.style.setProperty('--y', TOWER_POS[1]);
+    btn.title = '试炼塔：只出已通关章节的题，错题优先，爬得越高越难';
+    btn.setAttribute('aria-label', `试炼塔，${open ? (best ? `个人最佳第 ${best} 层` : '可挑战') : '第三章通关后开放'}`);
+    const status = !open
+      ? '<span class="mn-status locked">第三章通关后开放</span>'
+      : best ? `<span class="mn-status best">最高 第 ${best} 层</span>` : '<span class="mn-status">可挑战 · 错题优先</span>';
+    btn.innerHTML = `
+      <span class="mn-pin"><span class="mn-disc">塔</span><span class="mn-badge">${open ? '' : ICON.lock}</span></span>
+      <span class="mn-plate">
+        <span class="mn-week"><span>间隔复习</span></span>
+        <span class="mn-name">试炼塔</span>
+        ${status}
+      </span>`;
+    if (open) btn.addEventListener('click', () => this.travelTower());
+    else btn.disabled = true;
+    return btn;
   }
 
   /** 快速传送到章节野外（圆形转场 + 传送期间免伤） */
@@ -518,6 +552,20 @@ export class WorldMap {
     s.player.invulUntil = Number.MAX_SAFE_INTEGER;
     sfx.openGate();
     wipeTransition(() => s.scene.start(ch.fieldKey, { spawn: ch.id === 1 ? 'start' : 'fromPrev' }));
+  }
+
+  /** 进试炼塔：开一局挑战（快照主线爱心、塔内满心开局）后转场到塔的第 1 层 */
+  travelTower() {
+    if (!this.isOpen || !towerUnlocked(G.progress)) return;
+    const s = this.scene;
+    this.close();
+    if (s.transitioning || s.player.dying) return;
+    s.transitioning = true;
+    s.player.setVelocity(0, 0);
+    s.player.invulUntil = Number.MAX_SAFE_INTEGER;
+    sfx.openGate();
+    startRun();
+    wipeTransition(() => s.scene.start(TOWER_KEY));
   }
 
   destroy() {

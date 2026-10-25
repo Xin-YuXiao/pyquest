@@ -6,6 +6,8 @@
 //   旧记录的统计口径依然正确
 // - 汇总 stats 永不裁剪；原始日志 log 上限 LOG_CAP 条，超限丢最老的（dropped 累加）
 // - 复习作答（kind = 'review'）只写日志与汇总里的复习状态 rv，不改主线汇总
+// - 试炼塔作答（kind = 'tower'）：汇总 tw 计次；错题本里的题按复习同一规则推进掌握连击（rv）；
+//   不在错题本里的题在塔里答错 = 记一次主线答错（入错题本）——塔是真实的提取练习
 // - 只存本机（随 localStorage 存档），不发任何网络请求
 // 纯函数 applyAttempt / applyReview 不碰 G（供 smoke 校验）；
 // 薄包装 recordAttempt / recordSkip 写 G.records 并通知自动存档。
@@ -52,6 +54,7 @@ function freshStat() {
     solvedAt: null, // 首次答对时间（只写一次）
     ch: null, pool: null, tier: null, k: null, // 最近一次主线作答的快照与符文类型
     rv: null,      // 复习状态 { n, ok, streak, mastered, at }（首次复习时创建）
+    tw: null,      // 试炼塔作答 { n, ok, at }（首次在塔里作答时创建）
   };
 }
 
@@ -84,6 +87,22 @@ export function applyAttempt(records, e, cap = LOG_CAP) {
   } else if (e.k === 'review') {
     st.rv = applyReview(st.rv, e.ok === OK.RIGHT, e.t);
     a = st.rv.n;
+  } else if (e.k === 'tower') {
+    const right = e.ok === OK.RIGHT;
+    const tw = st.tw || { n: 0, ok: 0, at: null };
+    st.tw = { n: tw.n + 1, ok: tw.ok + (right ? 1 : 0), at: e.t };
+    a = st.tw.n;
+    if (st.w > 0) {
+      st.rv = applyReview(st.rv, right, e.t); // 错题本里的题：与错题本复习同一掌握规则
+    } else if (!right) {
+      // 塔里第一次答错：按主线答错入错题本（快照取本次作答）
+      st.n += 1;
+      st.w += 1;
+      if (st.first === null) { st.first = 'w'; st.firstAt = e.t; }
+      st.lastAt = e.t;
+      st.lastOk = false;
+      st.ch = e.ch; st.pool = e.pool; st.tier = e.tier; st.k = e.k;
+    }
   } else {
     st.n += 1;
     a = st.n;
@@ -112,7 +131,7 @@ function notify() {
   }
 }
 
-/** 记一次提交作答（答题面板「确认」时调用）。kind: shard / heal / boss / review */
+/** 记一次提交作答（答题面板「确认」时调用）。kind: shard / heal / boss / review / tower */
 export function recordAttempt({ qid, slot = '', kind, pick, ok, ms }) {
   const e = {
     t: Date.now(), q: qid, s: slot || '', k: kind, ...snapshotOf(qid, slot),

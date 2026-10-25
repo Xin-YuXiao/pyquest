@@ -233,6 +233,7 @@ class TouchControls {
     // 其他全屏面板（观测台 / 秘藏卷轴）打开时同样收起：触控层不在 #ui-scale 里、叠在面板之上，
     // 不收起的话左半屏的摇杆区会截走拟合台滑块的拖动
     if ((s.observatory && s.observatory.isOpen) || (s.secretScroll && s.secretScroll.isOpen)) return 'off';
+    if (s.towerResult && s.towerResult.isOpen) return 'off'; // 试炼塔结算页
     if (s.worldmap && s.worldmap.isOpen) return s.worldmap.book && s.worldmap.book.isOpen ? 'off' : 'map';
     return 'play';
   }

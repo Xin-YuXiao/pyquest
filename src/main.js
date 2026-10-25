@@ -5,6 +5,8 @@
 import Phaser from 'phaser';
 import BootScene from './scenes/BootScene.js';
 import { makeFieldScene, makeLairScene } from './scenes/ChapterScene.js';
+import { TowerScene } from './scenes/TowerScene.js';
+import { TOWER_KEY } from './core/tower.js';
 import { CHAPTERS } from './data/chapters.js';
 import { initAutosave } from './core/save.js';
 
@@ -19,6 +21,9 @@ for (const ch of CHAPTERS) {
   scenes.push(makeLairScene(ch));
   sceneKeys.push(ch.fieldKey, ch.lairKey);
 }
+// 试炼塔（章节之外的爬塔关卡，第三章通关后从世界地图进入；一个场景反复重启呈现每一层）
+scenes.push(TowerScene);
+sceneKeys.push(TOWER_KEY);
 
 const config = {
   type: Phaser.AUTO,

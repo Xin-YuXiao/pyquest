@@ -38,6 +38,14 @@ export function freshRecords() {
   return { stats: {}, log: [], dropped: 0 };
 }
 
+/**
+ * 试炼塔累计战绩的空结构（存档 v3 可选字段 tower，见 core/tower.js）：
+ *   best —— 个人最佳到达层数；runs —— 挑战次数；answered / correct —— 塔内累计答题 / 答对数
+ */
+export function freshTowerStats() {
+  return { best: 0, runs: 0, answered: 0, correct: 0 };
+}
+
 export const G = {
   hearts: 6,
   maxHearts: 6,
@@ -51,6 +59,8 @@ export const G = {
   observatory: {},       // 观测日志：观测台 id → 完成记录（core/observatory.js，可选小游戏）
   playMs: 0,             // 有效游玩时长（存档 v3 起预留；计时见 learning-records 后续工单）
   records: freshRecords(), // 学习记录：作答日志 + 每题汇总（core/records.js 维护）
+  tower: freshTowerStats(), // 试炼塔累计战绩（持久化）
+  towerRun: null,           // 进行中的一次试炼塔挑战（不持久化；结构见 core/tower.js 的 newRun）
 };
 
 export function resetState() {
@@ -66,6 +76,8 @@ export function resetState() {
   G.observatory = {};
   G.playMs = 0;
   G.records = freshRecords();
+  G.tower = freshTowerStats();
+  G.towerRun = null;
 }
 
 /** 取某章进度（默认当前章） */
