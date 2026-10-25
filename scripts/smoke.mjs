@@ -5,7 +5,6 @@
 // 4) 验证 W4-W11 三池式结构（24 个通用池齐备 / tier 对齐 / 旧池不残留 / 章节映射）
 import { generateAllTextures } from '../src/textures/pixelArt.js';
 import { makeGroundTexture } from '../src/textures/ground.js';
-import { buildVillage, buildDungeon, buildForest, buildCave, buildField, buildLair } from '../src/data/maps.js';
 import { CHAPTERS } from '../src/data/chapters.js';
 import { QUESTIONS, pickQuestion, highlight, POOLS, SLOT_POOL } from '../src/data/quizData.js';
 import { G } from '../src/core/state.js';

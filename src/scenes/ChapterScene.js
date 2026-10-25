@@ -87,7 +87,6 @@ export class LairScene extends WorldScene {
     const next = getChapter(this.ch.id + 1);
     const hasNext = !!next && next.id > this.ch.id;
     this.time.delayedCall(1100, () => showVictory(this.ch, {
-      hasNext,
       onNext: () => this.scene.start(
         hasNext ? next.fieldKey : CHAPTERS[0].fieldKey,
         { spawn: hasNext ? 'fromPrev' : 'start' },

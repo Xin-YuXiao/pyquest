@@ -41,7 +41,6 @@ const config = {
   scene: scenes,
 };
 
-// eslint-disable-next-line no-new
 const game = new Phaser.Game(config);
 
 // ---------- 自动存档（HUD 更新 / 关页时写入 localStorage） ----------

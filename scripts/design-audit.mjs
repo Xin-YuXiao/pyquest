@@ -16,7 +16,6 @@ const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1200, height: 800 } });
 const snap = shot(page);
 
-const activeKey = () => page.evaluate(() => window.__PYQUEST__.active().scene.settings.key);
 const tele = (x, y) => page.evaluate(([tx, ty]) => {
   const s = window.__PYQUEST__.active();
   s.player.setPosition(tx, ty);

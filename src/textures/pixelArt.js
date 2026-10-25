@@ -8,7 +8,6 @@
 // ============================================================
 
 export const S = 1;
-const TAU = Math.PI * 2;
 
 export function rng(seed) {
   let s = seed % 2147483647;

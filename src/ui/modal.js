@@ -10,6 +10,7 @@ import { ICON } from './icons.js';
 
 // 标题里的 emoji 前缀（chapters.js 的 victory.title 仍写着 🎉👑⚡…）
 // 在此剥掉，胜利封印页（#13）标题为纯文字 + 独立大金印
+// eslint-disable-next-line no-misleading-character-class -- U+FE0F（emoji 变体选择符）单列进字符类是有意的：与前一个 emoji 逐码位一起剥掉
 const STRIP_EMOJI = /^[\s\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]+\s*/u;
 
 export function initTitle({ onNew, onContinue }) {
@@ -27,7 +28,6 @@ export function initTitle({ onNew, onContinue }) {
     });
     btnNew.style.display = '';
     btnNew.addEventListener('click', () => {
-      // eslint-disable-next-line no-alert
       if (!window.confirm('开始新的冒险会覆盖当前存档，确定吗？')) return;
       el.classList.add('hidden');
       onNew();
@@ -40,7 +40,7 @@ export function initTitle({ onNew, onContinue }) {
   }
 }
 
-export function showVictory(ch, { hasNext, onNext, onRestart } = {}) {
+export function showVictory(ch, { onNext } = {}) {
   const el = document.getElementById('victory');
   const cfg = (ch && ch.victory) || {
     title: '冒险成功！', text: '你完成了试炼！', next: '继续冒险',
@@ -52,7 +52,7 @@ export function showVictory(ch, { hasNext, onNext, onRestart } = {}) {
   document.querySelector('#victory .victory-stamp').innerHTML = ICON.stamp;
 
   // 三枚统计印（#13）：用时 / 解开谜题 / 章节进度
-  // textContent 拼接后仍含「N / 8」，e2e 的章节进度断言不受影响
+  // textContent 拼接后仍含「N / 总章数」，e2e 的章节进度断言不受影响
   const elapsed = Math.max(0, Math.round((Date.now() - G.startTime) / 1000));
   const mm = Math.floor(elapsed / 60);
   const ss = String(elapsed % 60).padStart(2, '0');

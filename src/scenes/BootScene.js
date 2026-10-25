@@ -6,7 +6,7 @@ import Phaser from 'phaser';
 import { generateAllTextures, createAnimations } from '../textures/pixelArt.js';
 import { loadTSAssets, createTSAnimations } from '../assets/ts.js';
 import { initTitle } from '../ui/modal.js';
-import { G, resetState, furthestChapter } from '../core/state.js';
+import { resetState, furthestChapter } from '../core/state.js';
 import { getChapter } from '../data/chapters.js';
 import { clearSave, loadGame } from '../core/save.js';
 

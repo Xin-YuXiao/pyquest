@@ -123,7 +123,7 @@ Object.entries(TS_IMAGES).forEach(([key, url], i) => {
   const [w, h] = IMAGE_SIZE[key] || defaultImageSize;
   emit(url.replace('/TinySwordsFreePack', ''), w, h, hueColor(i + 40));
 });
-Object.entries(TS_TILESETS).forEach(([key, url], i) => {
+Object.entries(TS_TILESETS).forEach(([, url], i) => {
   emit(url.replace('/TinySwordsFreePack', ''), TILESET_SIZE[0], TILESET_SIZE[1], hueColor(i + 60));
 });
 

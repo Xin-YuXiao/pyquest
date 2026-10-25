@@ -14,7 +14,6 @@ import { wipeTransition } from './wipe.js';
 import { ICON } from './icons.js';
 
 const MAP_W = 1000;
-const MAP_H = 600;
 
 // 地标在画布上的位置（百分比）。叙事顺序：
 // W1 草原村庄（左下）→ W2 森林 → W3 高原 → W4 星图塔 → W5 熔炉

@@ -69,7 +69,7 @@ export class WorldScene extends Phaser.Scene {
 
     const def = this.mapDef;
     this.def = def;
-    const P = cp(this.ch.id); // 本章进度
+    cp(this.ch.id);           // 确保本章进度已初始化（cp 惰性创建）
     G.current = this.ch.id;   // 跟踪玩家所在章节（HUD / 碎片计数用）
 
     // ---------- 地面（TS tileset 拼接画布，1:1 像素完美） + 碰撞体 ----------
