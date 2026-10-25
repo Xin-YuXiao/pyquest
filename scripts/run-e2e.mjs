@@ -7,25 +7,35 @@
 //   - 端口被别的程序占着（返回的不是 PyQuest 页面）→ 报错退出，不误测。
 //
 // 用法：
-//   npm run test:e2e              # 全部章节
+//   npm run test:e2e              # 全部章节 + 专项（移动端触控）
 //   npm run test:e2e -- 9 10 11   # 只跑指定章节
+//   npm run test:e2e -- mobile    # 只跑移动端触控
 //
-// 每章作为独立子进程运行（各章脚本自带退出码），一章失败不中断后续章节，
-// 最后汇总；任一章失败 exit 1。单章超时 10 分钟强制结束（防 CI 卡死）。
+// 每项作为独立子进程运行（各脚本自带退出码），一项失败不中断后续，
+// 最后汇总；任一项失败 exit 1。单项超时 10 分钟强制结束（防 CI 卡死）。
 // ============================================================
 import { spawn } from 'node:child_process';
 import { createServer } from 'vite';
 import { CHAPTERS } from '../src/data/chapters.js';
 
 const BASE = process.env.BASE_URL || 'http://localhost:5173/';
-const CHAPTER_TIMEOUT_MS = 10 * 60 * 1000;
-const scriptFor = (id) => (id === 1 ? 'scripts/e2e.mjs' : `scripts/e2e-ch${id}.mjs`);
+const SUITE_TIMEOUT_MS = 10 * 60 * 1000;
 
-const wanted = process.argv.slice(2).map(Number);
-const ids = CHAPTERS.map((c) => c.id).filter((id) => !wanted.length || wanted.includes(id));
-const unknown = wanted.filter((id) => !CHAPTERS.some((c) => c.id === id));
+// 测试项：每章一项（键 = 章号）+ 不属于某一章的专项
+const SUITES = [
+  ...CHAPTERS.map((c) => ({
+    key: String(c.id),
+    label: `第 ${c.id} 章`,
+    script: c.id === 1 ? 'scripts/e2e.mjs' : `scripts/e2e-ch${c.id}.mjs`,
+  })),
+  { key: 'mobile', label: '移动端触控', script: 'scripts/e2e-mobile.mjs' },
+];
+
+const wanted = process.argv.slice(2);
+const suites = SUITES.filter((s) => !wanted.length || wanted.includes(s.key));
+const unknown = wanted.filter((k) => !SUITES.some((s) => s.key === k));
 if (unknown.length) {
-  console.error(`未知章节：${unknown.join(', ')}（可选 ${CHAPTERS.map((c) => c.id).join(' ')}）`);
+  console.error(`未知测试项：${unknown.join(', ')}（可选 ${SUITES.map((s) => s.key).join(' ')}）`);
   process.exit(1);
 }
 
@@ -57,35 +67,35 @@ if (found === 'pyquest') {
 const stopServer = async () => { if (server) { await server.close(); server = null; } };
 process.on('SIGINT', async () => { await stopServer(); process.exit(130); });
 
-// ---------- 逐章运行 ----------
-function runOne(id) {
+// ---------- 逐项运行 ----------
+function runOne(suite) {
   return new Promise((resolve) => {
-    const child = spawn(process.execPath, [scriptFor(id)], {
+    const child = spawn(process.execPath, [suite.script], {
       stdio: 'inherit',
       env: { ...process.env, BASE_URL: BASE },
     });
     const timer = setTimeout(() => {
-      console.error(`[e2e] 第 ${id} 章超时（${CHAPTER_TIMEOUT_MS / 60000} 分钟），强制结束`);
+      console.error(`[e2e] ${suite.label}超时（${SUITE_TIMEOUT_MS / 60000} 分钟），强制结束`);
       child.kill();
-    }, CHAPTER_TIMEOUT_MS);
+    }, SUITE_TIMEOUT_MS);
     child.on('exit', (code) => { clearTimeout(timer); resolve(code ?? 1); });
   });
 }
 
 const results = [];
-for (const id of ids) {
-  console.log(`\n========== [e2e] 第 ${id} 章 · ${scriptFor(id)} ==========`);
+for (const suite of suites) {
+  console.log(`\n========== [e2e] ${suite.label} · ${suite.script} ==========`);
   const t0 = Date.now();
-  const code = await runOne(id);
-  results.push({ id, code, secs: Math.round((Date.now() - t0) / 1000) });
+  const code = await runOne(suite);
+  results.push({ label: suite.label, code, secs: Math.round((Date.now() - t0) / 1000) });
 }
 await stopServer();
 
 console.log('\n========== [e2e] 汇总 ==========');
-for (const r of results) console.log(`  ${r.code === 0 ? '✓' : '✗'} 第 ${r.id} 章（${r.secs}s）`);
-const failedIds = results.filter((r) => r.code !== 0).map((r) => r.id);
-if (failedIds.length) {
-  console.log(`\n${failedIds.length} 章失败：${failedIds.join(', ')} ✘`);
+for (const r of results) console.log(`  ${r.code === 0 ? '✓' : '✗'} ${r.label}（${r.secs}s）`);
+const failedLabels = results.filter((r) => r.code !== 0).map((r) => r.label);
+if (failedLabels.length) {
+  console.log(`\n${failedLabels.length} 项失败：${failedLabels.join('、')} ✘`);
   process.exit(1);
 }
-console.log(`\n全部 ${results.length} 章通过 ✔`);
+console.log(`\n全部 ${results.length} 项通过 ✔`);
