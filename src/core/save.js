@@ -14,7 +14,14 @@ export function hasSave() {
   try { return !!localStorage.getItem(KEY) || !!localStorage.getItem(OLD_KEY); } catch { return false; }
 }
 
+// 自动存档只在玩家真正开始冒险（新的冒险 / 继续冒险）之后生效。
+// 标题画面时 G 还是空白初始状态：若此刻刷新 / 关页 / 切后台触发写档，
+// 会用空进度覆盖玩家的真实存档。
+let armed = false;
+export function armAutosave() { armed = true; }
+
 export function saveGame() {
+  if (!armed) return;
   try {
     const data = {
       v: 2,
