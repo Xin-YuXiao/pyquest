@@ -38,15 +38,25 @@ export function pickQuestion(slotId) {
 const KEYWORDS = /\b(for|while|in|if|elif|else|def|return|import|from|and|or|not|True|False|as|lambda)\b/g;
 const FUNCS = /\b(print|range|len|append|int|str|input|np|plt|array|arange|linspace|zeros|ones|mean|sum|rand|argmax|reshape|scatter|hist|xlabel|ylabel|savefig|fits|units|u|SkyCoord|quad|dblquad|curve_fit|solve_ivp|brentq|interp1d|fft|rfft|eig|cov|convolve|Pool|jit|ma|compressed|logical_not|isfinite|Bcast|gradient|inner|solve)\b/g;
 
+// 单遍分词：字符串 / 关键字 / 函数名 / 数字在一次扫描里互斥匹配，已着色的片段不会再被处理。
+// （旧实现逐条 replace：FUNCS 里的 str 会匹配到前一步插入的 class="str" 属性，
+//   生成 <span class="<span class="fn">str</span>"> 坏标签，每个字符串字面量前都多出可见的「str">」；
+//   字符串里的关键字也会被误着色）
+// 字符串不跨行：注释里落单的撇号（如 # it's）不会吞掉后面几行代码。
+const TOKENS = new RegExp(
+  `("[^"\\n]*"|'[^'\\n]*')|${KEYWORDS.source}|${FUNCS.source}|\\b(\\d+)\\b`, 'g',
+);
+
 export function highlight(code) {
   let html = code
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/("[^"]*"|'[^']*')/g, '<span class="str">$1</span>')
-    .replace(/(&quot;[^&]*&quot;)/g, '<span class="str">$1</span>')
-    .replace(KEYWORDS, '<span class="kw">$1</span>')
-    .replace(FUNCS, '<span class="fn">$1</span>')
-    .replace(/\b(\d+)\b/g, '<span class="num">$1</span>');
-  // 替换填空占位符 ___（避免被上面规则干扰）
+    .replace(TOKENS, (m, str, kw, fn, num) => {
+      if (str) return `<span class="str">${str}</span>`;
+      if (kw) return `<span class="kw">${kw}</span>`;
+      if (fn) return `<span class="fn">${fn}</span>`;
+      return `<span class="num">${num}</span>`;
+    });
+  // 替换填空占位符 ___（下划线是单词字符，不会被上面的规则切开）
   html = html.replace(/_{3,}/g, '<span class="blank" id="quiz-blank">____</span>');
   return html;
 }

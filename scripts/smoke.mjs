@@ -141,6 +141,10 @@ for (const [id, q] of Object.entries(QUESTIONS)) {
     const html = highlight(q.code);
     if (q.fill && !html.includes('quiz-blank')) fail(`${id} 填空题缺少空槽占位`);
     if (/<script/i.test(html)) fail(`${id} 高亮结果包含可疑内容`);
+    // 高亮只能加标签、不能改字：去掉标签、还原实体后必须与原代码逐字一致（填空 ___ 统一为 ____）
+    const text = html.replace(/<[^>]*>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+    if (text !== q.code.replace(/_{3,}/g, '____')) fail(`${id} 高亮后文本被破坏（标签嵌套或吞字）`);
+    if (/<span class="[^"]*</.test(html)) fail(`${id} 高亮生成了嵌套在属性里的坏标签`);
   } catch (e) { fail(`题目 ${id} 异常: ${e.message}`); }
 }
 ok(`题库 ${Object.keys(QUESTIONS).length} 题，格式校验通过`);
