@@ -38,7 +38,12 @@ export default defineConfig({
   server: {
     host: true,
     port: 5173,
+    // .claude/：Claude Code 本地目录（并行 agent 的 worktree 是整份仓库副本），不监听
+    watch: { ignored: ['**/.claude/**'] },
   },
+  // 依赖预构建只从根 index.html 扫描入口：默认会扫项目里所有 .html，
+  // 目录里有 worktree 副本时会把每份副本的源码都扫一遍，冷启动首屏可拖到一分钟以上
+  optimizeDeps: { entries: ['index.html'] },
   // Pyodide Worker 以 ES 模块运行（Worker 里用 import() 加载自托管的 pyodide.mjs）
   worker: { format: 'es' },
   build: {
