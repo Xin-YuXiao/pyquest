@@ -84,6 +84,11 @@ class TouchControls {
     this._layout();
   }
 
+  /** 进入非世界场景（如代码训练场）时解绑：没有当前场景 → 显示模式 off */
+  detach() {
+    this.scene = null;
+  }
+
   // ---------- DOM ----------
   _build() {
     const root = document.createElement('div');

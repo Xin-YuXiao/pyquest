@@ -9,7 +9,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint .",
-    "test": "node scripts/smoke.mjs && node scripts/verify-quiz.mjs && node scripts/verify-secrets.mjs",
+    "test": "node scripts/smoke.mjs && node scripts/verify-quiz.mjs && node scripts/verify-secrets.mjs && node scripts/verify-dojo.mjs",
     "test:e2e": "node scripts/run-e2e.mjs",
     "stubs": "node scripts/gen-ts-stubs.mjs",
     "check": "npm run lint && npm test && npm run build && npm run test:e2e"
@@ -22,6 +22,7 @@
     "eslint": "^10.13.0",
     "globals": "^17.13.0",
     "playwright": "^1.63.0",
+    "pyodide": "314.0.7",
     "vite": "^7.1.0"
   }
 }

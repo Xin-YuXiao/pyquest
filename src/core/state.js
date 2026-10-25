@@ -49,6 +49,7 @@ export const G = {
   progress: buildAllProgress(),
   startTime: Date.now(),
   observatory: {},       // 观测日志：观测台 id → 完成记录（core/observatory.js，可选小游戏）
+  dojo: {},              // 代码训练场：关卡 id → 通关记录 / 个人最佳 / 代码草稿（core/dojoSim.js）
   playMs: 0,             // 有效游玩时长（存档 v3 起预留；计时见 learning-records 后续工单）
   records: freshRecords(), // 学习记录：作答日志 + 每题汇总（core/records.js 维护）
 };
@@ -64,6 +65,7 @@ export function resetState() {
   G.progress = buildAllProgress();
   G.startTime = Date.now();
   G.observatory = {};
+  G.dojo = {};
   G.playMs = 0;
   G.records = freshRecords();
 }

@@ -236,9 +236,12 @@ export function buildForest(ch) {
     spawns: {
       fromPrev: { x: px(8.5), y: px(25.2) },
       fromLair: { x: pc(27.5), y: px(5) },
+      fromDojo: { x: pc(19), y: pc(18.7) }, // 从代码训练场回来：站在训练场门前
     },
     props: [
       { type: 'npc', x: pc(11), y: pc(22.5), id: ch.npcKind, tex: 'tablet' },
+      // 代码训练场之门（可选关卡，第一章通关后开放；进入后见 scenes/DojoScene.js）
+      { type: 'dojo', x: pc(19), y: pc(17.2), requires: { ch: 1, flag: 'done' } },
       { type: 'rune', x: pc(5), y: pc(12.5), qid: 'f1' },
       { type: 'rune', x: pc(31), y: pc(15.5), qid: 'f2' },
       { type: 'rune', x: pc(12), y: pc(7), qid: 'f3' },

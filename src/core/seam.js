@@ -3,14 +3,15 @@
 //
 // 只暴露两类入口，不再直接暴露可写的全局状态 G：
 //   只读查询 —— scene(key) / active() / state() / audio() / observatory() / secrets() / bossMech(key) /
-//     mistakes() / quizInfo() / input()
+//     mistakes() / quizInfo() / input() / dojo()
 //     · state() 返回纯数据快照（Set → 数组、progress / 学习记录深拷贝），
 //       可安全跨 Playwright evaluate 序列化
 //     · secrets() 返回秘藏快照（已发现 / 总数 / 本场景石碑位置 / 特效状态）
 //     · bossMech() 返回 BOSS 招牌机制的 JSON 快照（entities/bossMechanics.js）
 //     · mistakes() 错题本视图；quizInfo() 答题面板模式与正确项展示下标
 //   语义动作 —— teleport / godmode / clearMinions / pinBoss / hitBoss /
-//     breakBossShield / slayBoss / gotoChapter / gotoLair / setShards / setHearts / applyTestState
+//     breakBossShield / slayBoss / gotoChapter / gotoLair / setShards / setHearts / applyTestState /
+//     openDojo（直达代码训练场；dojo() 返回训练场关卡 / 运行阶段 / 结果 / Python 运行时 / 进度）
 //     每个动作一个明确语义，脚本侧无法绕过它们直接改写进度。
 //
 // 正常游戏路径完全不经过本模块（仅 main.js 启动时挂载一次）；
@@ -23,6 +24,8 @@ import { SECRET_TOTAL } from '../data/secrets.js';
 import { QUESTIONS } from '../data/quizBank.js';
 import { buildMistakeEntries, pendingCount } from './mistakes.js';
 import { isTouchMode, getStick, moveDir } from './input.js';
+import { pyRuntime } from './pyRuntime.js';
+import { DOJO_KEY } from '../scenes/DojoScene.js';
 
 export function buildSeam(game, sceneKeys) {
   // ---------- 只读查询 ----------
@@ -106,7 +109,29 @@ export function buildSeam(game, sceneKeys) {
     };
   }
 
+  /** 代码训练场快照：open / levelId / phase（idle|running|replaying|done）/ last / runtime / progress */
+  function dojo() {
+    const d = game.scene.getScene(DOJO_KEY);
+    const open = !!d && d.scene.isActive();
+    return {
+      open,
+      levelId: open ? d.levelId : null,
+      phase: open ? d.phase : null,
+      last: open ? d.lastRun : null,
+      runtime: pyRuntime.info(),
+      progress: JSON.parse(JSON.stringify(G.dojo)),
+    };
+  }
+
   // ---------- 语义动作（测试专用作弊指令） ----------
+
+  /** 直接进入代码训练场的第 levelId 关（E2E 直达，跳过森林里走到门前） */
+  function openDojo(levelId = 1) {
+    const s = active();
+    const data = { levelId, returnKey: s ? s.scene.key : CHAPTERS[1].fieldKey };
+    if (s) s.scene.start(DOJO_KEY, data);
+    else game.scene.start(DOJO_KEY, data);
+  }
 
   /** 把玩家传送到当前场景指定坐标（清速度/复位物理体，防漂移） */
   function teleport(x, y) {
@@ -247,8 +272,8 @@ export function buildSeam(game, sceneKeys) {
   }
 
   return {
-    scene, active, state, audio, observatory, secrets, bossMech, mistakes, quizInfo, input,
+    scene, active, state, audio, observatory, secrets, bossMech, mistakes, quizInfo, input, dojo,
     teleport, godmode, clearMinions, pinBoss, hitBoss, breakBossShield, slayBoss,
-    gotoChapter, gotoLair, setShards, setHearts, applyTestState,
+    gotoChapter, gotoLair, setShards, setHearts, applyTestState, openDojo,
   };
 }
