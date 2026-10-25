@@ -2,10 +2,12 @@
 // 存档系统：localStorage 持久化冒险进度（数据驱动多章结构）
 // - v2：G.progress[章] 独立进度 + G.current 当前章节
 // - v1 → v2 自动迁移：旧两章字段映射到 progress[1] / progress[2]
+// - v2 可选字段 observatory（观测日志）：旧档缺省为空，读档时清洗
 // - saveGame()：HUD 更新 / 关页 / 切后台时自动写档
 // ============================================================
 import { G, resetState } from './state.js';
 import { CHAPTERS } from '../data/chapters.js';
+import { sanitizeObservationLog } from './observatory.js';
 
 const KEY = 'pyquest:save:v2';
 const OLD_KEY = 'pyquest:save:v1';
@@ -27,6 +29,7 @@ export function saveGame() {
       qAnswered: [...G.qAnswered],
       runeRolls: { ...G.runeRolls },
       progress: JSON.parse(JSON.stringify(G.progress)),
+      observatory: JSON.parse(JSON.stringify(G.observatory)), // 可选字段（观测日志），旧档缺省
     };
     localStorage.setItem(KEY, JSON.stringify(data));
   } catch { /* 隐私模式等环境下静默失败，不影响游戏 */ }
@@ -73,6 +76,7 @@ export function loadGame() {
     G.answered = new Set(d.answered || []);
     G.qAnswered = new Set(d.qAnswered || []);
     G.runeRolls = d.runeRolls || {};
+    G.observatory = sanitizeObservationLog(d.observatory);
     // 逐章恢复进度（缺省字段按初始值补齐）
     for (const ch of CHAPTERS) {
       const saved = d.progress && d.progress[ch.id];

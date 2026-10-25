@@ -352,9 +352,10 @@ export class WorldMap {
   open() {
     if (this.isOpen) return;
     const s = this.scene;
-    // 答题 / 对话 / 转场 / 濒死期间不打开
+    // 答题 / 对话 / 观测台 / 转场 / 濒死期间不打开
     if (s.quiz && s.quiz.isOpen) return;
     if (s.dialogue && s.dialogue.isOpen) return;
+    if (s.observatory && s.observatory.isOpen) return;
     if (s.transitioning) return;
     if (s.player && s.player.dying) return;
 

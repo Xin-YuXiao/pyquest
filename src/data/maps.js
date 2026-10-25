@@ -358,6 +358,26 @@ function scatterSlots(rand, w, h, count, margin, forbidden, keepOut = []) {
   return spots;
 }
 
+// 观测台（章节可选小游戏，ch.observatory 登记）选址：确定性、不消耗随机数——
+// 不扰动既有符文 / 史莱姆 / 装饰布局（它们都由同一个 lcg 序列依次生成）。
+// 候选格按到锚点（十字路口东南、与引导石碑对称）的距离排序，取第一个合法格：
+// 3×3 范围内无树 / 水 / 门口等禁区，且与 avoid 列表各点的切比雪夫距离 > r
+function placeObservatory(w, h, anchor, forbidden, avoid) {
+  const cands = [];
+  for (let ty = 3; ty <= h - 4; ty++) {
+    for (let tx = 3; tx <= w - 4; tx++) {
+      cands.push({ tx, ty, d: Math.hypot(tx - anchor.tx, ty - anchor.ty) });
+    }
+  }
+  cands.sort((a, b) => a.d - b.d || a.ty - b.ty || a.tx - b.tx);
+  return cands.find(({ tx, ty }) => {
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) if (forbidden.has(`${tx + dx},${ty + dy}`)) return false;
+    }
+    return avoid.every((a) => Math.max(Math.abs(a.tx - tx), Math.abs(a.ty - ty)) > a.r);
+  }) || null;
+}
+
 export function buildField(ch) {
   const th = ch.theme || {};
   const w = th.w || 34, h = th.h || 26;
@@ -456,6 +476,25 @@ export function buildField(ch) {
   if (ch.nextKey) keepOut.push({ tx: w - 2, ty: midY, r: 3 }); // 去下一章传送门
   const slimeSpots = scatterSlots(rand, w, h, th.slimes ?? 4, 4, forbidden, keepOut);
 
+  // 观测台：离符文 ≥ 4 格（交互半径互不重叠）、离石碑 / 巢穴门 ≥ 4 格、
+  // 避开出生点与传送门禁入区；选中后 3×3 记为禁区（地牢水晶不压上来）
+  let observatory = null;
+  if (ch.observatory) {
+    const avoid = [
+      ...[...shardSpots, ...healSpots].map((s) => ({ tx: s.tx, ty: s.ty, r: 3 })),
+      ...slimeSpots.map((s) => ({ tx: s.tx, ty: s.ty, r: 2 })),
+      { tx: cx - 3, ty: midY + 3, r: 3 }, // 引导石碑
+      { tx: cx, ty: 1, r: 3 },            // 巢穴封印门
+      ...keepOut,
+    ];
+    if (dungeonStyle) [[3, 3], [w - 4, 3], [3, h - 4], [w - 4, h - 4], [cx, 3]].forEach(([tx, ty]) => avoid.push({ tx, ty, r: 1 }));
+    const spot = placeObservatory(w, h, { tx: cx + 4, ty: midY + 3 }, forbidden, avoid);
+    if (spot) {
+      observatory = spot;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) blockTile(spot.tx + dx, spot.ty + dy);
+    }
+  }
+
   const props = [];
   // 引导石碑（十字路口旁）
   props.push({ type: 'npc', x: pc(cx - 3), y: pc(midY + 3), id: ch.npcKind, tex: 'tablet' });
@@ -463,6 +502,8 @@ export function buildField(ch) {
   shardSpots.forEach((s, i) => props.push({ type: 'rune', x: pc(s.tx), y: pc(s.ty), qid: `c${ch.id}s${i + 1}` }));
   // 祝福符文
   healSpots.forEach((s, i) => props.push({ type: 'rune', x: pc(s.tx), y: pc(s.ty), qid: `c${ch.id}h${i + 1}`, healRune: true }));
+  // 观测台（可选小游戏，不产碎片、不影响封印门）
+  if (observatory) props.push({ type: 'observatory', kind: ch.observatory, x: pc(observatory.tx), y: pc(observatory.ty) });
   // 通往巢穴的封印门（北）
   const lairDoorX = pc(cx + 0.5);
   props.push({ type: 'doorlink', x: lairDoorX, y: px(1.4), to: ch.lairKey, spawn: 'fromField',
@@ -475,6 +516,7 @@ export function buildField(ch) {
   if (!dungeonStyle) {
     for (let i = 0; i < 8; i++) {
       const tx = 2 + Math.floor(rand() * (w - 4)), ty = 2 + Math.floor(rand() * (h - 4));
+      if (observatory && Math.abs(tx - observatory.tx) <= 1 && Math.abs(ty - observatory.ty) <= 1) continue;
       props.push({ type: 'bush', x: pc(tx), y: pc(ty) + 24 });
     }
     trees.forEach((t) => props.push({ type: 'tree', x: pc(t.tx), y: pc(t.ty) }));

@@ -1,0 +1,126 @@
+/* ============================================================
+   观测站面板（ui/ObservatoryOverlay.js）
+   挂在 #ui-scale 设计坐标系（960×640）里，与答题面板同一套羊皮纸 token：
+   --panel / --panel-border / --ink / --gold / --teal / --font-kai
+   ============================================================ */
+.obs-backdrop {
+  position: absolute; inset: 0;
+  background: rgba(20, 14, 30, .58);
+  display: none;
+  align-items: center; justify-content: center;
+}
+.obs-backdrop.show { display: flex; }
+
+.obs-panel {
+  width: 640px; max-height: 620px; overflow-y: auto;
+  background: var(--panel);
+  border: 3px solid var(--panel-border);
+  border-radius: 16px;
+  box-shadow: 0 8px 0 rgba(0,0,0,.3);
+  padding: 10px 16px 8px;
+  color: var(--ink);
+  animation: obsPop .18s ease-out;
+  outline: none;
+}
+@keyframes obsPop { from { transform: scale(.94); opacity: 0; } }
+.obs-panel.solved { border-color: var(--gold); box-shadow: 0 8px 0 rgba(0,0,0,.3), 0 0 0 4px rgba(255,210,87,.35); }
+
+.obs-head { display: flex; align-items: center; gap: 10px; }
+.obs-badge {
+  display: inline-block; background: var(--gold); color: #5a3d07;
+  font-size: var(--fs-caption); border-radius: 8px; padding: 2px 10px;
+}
+.obs-title { margin: 0; font-size: var(--fs-display); letter-spacing: 1px; }
+.obs-blurb {
+  margin: 6px 0 6px; font-family: var(--font-kai);
+  font-size: var(--fs-body); line-height: 1.5;
+}
+
+/* ---------- 图 ---------- */
+.obs-plot {
+  display: block; width: 100%; height: auto;
+  background: #2f2a3d; border-radius: 10px;
+  font-family: "JetBrains Mono", Consolas, monospace; font-size: 11px;
+}
+.obs-plot + .obs-plot { margin-top: 6px; }
+.obs-gridlines line { stroke: rgba(232,227,245,.14); stroke-width: 1; }
+.obs-gridlines text { fill: rgba(232,227,245,.6); }
+.obs-axis { fill: rgba(232,227,245,.75); font-size: 11px; }
+
+.obs-points line { stroke: #ffd257; stroke-width: 1.5; opacity: .75; }
+.obs-points circle { fill: #ffd257; stroke: #5a3d07; stroke-width: 1; }
+.obs-model { fill: none; stroke: #8fd6ff; stroke-width: 2.6; }
+.obs-truth { fill: none; stroke: #b5e48c; stroke-width: 2; stroke-dasharray: 6 5; opacity: 0; }
+.obs-truth.show { opacity: 1; }
+.obs-rs-line { stroke: #ffd257; stroke-width: 1.2; stroke-dasharray: 3 4; opacity: 0; }
+.obs-rs-dot { fill: none; stroke: #ffd257; stroke-width: 2.4; opacity: 0; }
+.obs-slope3 { fill: none; stroke: #ff9db8; stroke-width: 2; stroke-dasharray: 5 4; opacity: 0; }
+.obs-rs-line.show, .obs-rs-dot.show, .obs-slope3.show { opacity: 1; }
+
+.obs-fog { fill: rgba(232,227,245,.06); stroke: rgba(232,227,245,.12); stroke-dasharray: 4 4; }
+.obs-bars rect { fill: #8fd6ff; opacity: .85; }
+.obs-marks circle { fill: none; stroke: #ffd257; stroke-width: 2.4; }
+.obs-marks text { fill: #ffd257; font-size: 12px; font-weight: bold; }
+.obs-needle { stroke: #ff9db8; stroke-width: 2; }
+.obs-dwell { fill: #ffd257; }
+.obs-zero { stroke: rgba(232,227,245,.18); }
+.obs-signal { fill: none; stroke: #e8e3f5; stroke-width: 1.4; }
+.obs-probe { fill: none; stroke: #3ddad7; stroke-width: 1.4; stroke-dasharray: 4 3; opacity: .85; }
+
+/* ---------- 读数 / 滑块 ---------- */
+.obs-readout {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  margin: 8px 2px 4px; font-size: var(--fs-body);
+}
+.obs-readout b { font-family: "JetBrains Mono", Consolas, monospace; }
+.obs-grade[data-grade="good"] { color: #2e7d32; }
+.obs-grade[data-grade="close"] { color: #b26a00; }
+.obs-grade[data-grade="far"] { color: #c62828; }
+.obs-meter {
+  position: relative; flex: 1; min-width: 120px; height: 10px;
+  background: #eadbbd; border: 2px solid #d8c193; border-radius: 6px; overflow: hidden;
+}
+.obs-meter i { position: absolute; left: 0; top: 0; bottom: 0; background: #c62828; transition: width .12s; }
+.obs-meter i[data-grade="close"] { background: #e8a33a; }
+.obs-meter i[data-grade="good"] { background: var(--green); }
+.obs-meter em { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--ink); }
+
+.obs-sliders { display: flex; flex-direction: column; gap: 4px; }
+.obs-slider {
+  display: grid; grid-template-columns: 34px 1fr 130px; align-items: center; gap: 10px;
+  padding: 3px 8px; border: 2px solid transparent; border-radius: 10px; cursor: pointer;
+}
+.obs-slider.active { border-color: var(--teal); background: #e7fbfa; }
+.obs-slider-name { font-weight: bold; font-size: var(--fs-body-lg); text-align: center; }
+.obs-slider input { width: 100%; accent-color: var(--panel-border); }
+.obs-slider output { font-family: "JetBrains Mono", Consolas, monospace; font-size: var(--fs-body); }
+
+.obs-hint {
+  margin: 6px 0 0; padding: 6px 10px; border-radius: 8px;
+  background: #fff3c4; border: 1px dashed #d99a28;
+  font-family: var(--font-kai); font-size: var(--fs-body);
+}
+.obs-peaks { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+.obs-peaks li {
+  font-size: var(--fs-body); padding: 3px 10px; border-radius: 8px;
+  background: #fff3c4; border-left: 4px solid var(--gold);
+}
+
+/* ---------- 状态 / 页脚 ---------- */
+.obs-status {
+  min-height: 22px; margin: 8px 2px 4px;
+  font-family: var(--font-kai); font-size: var(--fs-body);
+}
+.obs-status.ok { color: #2e7d32; font-weight: bold; }
+.obs-status.near { color: #b26a00; }
+.obs-status.far, .obs-status.close { color: #6b5a4a; }
+.obs-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.obs-keys { font-size: var(--fs-caption); color: #6b5a4a; }
+.obs-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.obs-actions .btn { white-space: nowrap; font-size: var(--fs-body); padding: 6px 16px; }
+.obs-actions .btn.on { background: #fff3c4; border-color: #d99a28; }
+
+@media (prefers-reduced-motion: reduce) {
+  .obs-panel { animation: none; }
+  .obs-meter i { transition: none; }
+}
