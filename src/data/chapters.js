@@ -167,6 +167,7 @@ export const CHAPTERS = [
     },
     npcKind: 'tablet', npcName: '科学石碑',
     pools: { shard: 'w3shard', heal: 'w3heal', lair: 'w3heal', boss: 'w3boss' },
+    observatory: 'montecarlo', // 野外观测台：蒙特卡洛估 π（core/stations.js）
     theme: {
       palette: 'grass', seed: 20260301, w: 34, h: 26,
       healRunes: 2, slimeVariant: 'red', slimes: 5,
@@ -260,6 +261,7 @@ export const CHAPTERS = [
     },
     npcKind: 'tablet', npcName: '熔炉石碑',
     pools: { shard: 'w5shard', heal: 'w5lair', lair: 'w5lair', boss: 'w5boss' },
+    observatory: 'scheduler',  // 野外观测台：并行搬砖（core/stations.js）
     theme: {
       palette: 'dungeon', seed: 20260501, w: 30, h: 24,
       healRunes: 2, slimeVariant: 'crimson', slimes: 4,
@@ -302,6 +304,7 @@ export const CHAPTERS = [
     },
     npcKind: 'tablet', npcName: '神殿石碑',
     pools: { shard: 'w6shard', heal: 'w6lair', lair: 'w6lair', boss: 'w6boss' },
+    observatory: 'gravity',    // 野外观测台：引力沙盒（core/stations.js）
     theme: {
       palette: 'dungeon', seed: 20260601, w: 30, h: 24,
       healRunes: 2, slimeVariant: 'crimson', slimes: 4,
@@ -431,6 +434,7 @@ export const CHAPTERS = [
     },
     npcKind: 'tablet', npcName: '统计石碑',
     pools: { shard: 'w9shard', heal: 'w9lair', lair: 'w9lair', boss: 'w9boss' },
+    observatory: 'bayes',      // 野外观测台：贝叶斯硬币（core/stations.js）
     theme: {
       palette: 'grass', seed: 20260901, w: 32, h: 24,
       healRunes: 2, slimeVariant: 'crimson', slimes: 4,
@@ -516,6 +520,7 @@ export const CHAPTERS = [
     },
     npcKind: 'tablet', npcName: '试炼石碑',
     pools: { shard: 'w11shard', heal: 'w11lair', lair: 'w11lair', boss: 'w11boss' },
+    observatory: 'galaxy',     // 野外观测台：星系分类台（core/stations.js）
     final: true,
     theme: {
       palette: 'dungeon', seed: 20261101, w: 32, h: 24,

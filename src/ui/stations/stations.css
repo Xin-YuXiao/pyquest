@@ -1,0 +1,99 @@
+/* ============================================================
+   第二批观测台（ui/stations/*.js）：沿用观测站面板（observatory.css）的羊皮纸 token，
+   这里只补各台专属的图形与按钮样式
+   ============================================================ */
+.st-row { display: flex; gap: 8px; align-items: stretch; }
+.st-row > * { min-width: 0; }
+.st-actions { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 2px; }
+.st-actions[hidden] { display: none; }   /* display:flex 会盖过 hidden 属性 */
+.st-actions .btn { font-size: var(--fs-body); padding: 5px 12px; white-space: nowrap; }
+.st-actions .btn.on, .st-actions .btn[aria-pressed="true"] { background: #fff3c4; border-color: #d99a28; }
+.st-actions .btn:disabled { opacity: .45; cursor: not-allowed; }
+.st-actions kbd { font-size: 11px; margin-left: 2px; }
+
+/* ---------- 蒙特卡洛估 π ---------- */
+.st-mc-canvas { width: 248px; height: 248px; border-radius: 10px; flex: none; image-rendering: pixelated; }
+.st-mc-plot { flex: 1; }
+.st-mc-sigma { fill: none; stroke: #ff9db8; stroke-width: 1.6; stroke-dasharray: 5 4; }
+.st-mc-tol { stroke: #b5e48c; stroke-width: 1.2; stroke-dasharray: 3 3; }
+.st-mc-err { fill: none; stroke: #8fd6ff; stroke-width: 2; }
+
+/* ---------- 并行搬砖 ---------- */
+.st-sc-tasks { display: flex; flex-wrap: wrap; gap: 4px; margin: 2px 0 6px; }
+.st-sc-task {
+  font: inherit; font-size: var(--fs-caption); padding: 3px 8px; border-radius: 8px; cursor: pointer;
+  background: #eadbbd; border: 2px solid #d8c193; color: var(--ink);
+}
+.st-sc-task.done { color: #2f2a3d; border-color: rgba(47,42,61,.25); }
+.st-sc-task.sel { outline: 3px solid var(--teal); outline-offset: 1px; }
+.st-sc-lane { fill: rgba(232,227,245,.05); stroke: rgba(232,227,245,.14); cursor: pointer; }
+.st-sc-lane:hover { fill: rgba(61,218,215,.12); }
+.st-sc-rank { fill: rgba(232,227,245,.8); font-size: 12px; }
+.st-sc-block { stroke: #2f2a3d; stroke-width: 1; cursor: pointer; }
+.st-sc-block.sel { stroke: #fff; stroke-width: 2.5; }
+.st-sc-label { fill: #2f2a3d; font-size: 10px; font-weight: bold; pointer-events: none; }
+.st-sc-opt { stroke: #b5e48c; stroke-width: 2; stroke-dasharray: 5 4; }
+.st-sc-goal { stroke: #ffd257; stroke-width: 1.5; stroke-dasharray: 2 3; }
+.st-sc-span { stroke: #ff6b81; stroke-width: 2.5; }
+.st-legend { display: flex; gap: 14px; font-size: var(--fs-caption); color: #6b5a4a; margin: -2px 2px 2px; }
+.st-legend i { display: inline-block; width: 18px; height: 0; margin-right: 4px; vertical-align: middle; border-top: 3px solid; }
+.st-legend i.lg-opt { border-color: #7cb342; border-top-style: dashed; }
+.st-legend i.lg-goal { border-color: #d99a28; border-top-style: dotted; }
+.st-legend i.lg-span { border-color: #ff6b81; }
+
+/* ---------- 引力沙盒 ---------- */
+.st-gr-canvas { width: 280px; height: 280px; border-radius: 10px; flex: none; touch-action: none; cursor: crosshair; }
+.st-gr-side { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.st-gr-readout { margin: 2px; gap: 4px 12px; font-size: var(--fs-caption); }
+.st-gr-eline { fill: none; stroke: #ffd257; stroke-width: 1.8; }
+.st-gr-side .st-actions { flex-wrap: nowrap; gap: 4px; }
+.st-gr-side .st-actions .btn { padding: 4px 8px; }
+.st-gr-sliders { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 8px; margin-top: 4px; }
+.st-gr-sliders .obs-slider { grid-template-columns: 30px 1fr 86px; gap: 6px; padding: 2px 6px; }
+
+/* ---------- 贝叶斯硬币 ---------- */
+.st-by-band { fill: rgba(255,210,87,.16); }
+.st-by-fair { stroke: rgba(232,227,245,.55); stroke-width: 1.5; stroke-dasharray: 3 4; }
+.st-by-prior { fill: none; stroke: #c9bfe0; stroke-width: 1.6; stroke-dasharray: 6 5; }
+.st-by-like { fill: none; stroke: #3ddad7; stroke-width: 1.6; stroke-dasharray: 2 3; }
+.st-by-post { fill: none; stroke: #ffd257; stroke-width: 2.6; }
+.st-by-truth { stroke: #ff6b81; stroke-width: 2.5; }
+.st-by-w[data-ok="true"] { color: #2e7d32; }
+.st-by-flips {
+  margin: 2px 2px 4px; font-family: "JetBrains Mono", Consolas, monospace; font-size: 12px;
+  color: #6b5a4a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.st-legend i.lg-prior { border-color: #9b8fc0; border-top-style: dashed; }
+.st-legend i.lg-like { border-color: #26a8a5; border-top-style: dotted; }
+.st-legend i.lg-post { border-color: #d9a400; }
+.st-legend i.lg-band { height: 10px; border: 0; background: rgba(217,164,0,.3); }
+.st-legend i.lg-fair { border-color: #8a7f99; border-top-style: dashed; width: 10px; }
+
+/* ---------- 星系分类台 ---------- */
+.st-gx-big { width: 220px; height: 220px; border-radius: 10px; flex: none; }
+.st-gx-side { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.st-gx-progress { font-weight: bold; font-size: var(--fs-body-lg); }
+.st-gx-side .btn.primary { align-self: flex-start; margin-top: 6px; }
+.st-gx-shelf { display: flex; gap: 6px; margin-bottom: 4px; }
+.st-gx-shelf figure { margin: 0; text-align: center; font-size: var(--fs-caption); color: #6b5a4a; }
+.st-gx-shelf canvas { width: 64px; height: 64px; border-radius: 8px; display: block; }
+.st-gx-res { gap: 14px; align-items: flex-start; margin-top: 4px; }
+.st-gx-recall { flex: 1; font-size: var(--fs-body); }
+.st-gx-recall-title { font-weight: bold; margin-bottom: 4px; }
+.st-gx-recall ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.st-gx-recall li { display: grid; grid-template-columns: 52px 1fr 44px; align-items: center; gap: 6px; }
+.st-gx-recall li i { display: block; height: 10px; border-radius: 5px; background: var(--teal); min-width: 2px; }
+.st-gx-recall li b { font-family: "JetBrains Mono", Consolas, monospace; text-align: right; }
+.st-gx-base { margin-top: 6px; font-size: var(--fs-caption); color: #6b5a4a; }
+
+/* ---------- 混淆矩阵（星系分类台） ---------- */
+.st-matrix { border-collapse: collapse; font-size: var(--fs-body); }
+.st-matrix caption { text-align: left; font-weight: bold; padding-bottom: 2px; }
+.st-matrix th, .st-matrix td { border: 1px solid #d8c193; padding: 2px 8px; text-align: center; }
+.st-matrix th.corner { font-size: var(--fs-caption); font-weight: normal; color: #6b5a4a; }
+.st-matrix td.diag { background: #d7f3d0; font-weight: bold; }
+.st-matrix td.off { background: #ffe0e0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .st-actions .btn { transition: none; }
+}

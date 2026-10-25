@@ -14,6 +14,7 @@
 // 12) 验证试炼塔：解锁与题源、选题优先级（错题 → 久未见 → 随机）、楼层规划与推进、
 //     楼层布局合法、塔内作答入学习记录、战绩累计与存档（主线爱心隔离）
 // 13) 验证 Project 秘境：注册表（六步 / 题目都在题库 / 槽位不撞主线）、地图合法、按序解锁规则、存档往返、章节数不变
+// 14) 验证第二批观测站的纯数学：蒙特卡洛 π / 并行搬砖 / 引力沙盒 / 贝叶斯硬币 / 星系分类（对齐题库）
 import { readFileSync } from 'node:fs';
 import { generateAllTextures } from '../src/textures/pixelArt.js';
 import { makeGroundTexture } from '../src/textures/ground.js';
@@ -54,6 +55,7 @@ import {
   realmState, stepState, solveRealmStep, sealRealm, badgeCount, realmBossShielded, sanitizeRealms, realmHud,
 } from '../src/core/realms.js';
 import { buildVillage } from '../src/data/maps.js';
+import * as ST from '../src/core/stations.js';
 
 let errors = 0;
 const fail = (msg) => { errors++; console.error('  ✗', msg); };
@@ -390,7 +392,8 @@ try {
     placed++;
   }
   if (placed !== Object.keys(OBSERVATORIES).length) fail(`观测台应有 ${Object.keys(OBSERVATORIES).length} 座，实际 ${placed}`);
-  ok(`观测台选址：${placed} 座（第七章 / 第八章），离符文 / 石碑 / 门 ≥ 4 格，避开出生点与传送门`);
+  const where = CHAPTERS.filter((c) => c.observatory).map((c) => c.title.split(' · ')[0]).join(' / ');
+  ok(`观测台选址：${placed} 座（${where}），离符文 / 石碑 / 门 ≥ 4 格，避开出生点与传送门`);
 
   // 6d. 观测日志：合并完成记录 + 读档清洗（坏数据丢弃、不抛错）
   const rec1 = recordObservation(undefined, { seconds: 30, chi2dof: 1.1 }, 1000);
@@ -442,7 +445,7 @@ try {
     }
     for (const p of def.props) {
       const d = cheb(t, tileOf(p));
-      if (['rune', 'npc', 'door', 'doorlink', 'gate'].includes(p.type) && d < R.interact) fail(`${label} 离 ${p.type}${p.qid ? ' ' + p.qid : ''} 只有 ${d} 格`);
+      if (['rune', 'npc', 'door', 'doorlink', 'gate', 'observatory'].includes(p.type) && d < R.interact) fail(`${label} 离 ${p.type}${p.qid ? ' ' + p.qid : ''} 只有 ${d} 格`);
       if (['tree', 'crystal', 'torch'].includes(p.type) && d < R.solid) fail(`${label} 离 ${p.type} 只有 ${d} 格`);
     }
     for (const s of Object.values(def.spawns)) if (cheb(t, tileOf(s)) < R.spawn) fail(`${label} 离出生点太近`);
@@ -1051,6 +1054,113 @@ try {
   ok('存档：realms 字段往返、坏数据清洗、旧档缺字段为空；不碰主线槽位映射');
 } catch (e) { fail(`Project 秘境校验异常: ${e.message}`); }
 resetState();
+// ---- 14. 第二批观测站（纯数学层；面板在 ui/stations/） ----
+console.log('[14] 第二批观测站');
+try {
+  // 14a. 蒙特卡洛估 π：π̂ = 4M/N（mp5）；1σ = 4√(p(1−p)/N)（st14）；每次挑战都能在上限内估成
+  if (ST.piEstimate(7850, 10000) !== 3.14) fail('蒙特卡洛：mp5 的 4 × 7850 / 10000 应为 3.14');
+  if (Math.abs(ST.mcSigma(400) / ST.mcSigma(100) - 0.5) > 1e-12) fail('蒙特卡洛：点数 ×4，1σ 应减半（1/√N）');
+  const solvedAt = [];
+  for (let a = 0; a < 6; a++) {
+    const m = ST.makeMonteCarlo(a);
+    while (m.state.solvedAt == null && m.state.n < ST.MC.maxN) m.throw(1000);
+    const m2 = ST.makeMonteCarlo(a);
+    while (m2.state.solvedAt == null && m2.state.n < ST.MC.maxN) m2.throw(10);
+    if (m.state.solvedAt == null) fail(`蒙特卡洛第 ${a} 次：撒满 ${ST.MC.maxN} 点仍未估成`);
+    if (m.state.solvedAt !== m2.state.solvedAt) fail(`蒙特卡洛第 ${a} 次：成功点与一次撒几颗有关（${m.state.solvedAt} vs ${m2.state.solvedAt}）`);
+    if (m.state.solvedAt < ST.MC.minN) fail(`蒙特卡洛第 ${a} 次：不足 ${ST.MC.minN} 点就判成功`);
+    solvedAt.push(m.state.solvedAt);
+  }
+  ok(`蒙特卡洛估 π：4M/N 与 1/√N 口径对齐题库；6 次挑战分别在 N = ${solvedAt.join(' / ')} 估成（与撒点批量无关）`);
+
+  // 14b. 并行搬砖：轮转 = range(rank, nruns, size)（sp7：任务 7 归 rank 3）；最优 = Σ/4 恰好可达；
+  //      每次挑战都是「轮转明显不均、贪心够用」，学生先看到问题再找到办法
+  const rr15 = ST.roundRobin(Array.from({ length: 15 }, (_, i) => ({ id: i, cost: 1 })));
+  if (rr15[7] !== 3) fail(`并行搬砖：range(rank, 15, 4) 下任务 7 应归 rank 3（sp7），实际 ${rr15[7]}`);
+  const spans = [];
+  for (let a = 0; a < 6; a++) {
+    const { tasks, optimal, serial } = ST.makeTasks(a);
+    const sum = tasks.reduce((s, t) => s + t.cost, 0);
+    if (tasks.length !== ST.SCHED.workers * ST.SCHED.perWorker) fail(`并行搬砖第 ${a} 次：任务数 ${tasks.length}`);
+    if (sum !== serial || optimal !== sum / ST.SCHED.workers) fail(`并行搬砖第 ${a} 次：最优应为 Σ/4（Σ = ${sum}）`);
+    if (JSON.stringify(ST.makeTasks(a)) !== JSON.stringify({ tasks, optimal, serial })) fail(`并行搬砖第 ${a} 次：任务集不确定`);
+    const rr = ST.makespan(tasks, ST.roundRobin(tasks));
+    const lpt = ST.makespan(tasks, ST.greedyLPT(tasks));
+    if (rr <= optimal * ST.SCHED.tolerance) fail(`并行搬砖第 ${a} 次：轮转就过关了（${rr}），体会不到负载不均`);
+    if (lpt > optimal * ST.SCHED.tolerance) fail(`并行搬砖第 ${a} 次：贪心也过不了关（${lpt} > ${optimal * ST.SCHED.tolerance}）`);
+    spans.push(`${rr}→${lpt}`);
+  }
+  ok(`并行搬砖：轮转 = range(rank, nruns, size)（sp7）；6 次挑战最优 = Σ/4 = ${ST.SCHED.load}s，轮转→贪心总耗时 ${spans.join(' / ')}`);
+
+  // 14c. 引力沙盒：nm20 的 g(0) = 1/ε² = 4.0、g(1) = 0.8（ε = 0.5）；势能与力律配对（dΦ/dr = g，
+  //      否则能量曲线假漂移）；圆轨道能量守恒；开局速度先体验逃逸；ε = 0 近心掠过被数值误差甩飞、ε = 0.1 保住
+  if (Math.abs(ST.softAccel(0, 0.5) - 4) > 1e-12 || Math.abs(ST.softAccel(1, 0.5) - 0.8) > 1e-12) fail('引力沙盒：nm20 的 g(0) / g(1) 应为 4.0 / 0.8');
+  for (const eps of [0, 0.05, 0.1, 0.3]) {
+    for (const r of [0.05, 0.3, 1, 2.5]) {
+      const h = 1e-6;
+      const dPhi = (ST.softPotential(r + h, eps) - ST.softPotential(r - h, eps)) / (2 * h);
+      if (Math.abs(dPhi - ST.softAccel(r, eps)) > 1e-5 * Math.max(1, ST.softAccel(r, eps))) fail(`引力沙盒：ε=${eps}、r=${r} 处 dΦ/dr ≠ g（势能与力律不配对）`);
+    }
+  }
+  const circ = ST.simulateOrbit({ speed: ST.circularSpeed(1, ST.GRAV.eps.start), angle: 90, eps: ST.GRAV.eps.start, dt: ST.GRAV.dt.start });
+  if (circ.status !== 'won' || circ.maxDrift > 1e-6) fail(`引力沙盒：圆轨道应绕满 3 圈且能量守恒（${circ.status}，误差 ${circ.maxDrift}）`);
+  const opening = ST.simulateOrbit({ speed: ST.GRAV.speed.start, angle: ST.GRAV.angle.start, eps: ST.GRAV.eps.start, dt: ST.GRAV.dt.start });
+  if (opening.status !== 'escaped') fail(`引力沙盒：开局速度 ${ST.GRAV.speed.start} 应先体验逃逸（实际 ${opening.status}）`);
+  const raw = ST.simulateOrbit({ ...ST.PLUNGE, eps: 0 });
+  const soft = ST.simulateOrbit({ ...ST.PLUNGE, eps: 0.1 });
+  if (raw.status !== 'escaped' || raw.maxDrift < 1) fail(`引力沙盒：ε = 0 的近心掠过应被数值误差甩飞（${raw.status}，误差 ${raw.maxDrift.toFixed(2)}）`);
+  if (soft.status !== 'won' || soft.maxDrift > 0.3) fail(`引力沙盒：ε = 0.1 的近心掠过应保住轨道（${soft.status}，误差 ${soft.maxDrift.toFixed(2)}）`);
+  ok(`引力沙盒：nm20 力律 g(0)=4.0 / g(1)=0.8，势能与力律配对；圆轨道能量误差 ${circ.maxDrift.toExponential(1)}；`
+    + `近心掠过 ε=0 被甩飞（误差 ${Math.round(raw.maxDrift * 100)}%）、ε=0.1 保住（${Math.round(soft.maxDrift * 100)}%）`);
+
+  // 14d. 贝叶斯硬币：st18 的 Beta(1,1) + 3 正 2 反 → Beta(4,3)、众数 0.6、均值 4/7；
+  //      95% 区间口径（Beta(1,1) → [0.025, 0.975]）；每枚硬币在区间窄到 0.2 时的结论与真值一致
+  const st18 = ST.posterior(ST.COIN.priors.flat, 3, 2);
+  if (st18.a !== 4 || st18.b !== 3 || ST.betaMode(4, 3) !== 0.6 || Math.abs(ST.betaMean(4, 3) - 4 / 7) > 1e-12) fail('贝叶斯硬币：st18 的 Beta(4,3)、众数 0.6、均值 4/7 不对');
+  const flatCI = ST.betaInterval(1, 1);
+  if (Math.abs(flatCI[0] - 0.025) > 1e-3 || Math.abs(flatCI[1] - 0.975) > 1e-3) fail(`贝叶斯硬币：Beta(1,1) 的 95% 区间应为 [0.025, 0.975]，实际 ${flatCI.map((v) => v.toFixed(4))}`);
+  const symCI = ST.betaInterval(50, 50);
+  if (Math.abs(symCI[0] + symCI[1] - 1) > 1e-3) fail('贝叶斯硬币：对称 Beta(50,50) 的区间应关于 0.5 对称');
+  const tosses = [];
+  for (const which of ['flat', 'informed']) {
+    for (let a = 0; a < ST.COIN.truths.length; a++) {
+      const c = ST.makeCoin(a);
+      let iv;
+      do {
+        c.flip(10);
+        const p = ST.posterior(ST.COIN.priors[which], c.state.heads, c.state.tails);
+        iv = ST.betaInterval(p.a, p.b);
+      } while (iv[1] - iv[0] >= ST.COIN.widthGoal && c.state.flips.length < 1000);
+      const truth = c.state.p === 0.5 ? 'fair' : 'biased';
+      if (ST.coinVerdict(iv) !== truth) fail(`贝叶斯硬币第 ${a} 枚（${which}）：区间 [${iv.map((v) => v.toFixed(3))}] 的结论与真值 p = ${c.state.p} 不符`);
+      if (which === 'flat') tosses.push(c.state.flips.length);
+    }
+  }
+  ok(`贝叶斯硬币：st18 的 Beta(4,3) 众数 0.6；95% 区间口径正确；6 枚硬币两种先验下结论都与真值一致（均匀先验各抛 ${tosses.join(' / ')} 次）`);
+
+  // 14e. 星系分类台：混淆矩阵 行=真实 列=预测（sg18）；类别比例（稀有类 6%，pj16）；训练 / 测试不重叠（pj7）；
+  //      「只用颜色、k=15」准确率高但稀有类召回 0（陷阱存在），「颜色 + 集中度、k=5」过关（有解）
+  const cm = ST.confusionMatrix(['spiral', 'spiral', 'irregular'], ['spiral', 'irregular', 'spiral']);
+  if (cm[0][0] !== 1 || cm[0][2] !== 1 || cm[2][0] !== 1) fail('星系分类台：混淆矩阵应为 行 = 真实、列 = 预测（sg18）');
+  const dumb = ST.classMetrics(ST.confusionMatrix([...Array(99).fill('spiral'), 'irregular'], Array(100).fill('spiral')));
+  if (dumb.acc !== 0.99 || dumb.recall.irregular !== 0) fail('星系分类台：pj16 的哑模型应为准确率 99%、稀有类召回 0');
+  const trap = [], solve = [];
+  for (let a = 0; a < 4; a++) {
+    const d = ST.makeGalaxyData(a);
+    const count = (set, cls) => set.filter((g) => g.cls === cls).length;
+    if (d.label.length !== ST.GALAXY.nLabel || count(d.test, 'irregular') !== Math.round(ST.GALAXY.nTest * ST.GALAXY.mix.irregular)) fail(`星系分类台第 ${a} 次：数据量或类别比例不对`);
+    if (d.train.some((g) => d.test.includes(g))) fail(`星系分类台第 ${a} 次：训练集与测试集重叠`);
+    if (JSON.stringify(ST.makeGalaxyData(a)) !== JSON.stringify(d)) fail(`星系分类台第 ${a} 次：数据不确定`);
+    const t = ST.evaluateClassifier(d, ['color'], 15);
+    const s = ST.evaluateClassifier(d, ['color', 'conc'], 5);
+    if (!(t.acc >= ST.GALAXY.pass.acc && t.rareRecall < ST.GALAXY.pass.rareRecall && !t.pass)) fail(`星系分类台第 ${a} 次：「颜色、k=15」应准确率高但稀有类认不出（${t.acc} / ${t.rareRecall}）`);
+    if (!s.pass) fail(`星系分类台第 ${a} 次：「颜色 + 集中度、k=5」应能过关（${s.acc} / ${s.rareRecall}）`);
+    trap.push(`${Math.round(t.acc * 100)}%/${Math.round(t.rareRecall * 100)}%`);
+    solve.push(`${Math.round(s.acc * 100)}%/${Math.round(s.rareRecall * 100)}%`);
+  }
+  ok(`星系分类台：混淆矩阵行 = 真实；训练 / 测试不重叠；陷阱「颜色、k=15」准确率/稀有召回 ${trap.join(' ')}，`
+    + `「颜色 + 集中度、k=5」${solve.join(' ')}`);
+} catch (e) { fail(`第二批观测站校验异常: ${e.message}`); }
 
 console.log(errors === 0 ? '\n全部通过 ✔' : `\n${errors} 个错误 ✘`);
 process.exit(errors === 0 ? 0 : 1);

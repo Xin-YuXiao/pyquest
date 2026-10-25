@@ -190,7 +190,7 @@ const TILE = 128;
 const tileOf = (p) => [Math.floor(p.x / TILE), Math.floor(p.y / TILE)];
 const cheb = (ax, ay, bx, by) => Math.max(Math.abs(ax - bx), Math.abs(ay - by));
 const isWater = (t) => t === T.WATER || t === T.WATER2;
-const INTERACT_TYPES = new Set(['rune', 'npc', 'door', 'doorlink', 'gate']);
+const INTERACT_TYPES = new Set(['rune', 'npc', 'door', 'doorlink', 'gate', 'observatory']);
 const SOLID_TYPES = new Set(['tree', 'crystal', 'torch']);
 
 /** 主路线瓦片：有土路就用土路；地牢风格野外没有土路，取生成器的十字中线 */

@@ -2,6 +2,8 @@
 // 观测站面板：野外「观测台」的可选小游戏覆盖层（纯 DOM，打开时暂停游戏世界）
 // - nfw    NFW 拟合台：log-log 数据点 + 模型曲线，ρ₀ / Rₛ 两个对数滑块，χ²/dof 实时反馈
 // - tuning 频率调谐台：时域波形 + 迷雾频谱，调谐滑块扫频，在尖峰上停留即锁定
+// - 第二批观测台（蒙特卡洛 / 并行搬砖 / 引力沙盒 / 贝叶斯硬币 / 星系分类）各自是 ui/stations/ 下的
+//   控制器（open / tick / key / snapshot / close），本面板只负责外壳、通用按键与完成回调
 // 数学全部在 core/observatory.js（纯函数，smoke 校验）；这里只管交互与绘制。
 // 键盘：↑/↓ 切换滑块 · ←/→ 微调（Shift 大步）· H 提示 · Esc 关闭 · Enter 完成后关闭。
 // Phaser 对方向键做了 preventDefault，range 原生键盘调节失效，所以由本面板自己接管。
@@ -14,6 +16,7 @@ import {
   makeTuningSignal, makeTuner, findPeaks, tuningGrid, readoutMagnitude, amplitudeOf,
 } from '../core/observatory.js';
 import { sfx } from '../audio/sfx.js';
+import { STATIONS } from './stations/index.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const LOG_R = [Math.log10(NFW.rMin), Math.log10(NFW.rMax)]; // x 轴（log r）
@@ -96,8 +99,10 @@ export class ObservatoryOverlay {
     this.statusEl.textContent = '';
     this.statusEl.className = 'obs-status';
 
+    this.ctrl = null;
     if (kind === 'nfw') this._openNfw();
-    else this._openTuning();
+    else if (kind === 'tuning') this._openTuning();
+    else this._openStation(kind);
 
     this.root.classList.add('show');
     sfx.talk();
@@ -110,6 +115,7 @@ export class ObservatoryOverlay {
     if (!this.isOpen) return;
     this.isOpen = false;
     cancelAnimationFrame(this._raf);
+    if (this.ctrl && this.ctrl.close) this.ctrl.close();
     this.root.classList.remove('show');
     this.scene.scene.resume();
     if (this._prevFocus && this._prevFocus.isConnected && this._prevFocus.focus) this._prevFocus.focus({ preventScroll: true });
@@ -134,6 +140,7 @@ export class ObservatoryOverlay {
         truth: { ...this.data.truth },
       };
     }
+    if (this.ctrl) base.station = this.ctrl.snapshot();
     if (this.kind === 'tuning' && this.peaks) {
       base.tuning = {
         f: this.f, locked: [...this.locked], peaks: this.peaks.map((p) => p.f), visited: this.visited.size,
@@ -151,6 +158,7 @@ export class ObservatoryOverlay {
     if (k === 'Enter' && this.solved) { e.preventDefault(); this.close(); return; }
     if (k === 'Tab') { e.preventDefault(); return; } // 面板内无需 Tab 巡航；也挡住世界地图
     if (k === 'h' || k === 'H') { e.preventDefault(); this.toggleHint(); return; }
+    if (this.ctrl) { if (this.ctrl.key(e)) e.preventDefault(); return; }
     if (k === 'ArrowUp' || k === 'ArrowDown') {
       e.preventDefault();
       if (this.kind === 'nfw') this._select(this.sel === 0 ? 1 : 0);
@@ -169,20 +177,22 @@ export class ObservatoryOverlay {
   }
 
   toggleHint() {
-    if (!this.isOpen) return;
+    if (!this.isOpen || this.hintBtn.hidden) return;
     this.hint = !this.hint;
     this.hintBtn.classList.toggle('on', this.hint);
     this.hintBtn.setAttribute('aria-pressed', String(this.hint));
     const h = this.root.querySelector('#obs-hint');
     if (h) h.hidden = !this.hint;
     if (this.kind === 'nfw') this._drawNfwModel();
+    if (this.ctrl && this.ctrl.onHint) this.ctrl.onHint(this.hint);
   }
 
   // ---------- 每帧：停留判定 ----------
 
   _tick(now) {
     if (!this.isOpen) return;
-    if (!this.solved) {
+    if (this.ctrl) this.ctrl.tick(now); // 控制器自己管完成后的动画（例如卫星继续绕行）
+    else if (!this.solved) {
       if (this.kind === 'nfw') this._tickNfw(now);
       else this._tickTuning(now);
     }
@@ -203,6 +213,19 @@ export class ObservatoryOverlay {
   _status(text, cls = '') {
     if (this.statusEl.textContent !== text) this.statusEl.textContent = text;
     this.statusEl.className = `obs-status ${cls}`.trim();
+  }
+
+  // ============================================================
+  // 第二批观测台：交给 ui/stations/ 的控制器
+  // ============================================================
+
+  _openStation(kind) {
+    this.ctrl = STATIONS[kind](this);
+    this.hintBtn.hidden = !this.ctrl.hasHint;
+    this.hintBtn.classList.remove('on');
+    this.hintBtn.setAttribute('aria-pressed', 'false');
+    this.root.querySelector('#obs-keys').innerHTML = this.ctrl.keys;
+    this.ctrl.open();
   }
 
   // ============================================================
