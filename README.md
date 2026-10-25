@@ -1,7 +1,9 @@
 # PyQuest · Python 冒险记 ⚔️
 
 一款**用塞尔达式动作冒险学习 Python 天文应用**的网页游戏。
-关卡体系对齐 **P4A@UCAS（Python for Astronomy）八周课程**：一周一章，从 Python 基础一路打到暗物质晕密度轮廓拟合。
+关卡体系对齐 **P4A@UCAS（Python for Astronomy）64 学时课程**：一周一章，分两部共十一章——
+第一部（W1-W8）从 Python 基础一路打到暗物质晕密度轮廓拟合，
+第二部（W9-W11）进入统计学基础、vibe coding 方法论与 project 毕业试炼。
 画风致敬《塞尔达传说：织梦岛》Switch 重制版 + 欧美 Q 版卡通：俯视角、大头小身比例、
 描边卡通渲染（帽子/羽毛/肩带/宝珠等层叠细节）、柔和粉彩配色、无像素马赛克的矢量渲染。
 **全部角色以 4 倍尺寸显示**，环境物件按 2.5 倍跟随缩放。
@@ -31,10 +33,10 @@ npm run preview    # 本地预览构建产物
 | 方向键 / WASD | 移动 |
 | J / 空格 | 挥剑攻击 |
 | E | 交互（符文石 / NPC / 石门） |
-| Tab | 世界地图（查看八章进度 / 快速传送已解锁章节） |
+| Tab | 世界地图（查看各章进度 / 快速传送已解锁章节） |
 | M | 静音开关 |
 
-## 🗺️ 游戏流程（八周课程 = 八章关卡）
+## 🗺️ 游戏流程（64 学时课程 = 两部十一章关卡）
 
 游戏由 `src/data/chapters.js` 注册表驱动：每章 = **野外**（碎片符文 + 引导 NPC + 封印门）+ **巢穴**（BOSS 符文破盾 + BOSS 战）。
 通关当前章后，野外的「前方传送门」开启，进入下一章；也可随时返回上一章补答符文。
@@ -49,9 +51,14 @@ npm run preview    # 本地预览构建产物
 | 第六章 · 数值方法神殿 | Week 6 | 数值神殿外庭 + 优化迷宫 / 优化牛头怪 | quad 积分、solve_ivp、curve_fit、brentq 求根、interp1d |
 | 第七章 · 信号圣殿 | Week 7 | 信号圣殿平原 + 频域回廊 / 傅里叶魅影 | eig 特征值、cov 协方差、FFT、卷积、sklearn fit/predict |
 | 第八章 · 深空晕环 | Week 8 | 深空晕环 + 暗物质核心 / NFW 幻龙 | NFW 轮廓、M₂₀₀、N-body 引力模拟、密度→质量积分 |
+| 第九章 · 统计圣所 | Part II · W9 | 圣所外庭 + 后验回廊 / 贝叶斯祭司 | 描述统计、泊松涨落、误差传播、中心极限、似然/χ²、贝叶斯先验/后验、p 值与置信区间、MCMC 收敛诊断 |
+| 第十章 · 灵思之塔 | Part II · W10 | 灵思之塔底层 + 验证回廊 / 幻言魔像 | vibe coding 流程、prompt 分解、幻觉识别、测试先行、小步迭代、回归检查 |
+| 第十一章 · 毕业试炼 | Part II · W11 | 毕业试炼场 + 三途之门 / 三途守门人 | 选题与文献、拟合/模拟/机器学习三类 project workflow、不确定度、泛化、科学报告 |
 
 > 第一、二章为手工地图（内容已按周次重对齐题池）；第三章为**通用生成器样板章**（完整可玩）；
 > 第四至八章为通用生成器关卡，题库已充实至**每章 20 题**（shard/lair/boss 三池式）。
+> 第二部第九至十一章同为通用生成器关卡、三池式题库（第九章 21 题，第十、十一章各 20 题），
+> 规划见 `docs/part2-plan.md`，出题提纲见 `docs/quiz-outline-w9.md` ~ `w11.md`。
 
 ### 单章流程
 
@@ -70,14 +77,15 @@ npm run preview    # 本地预览构建产物
 - 通关结算中的「重新开始」会清档重置。
 - 存档实现：`src/core/save.js`（任何 HUD 数据变化 / 关页 / 切后台时写档）。
 
-## 📖 知识点覆盖（190 题 · 25 个同难度题池 · 对齐 P4A@UCAS 课程）
+## 📖 知识点覆盖（251 题 · 34 个同难度题池 · 对齐 P4A@UCAS 课程）
 
 每块符文石从所属**同难度题池**随机抽题：同池题目 `tier` 一致，
 随机但不撞题（同池多块符文不重复、已答过的题不再出现），
 同一块符文石在答对之前始终是同一道题。
 
-W4-W8 为**三池式**：每章 `w{N}shard`（野外碎片 ×10 基础）/ `w{N}lair`（巢穴祝福 ×7 进阶）/
-`w{N}boss`（BOSS 破盾 ×3 综合）共 20 题，难度 `tier` 11-25 随章递进（W4=11-13 … W8=23-25）。
+W4-W11 为**三池式**：每章 `w{N}shard`（野外碎片 ×10 基础）/ `w{N}lair`（巢穴祝福 ×7 进阶）/
+`w{N}boss`（BOSS 破盾 ×3 综合）共 20 题，难度 `tier` 11-34 随章递进（W4=11-13 … W8=23-25，
+第二部顺延 W9=26-28 … W11=32-34）；`w9shard` 按 W9 提纲 grilling 决议为 11 题。
 
 | 题池 | 题量 | 知识点 |
 | --- | --- | --- |
@@ -106,18 +114,31 @@ W4-W8 为**三池式**：每章 `w{N}shard`（野外碎片 ×10 基础）/ `w{N}
 | w8shard（W8 深空 · 碎片） | 10 | NFW 轮廓定义与发现、N-body 引力、ρ(Rₛ)=ρ₀/4、外区 r⁻³ 衰减、M(r) 与 ρ 的积分关系、MCMC 要点、逆变换采样、corner 角图、ML→emcee 衔接 |
 | w8lair（W8 核心 · 祝福） | 7 | ρ(r) 拟合出 r_s/ρ₀、interp1d 反转 CDF、球面均匀采样 θ/ψ、log-log 拟合、-inf 清洗、自相关时间 τ 与 thin、密度 vs 累积质量两种拟合 |
 | w8boss（W8 NFW 幻龙） | 3 | NFW 密度积分→累积质量、M(<R_max) 积分公式、walkers 链 discard/thin 统计 |
+| w9shard（W9 外庭 · 碎片） | 11 | 偏态分布均值/中位数/众数、泊松 σ=√N、68-95-99.7、独立误差传播、中心极限定理、似然 vs 概率、χ²/dof、贝叶斯定理、p 值、频率派置信区间、先验选择 |
+| w9lair（W9 回廊 · 祝福） | 7 | 泊松涨落数值、误差传播 √(a²+b²)、标准误 σ/√N、`norm.ppf(0.975)`、χ²/dof 数值、16/84 分位 ≈ ±1σ、Beta 后验众数 |
+| w9boss（W9 贝叶斯祭司） | 3 | MCMC 收敛诊断与有效样本量、AIC 模型比较、5σ 发现门槛与 look-elsewhere 效应 |
+| w10shard（W10 塔底 · 碎片） | 10 | vibe coding 流程、具体 prompt 四要素、LLM「看起来对」≠ 对、API 幻觉、科研代码验证义务、小步迭代、测试先行、上下文给法、样板 vs 关键常数信任策略、人机分工 |
+| w10lair（W10 回廊 · 祝福） | 7 | 漏归一化系数、角度/弧度、linspace 边界 off-by-one、锚点测试用例、除零 inf 污染、`math` vs `np` 标量/数组、回归检查 |
+| w10boss（W10 幻言魔像） | 3 | vibe coding 五步排序、具体 prompt 改写、旧测试变红的正确处置 |
+| w11shard（W11 试炼场 · 碎片） | 10 | 可检验选题、文献调研起点、三类 project 数据来源与流程链（拟合/模拟/ML）、train/val/test、过拟合识别、结果 vs 结论、自选题来源 |
+| w11lair（W11 三途 · 祝福） | 7 | `√diag(pcov)` 误差棒、残差结构诊断、PSF 卷积、cutout 尺寸、`random_state` 可复现、类别不平衡指标、解析极限 sanity check |
+| w11boss（W11 三途守门人） | 3 | 密度/质量双轨交叉验证、透镜建模残差排查链、跨巡天泛化与分布泄漏 |
 
 ## 🏗️ 项目结构
 
 ```
 src/
-├── main.js                  # 游戏入口 + 调试句柄 window.__PYQUEST__（按注册表批量注册 16 个章节场景）
+├── main.js                  # 游戏入口：按注册表批量注册 22 个章节场景 + 挂载测试接缝 window.__PYQUEST__
 ├── core/state.js            # 全局状态：G.progress[章] 多章进度 + 传送门解锁条件解析
 ├── core/save.js             # localStorage 存档（v2 多章结构 + v1 自动迁移 + 自动存档）
+├── core/phase.js            # 章内阶段（新来/收集/集齐/门开/通关）：NPC 台词、HUD、世界地图的单一推断来源
+├── core/quiz.js             # 答题行为层：随机抽题 pickQuestion + Python 语法高亮
+├── core/seam.js             # 测试接缝：window.__PYQUEST__ 只读查询 + 语义动作（E2E 专用）
 ├── data/
-│   ├── chapters.js          # 八章注册表：周次/地图/对话/胜利文本/BOSS/题池配置（关卡数据核心）
-│   ├── maps.js              # 地图构建器：W1/W2 手工地图 + W3-W8 通用生成器（theme 驱动）
-│   └── quizData.js          # Python 题库（190 题 · 25 个同难度题池）+ 语法高亮
+│   ├── chapters.js          # 十一章注册表：周次/地图/对话/胜利文本/BOSS/题池配置（关卡数据核心）
+│   ├── maps.js              # 地图构建器：W1/W2 手工地图 + W3-W11 通用生成器（theme 驱动）
+│   ├── quizBank.js          # Python 题库（251 题 · 34 个同难度题池）+ 槽位映射（题面权威源，ADR-0001）
+│   └── quizData.js          # 兼容 re-export 枢纽（旧 import 路径，新代码直接用 quizBank / core/quiz）
 ├── assets/ts.js             # Tiny Swords 素材清单/加载/动画（素材本体在 assets/TinySwordsFreePack/，未入库）
 ├── textures/pixelArt.js     # 程序化补充贴图（代码碎片/爱心/传送门/石门等）
 ├── textures/ground.js       # 整图地面画布（草地 → 水/土路 → 岸沫分层绘制）
@@ -125,16 +146,18 @@ src/
 ├── entities/
 │   ├── Player.js            # 玩家：移动/挥剑/受击/死亡（回本章野外重生）
 │   ├── Slime.js             # 史莱姆 AI：游荡/追击/掉落（red / crimson 变体）
-│   ├── BossSlime.js         # BOSS 之一：护盾/召唤帮手（W1/W3/W5/W7 章）
-│   └── BossSnake.js         # BOSS 之二：体节跟随/断尾/突咬（W2/W4/W6/W8 章）
+│   ├── BossSlime.js         # BOSS 之一：护盾/召唤帮手（W1/W3/W5/W7/W9/W11 章）
+│   └── BossSnake.js         # BOSS 之二：体节跟随/断尾/突咬（W2/W4/W6/W8/W10 章）
 └── scenes/
     ├── BootScene.js         # 生成贴图动画 + 标题画面（继续冒险按最新章节落点）
     ├── WorldScene.js        # 世界基类：地图/交互/传送门封印/答题接线（章节驱动）
     └── ChapterScene.js      # 通用章节场景：FieldScene（野外）+ LairScene（巢穴）+ 工厂
 ui/                          # DOM 覆盖层：HUD、对话框、答题面板、结算（章节配置驱动）
 scripts/
-├── smoke.mjs                # 无头冒烟测试（贴图/八章地图/题库/题池/抽题校验）
-├── verify-quiz.mjs          # 题库自动校验（用本机 python3 执行输出确定的题目，比对 stdout）
+├── smoke.mjs                # 无头冒烟测试（贴图/全部章节地图/题库/题池/抽题校验）
+├── verify-quiz.mjs          # 题库自动校验（用本机 python 执行输出确定的题目，比对 stdout）
+├── gen-ts-stubs.mjs         # 无素材环境（CI）生成 Tiny Swords 纯色占位图，让 E2E 可跑
+├── e2e/lib/runner.mjs       # 章节 E2E 共享运行器：各章脚本只声明 labels + steps
 ├── e2e.mjs                  # Playwright E2E：第一章全流程 + 存档
 ├── e2e-ch2.mjs              # 第二章 E2E（森林/洞窟/巨蟒/进入第三章/读档续玩）
 ├── e2e-ch3.mjs              # 第三章 E2E（样板章全流程 + 衔接第四章 + 读档续玩）
@@ -142,7 +165,10 @@ scripts/
 ├── e2e-ch5.mjs              # 第五章 E2E（加速熔炉/深渊符文/迟缓巨魔/衔接第六章）
 ├── e2e-ch6.mjs              # 第六章 E2E（数值神殿/迷宫符文/优化牛头怪/衔接第七章）
 ├── e2e-ch7.mjs              # 第七章 E2E（信号圣殿/回廊符文/傅里叶魅影/衔接第八章）
-└── e2e-ch8.mjs              # 第八章 E2E（深空晕环/核心符文/NFW 幻龙/通关结算）
+├── e2e-ch8.mjs              # 第八章 E2E（深空晕环/核心符文/NFW 幻龙/衔接第二部第九章）
+├── e2e-ch9.mjs              # 第九章 E2E（统计圣所/后验回廊/贝叶斯祭司/衔接第十章）
+├── e2e-ch10.mjs             # 第十章 E2E（灵思之塔/验证回廊/幻言魔像/衔接第十一章）
+└── e2e-ch11.mjs             # 第十一章 E2E（毕业试炼/三途之门/三途守门人/全部通关）
 ```
 
 ## 🎨 画面技术（Tiny Swords 素材 + 程序化补充）
@@ -166,8 +192,8 @@ scripts/
 ## 🔧 如何扩展
 
 - **加一章**：在 `src/data/chapters.js` 的 `CHAPTERS` 里加一个对象（标题/世界名/BOSS/对话/victory 文案/
-  theme 主题/题池名），再在 `src/data/quizData.js` 建对应题池——地图/场景/传送门全部自动生成注册。
-- **充实 W4-W8 题量**：在 `quizData.js` 的 `QUESTIONS` 里加题（标 `tier` 与所属池一致），
+  theme 主题/题池名），再在 `src/data/quizBank.js` 建对应题池——地图/场景/传送门全部自动生成注册。
+- **充实 W4-W11 题量**：在 `quizBank.js` 的 `QUESTIONS` 里加题（标 `tier` 与所属池一致），
   加进对应 `POOLS`（如 `w4shard` / `w4lair` / `w4boss`）即可，符文槽会自动抽到。
 - **改地图主题**：章节配置的 `theme` 字段（palette 草原/地牢、seed、尺寸、怪物密度、氛围色）。
 - **改 W1/W2 手工地图**：`src/data/maps.js` 是纯代码构建器，改数字即可挪动池塘、道路、道具。
@@ -176,8 +202,9 @@ scripts/
 
 ```bash
 npm run dev &                # 先起服务器
-node scripts/smoke.mjs       # 数据层冒烟测试（八章地图 + 题库校验）
-node scripts/verify-quiz.mjs # 题库自动校验（本机 python3 实跑输出确定的题目比对 stdout）
+node scripts/smoke.mjs       # 数据层冒烟测试（全部章节地图 + 题库校验）
+node scripts/verify-quiz.mjs # 题库自动校验（本机 python 实跑输出确定的题目比对 stdout）
+node scripts/gen-ts-stubs.mjs # 没有 Tiny Swords 素材时先生成占位图（检测到真实素材包会跳过）
 node scripts/e2e.mjs         # E2E：第一章（答题/开门/BOSS/进第二章/存档）
 node scripts/e2e-ch2.mjs     # E2E：第二章（森林/洞窟/巨蟒/进第三章/读档续玩）
 node scripts/e2e-ch3.mjs     # E2E：第三章样板章（NumPy 符文/破盾/魔君/衔接第四章/读档）
@@ -185,10 +212,13 @@ node scripts/e2e-ch4.mjs     # E2E：第四章（星图塔/FITS 符文/单位术
 node scripts/e2e-ch5.mjs     # E2E：第五章（加速熔炉/深渊符文/迟缓巨魔/衔接第六章）
 node scripts/e2e-ch6.mjs     # E2E：第六章（数值神殿/迷宫符文/优化牛头怪/衔接第七章）
 node scripts/e2e-ch7.mjs     # E2E：第七章（信号圣殿/回廊符文/傅里叶魅影/衔接第八章）
-node scripts/e2e-ch8.mjs     # E2E：第八章（深空晕环/核心符文/NFW 幻龙/通关结算）
+node scripts/e2e-ch8.mjs     # E2E：第八章（深空晕环/核心符文/NFW 幻龙/衔接第九章）
+node scripts/e2e-ch9.mjs     # E2E：第九章（统计圣所/后验回廊/贝叶斯祭司/衔接第十章）
+node scripts/e2e-ch10.mjs    # E2E：第十章（灵思之塔/验证回廊/幻言魔像/衔接第十一章）
+node scripts/e2e-ch11.mjs    # E2E：第十一章（毕业试炼/三途之门/三途守门人/全部通关）
 ```
 
-## 🗺️ 路线图（对齐 P4A@UCAS 八周课程）
+## 🗺️ 路线图（对齐 P4A@UCAS 64 学时课程）
 
 - [x] ~~八章节架构：数据驱动注册表 + 通用关卡生成器 + v2 多章存档~~ ✅
 - [x] ~~W1/W2 内容按周次重对齐（地牢=列表/元组，洞窟=控制流）~~ ✅
@@ -202,9 +232,10 @@ node scripts/e2e-ch8.mjs     # E2E：第八章（深空晕环/核心符文/NFW �
 
 ### 第二部（64 学时扩展，详见 `docs/part2-plan.md`）
 
-- [ ] 第九章 · 统计圣所（天文学中的统计学基础，到 MCMC 后验分布为止）
-- [ ] 第十章 · 灵思之塔（vibe coding 工具方法论）
-- [ ] 第十一章 · 毕业试炼（project-driven study 实战收尾）
+- [x] ~~第九章 · 统计圣所（天文学中的统计学基础，到 MCMC 后验分布为止）~~ ✅
+- [x] ~~第十章 · 灵思之塔（vibe coding 工具方法论，四选一符文落地）~~ ✅
+- [x] ~~第十一章 · 毕业试炼（project-driven study 实战收尾）~~ ✅
+- [ ] 第十章对话式编程 UI（模拟 prompt → 迭代 → 验证）
 
 ## 📄 许可证
 
