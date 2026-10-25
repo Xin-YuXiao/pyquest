@@ -81,8 +81,11 @@ export class WorldScene extends Phaser.Scene {
 
     const def = this.mapDef;
     this.def = def;
-    cp(this.ch.id);           // 确保本章进度已初始化（cp 惰性创建）
-    G.current = this.ch.id;   // 跟踪玩家所在章节（HUD / 碎片计数用）
+    // 虚拟章节（试炼塔等不在章节注册表里的场景）不登记章节进度、不改「当前所在章」
+    if (!this.ch.virtual) {
+      cp(this.ch.id);           // 确保本章进度已初始化（cp 惰性创建）
+      G.current = this.ch.id;   // 跟踪玩家所在章节（HUD / 碎片计数用）
+    }
 
     // ---------- 地面（TS tileset 拼接画布，1:1 像素完美） + 碰撞体 ----------
     const groundKey = makeGroundTexture(this, def);
@@ -247,7 +250,8 @@ export class WorldScene extends Phaser.Scene {
       return;
     }
     // 村庄：花粉漂浮 + 水面波光
-    if (this.waterTiles && Math.random() < 0.35) {
+    // 没有水面的地图（如试炼塔草原层）跳过水波光：GetRandom([]) 会返回 null
+    if (this.waterTiles && this.waterTiles.length && Math.random() < 0.35) {
       const w = Phaser.Utils.Array.GetRandom(this.waterTiles);
       const p = this.add.image(w.x * 128 + Phaser.Math.Between(16, 112), w.y * 128 + Phaser.Math.Between(16, 112), 'particle')
         .setTint(0xeafcff).setAlpha(0.95).setScale(6.6).setDepth(-5);
@@ -694,6 +698,8 @@ export class WorldScene extends Phaser.Scene {
   }
 
   // ---------- 子类可覆写的钩子 ----------
+  /** BOSS 是否处于护盾状态（BOSS 原型读这里；试炼塔守层者按楼层状态覆写） */
+  bossShielded() { return cp(this.ch.id).bossShielded; }
   talkToElder() {}
   breakBossShield() {}
   onBossDefeated() {}

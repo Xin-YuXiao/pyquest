@@ -106,6 +106,12 @@ export function damageHearts(n = 1) {
   updateHud();
 }
 
+/** 试炼塔专用：答错可以扣到 0（塔里爱心归零 = 本次挑战结束，主线答题仍是 damageHearts 保底 1 心） */
+export function loseHearts(n = 1) {
+  G.hearts = Math.max(0, G.hearts - n);
+  updateHud();
+}
+
 export function healHearts(n = 1) {
   G.hearts = Math.min(G.maxHearts, G.hearts + n);
   updateHud();
