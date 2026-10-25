@@ -66,6 +66,7 @@ export class WorldScene extends Phaser.Scene {
   create() {
     // 场景重启（死亡重生/传送回来）会复用实例，必须重置瞬态标记
     this.transitioning = false;
+    this.flashUntil = 0;     // 按键反馈短时提示的截止时刻（见 flashHint）
 
     const def = this.mapDef;
     this.def = def;
@@ -163,8 +164,7 @@ export class WorldScene extends Phaser.Scene {
     this.input.keyboard.on('keydown-SPACE', () => this.player.tryAttack());
     this.input.keyboard.on('keydown-M', () => {
       const muted = sfx.toggleMute();
-      this.hud.hint(muted ? '🔇 已静音（按 M 恢复）' : '🔊 声音已开启');
-      this.time.delayedCall(1400, () => this.hud.hint(null));
+      this.flashHint(muted ? '🔇 已静音（按 M 恢复）' : '🔊 声音已开启', 1400);
     });
 
     updateHud();
@@ -535,7 +535,16 @@ export class WorldScene extends Phaser.Scene {
     this.updateInteractHint();
   }
 
+  /** 按键反馈等短时提示：持续 ms 期间优先于逐帧的交互提示
+   *  （否则 updateInteractHint 下一帧就会把它清掉，M / N 的反馈根本看不见） */
+  flashHint(html, ms) {
+    this.flashUntil = this.time.now + ms;
+    this.hud.hint(html);
+  }
+
   updateInteractHint() {
+    if (this.flashUntil && this.time.now < this.flashUntil) return;
+    this.flashUntil = 0;
     const px = this.player.x, py = this.player.y;
     const dist = (x, y) => Phaser.Math.Distance.Between(px, py, x, y);
     let hint = null;
