@@ -25,6 +25,7 @@ import { makeGroundTexture } from '../textures/ground.js';
 import { spawnSecretProp, interactSecret, secretHint, SECRET_RADIUS } from './secrets.js';
 import { ACTION_EVENT, isTouchMode, pressLabel } from '../core/input.js';
 import { touchControls } from '../ui/TouchControls.js';
+import { DOJO_KEY } from './DojoScene.js';
 
 // ---------- 交互判定半径（玩法冻结：数值即原字面量，勿改） ----------
 /** 符文石可交互/提示半径（px，世界坐标距离） */
@@ -33,13 +34,15 @@ const INTERACT_RUNE_RADIUS = 260;
 const INTERACT_GATE_RADIUS = 340;
 /** 观测台可交互/提示半径（px；地图生成保证观测台离符文 / 石碑 ≥ 4 格，与其他半径互不重叠） */
 const INTERACT_OBSERVATORY_RADIUS = 260;
+/** 代码训练场之门可交互/提示半径（px） */
+const INTERACT_DOJO_RADIUS = 280;
 
 /**
  * 章节道具描述对象（src/data/chapters.js 的 buildField/buildLair `props` 数组元素）。
  * 由 WorldScene.spawnProp 消费；交互类道具会进一步转化为 Interactable 供 tryInteract 使用。
  *
  * @typedef {Object} PropDef
- * @property {string} type 道具种类：'tree'|'house'|'npc'|'rune'|'gate'|'torch'|'bush'|'crystal'|'shroom'|'door'|'doorlink'|'observatory'|'secret'
+ * @property {string} type 道具种类：'tree'|'house'|'npc'|'rune'|'gate'|'torch'|'bush'|'crystal'|'shroom'|'door'|'doorlink'|'observatory'|'secret'|'dojo'
  * @property {number} x 世界坐标 x（px）
  * @property {number} y 世界坐标 y（px，多数贴图以此为锚/基准深度）
  * @property {string} [id] 仅 type='npc'：'tablet'（引导石碑）|'elder'（长老）等
@@ -57,7 +60,7 @@ const INTERACT_OBSERVATORY_RADIUS = 260;
  * spawnProp 生成的可交互对象（存入 this.interactables，由 tryInteract / updateInteractHint 消费）。
  *
  * @typedef {Object} Interactable
- * @property {'rune'|'doorlink'|'observatory'|'secret'} kind 交互种类（secret 的行为见 scenes/secrets.js）
+ * @property {'rune'|'doorlink'|'observatory'|'secret'|'dojo'} kind 交互种类（secret 的行为见 scenes/secrets.js；dojo 进入代码训练场）
  * @property {string} [obs] kind='observatory'：观测台 id
  * @property {number} x 交互判定锚点 x
  * @property {number} y 交互判定锚点 y
@@ -418,6 +421,26 @@ export class WorldScene extends Phaser.Scene {
         this.interactables.push({ kind: 'observatory', obs: p.kind, x: p.x, y: p.y, sprite: o, alive: true });
         break;
       }
+      case 'dojo': {
+        // 代码训练场之门：金色传送门 + 门牌；第一章通关前置灰（只能检查，不能进）
+        const locked = !meetsRequires(p.requires);
+        const d = this.add.image(p.x, p.y + 48, 'portal_door').setOrigin(0.5, 1).setDisplaySize(280, 280).setDepth(p.y + 4);
+        const sign = this.add.text(p.x, p.y - 270, '代码训练场', {
+          fontFamily: '"ZCOOL KuaiLe","PingFang SC",sans-serif', fontSize: '52px', color: '#ffd257',
+          stroke: '#3f2631', strokeThickness: 12,
+        }).setOrigin(0.5).setDepth(p.y + 5);
+        if (locked) {
+          d.setTint(0x8a8496);
+          sign.setColor('#c9c2d6');
+        } else {
+          d.setTint(0xffe08a);
+          const aura = this.add.image(p.x, p.y - 72, 'particle')
+            .setTint(0xffd257).setAlpha(0.18).setScale(36).setDepth(p.y - 2);
+          this.tweens.add({ targets: aura, alpha: 0.32, scale: 44, duration: 1100, yoyo: true, repeat: -1, ease: 'sine.inout' });
+        }
+        this.interactables.push({ kind: 'dojo', x: p.x, y: p.y, locked, sprite: d, alive: true });
+        break;
+      }
       default: break;
     }
   }
@@ -450,6 +473,10 @@ export class WorldScene extends Phaser.Scene {
       }
       if (it.kind === 'secret' && dist(it.x, it.y) < SECRET_RADIUS) {
         interactSecret(this, it);
+        return;
+      }
+      if (it.kind === 'dojo' && dist(it.x, it.y) < INTERACT_DOJO_RADIUS) {
+        this.enterDojo(it);
         return;
       }
     }
@@ -509,6 +536,21 @@ export class WorldScene extends Phaser.Scene {
     sfx.heal();
     saveGame();
     this._obsJustSolved = true;
+  }
+
+  /** 代码训练场：写真 Python 驱动勇者的可选关卡（scenes/DojoScene.js）；不影响主线 */
+  enterDojo(it) {
+    if (it.locked) {
+      this.dialogue.say({ name: '代码训练场', lines: ['门上刻着：「先通过第一章的试炼，再来这里用真正的 Python 驾驭勇者。」'] });
+      return;
+    }
+    if (this.transitioning) return;
+    this.transitioning = true;
+    this.player.setVelocity(0, 0);
+    this.player.invulUntil = Number.MAX_SAFE_INTEGER;
+    saveGame();
+    sfx.openGate();
+    wipeTransition(() => this.scene.start(DOJO_KEY, { returnKey: this.scene.key }));
   }
 
   spawnShardFx(x, y, tint = 0xffd257) {
@@ -682,6 +724,10 @@ export class WorldScene extends Phaser.Scene {
         }
         if (it.kind === 'secret' && dist(it.x, it.y) < SECRET_RADIUS) {
           hint = secretHint(it);
+          break;
+        }
+        if (it.kind === 'dojo' && dist(it.x, it.y) < INTERACT_DOJO_RADIUS) {
+          hint = it.locked ? `${press} 检查代码训练场之门` : `${press} 进入代码训练场（用真 Python 驱动勇者）`;
           break;
         }
       }

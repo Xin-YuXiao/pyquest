@@ -9,6 +9,8 @@
 // 8) 验证 BOSS 招牌机制配置（种类登记 / 原型匹配 / 开场文案）与机制公式（正弦 / NFW / 后验权重）
 // 9) 验证存档 v3：v1/v2 真实样本迁移、校验、水合、配额降级（纯函数，不需要浏览器）
 // 10) 验证学习记录与错题本：作答汇总规则、日志裁剪、复习掌握规则、选项打乱映射、错题视图
+// 11) 验证代码训练场：关卡数据完整、模拟器规则（撞墙 / 落水 / 陷阱 / 碎片 / 史莱姆 / 步数上限）、进度清洗、门的选址
+//     （参考解在全部布局上通关由 verify-dojo 用 CPython 实跑校验）
 import { readFileSync } from 'node:fs';
 import { generateAllTextures } from '../src/textures/pixelArt.js';
 import { makeGroundTexture } from '../src/textures/ground.js';
@@ -30,6 +32,13 @@ import {
 import { applyAttempt, applyReview, snapshotOf, LOG_CAP, MASTERY_STREAK, OK } from '../src/core/records.js';
 import { buildMistakeEntries, filterMistakes, filterOptions, pendingCount } from '../src/core/mistakes.js';
 import { optionOrder } from '../src/core/quiz.js';
+import { DOJO_LEVELS, DOJO_API_DOCS } from '../src/data/dojoLevels.js';
+import {
+  createSim, apply, finish, simulate, STOP, MAX_QUERIES, countLines, countSteps,
+  recordClear, sanitizeDojo, levelUnlocked,
+} from '../src/core/dojoSim.js';
+import { explainPyError } from '../src/core/dojoPrelude.js';
+import { buildForest } from '../src/data/maps.js';
 
 let errors = 0;
 const fail = (msg) => { errors++; console.error('  ✗', msg); };
@@ -652,6 +661,119 @@ try {
   if (!fo.chapters.includes(1) || !fo.kinds.includes('boss')) fail('筛选可选值不完整');
   ok('错题视图：曾错入册、下线题不计数、待复习/已掌握页签、章/符文类型/知识点筛选');
 } catch (e) { fail(`学习记录 / 错题本校验异常: ${e.message}`); }
+resetState();
+
+// ---- 11. 代码训练场（关卡数据 + 模拟器纯函数 + 进度 + 门的选址） ----
+console.log('[11] 代码训练场');
+try {
+  // 11a. 关卡数据：编号连续、API 都有说明、每个布局等宽且恰好一个起点、终点与胜利方式匹配
+  DOJO_LEVELS.forEach((l, i) => {
+    if (l.id !== i + 1) fail(`训练场关卡编号应连续：第 ${i + 1} 个是 ${l.id}`);
+    for (const k of ['concept', 'title', 'blurb', 'goal', 'starter', 'solution']) if (!l[k]) fail(`第 ${l.id} 关缺少 ${k}`);
+    if (!Array.isArray(l.hints) || l.hints.length < 2) fail(`第 ${l.id} 关提示少于 2 级`);
+    if (!l.api.length || l.api.some((a) => !DOJO_API_DOCS[a])) fail(`第 ${l.id} 关 API 白名单不合法`);
+    if (!['reach', 'stop'].includes(l.win.type)) fail(`第 ${l.id} 关胜利方式不合法`);
+    if (!(l.maxSteps > 0)) fail(`第 ${l.id} 关缺少步数上限`);
+    l.variants.forEach((v, j) => {
+      const w = v.grid[0].length;
+      if (v.grid.some((r) => r.length !== w)) fail(`第 ${l.id} 关布局 ${j + 1} 行宽不一致`);
+      if (v.grid.some((r) => /[^S.#~^*mEF]/.test(r))) fail(`第 ${l.id} 关布局 ${j + 1} 有不认识的格子`);
+      const all = v.grid.join('');
+      if ((all.match(/S/g) || []).length !== 1) fail(`第 ${l.id} 关布局 ${j + 1} 起点不是恰好 1 个`);
+      const goal = l.win.type === 'reach' ? 'E' : 'F';
+      if (!all.includes(goal)) fail(`第 ${l.id} 关布局 ${j + 1} 缺少终点 ${goal}`);
+    });
+  });
+  ok(`训练场 ${DOJO_LEVELS.length} 关：数据完整（目标 / 两级提示 / 参考解 / API 白名单 / 布局网格合法）`);
+
+  // 11b. 模拟器规则（用第 7 关「史莱姆巢穴」的布局 1：S.m.^.*.m.*.E）
+  const L7 = DOJO_LEVELS[6];
+  let s = createSim(L7, 0);
+  if (apply(s, 'look') !== 'empty' || apply(s, 'look', 'up') !== 'wall' || apply(s, 'look', 'left') !== 'wall') fail('look 结果不对');
+  apply(s, 'move', 'right');
+  if (apply(s, 'look') !== 'slime') fail('前方应是史莱姆');
+  if (apply(s, 'move', 'right') !== STOP || s.reason.indexOf('史莱姆') < 0) fail('撞上史莱姆应失败');
+  s = createSim(L7, 0);
+  apply(s, 'move', 'right'); apply(s, 'attack');
+  if (apply(s, 'look') !== 'empty' || s.slimes !== 1) fail('attack 应打倒前方的史莱姆');
+  apply(s, 'move', 'right'); apply(s, 'move', 'right');
+  if (apply(s, 'look') !== 'trap') fail('前方应是陷阱');
+  apply(s, 'jump');
+  if (s.status !== 'running' || s.x !== 5) fail('jump 应越过陷阱落在第 5 格');
+  apply(s, 'move', 'right');
+  if (s.shards !== 1) fail('踩上碎片应拾取');
+  s = createSim(L7, 0);
+  apply(s, 'move', 'right'); apply(s, 'attack'); apply(s, 'move', 'right'); apply(s, 'move', 'right'); apply(s, 'move', 'right');
+  if (s.status !== 'fail' || s.reason !== '踩到陷阱了') fail('走上陷阱应失败');
+  s = createSim(L7, 0);
+  if (apply(s, 'move', 'up') !== STOP || s.reason !== '撞到墙了') fail('撞墙应失败');
+  s = createSim(DOJO_LEVELS[1], 0);
+  if (apply(s, 'move', 'down') !== STOP || s.reason !== '掉进水里了') fail('走进水里应失败');
+  // 碎片没收齐时传送门不亮：第 6 关布局 1 跳过碎片直接去终点是走不通的，用 finish 的原因检验
+  s = finish(createSim(DOJO_LEVELS[5], 0));
+  if (s.status !== 'fail' || !s.reason.includes('一动不动')) fail('一步都不走应判「一动不动」');
+  // 步数上限 / 查看上限（防死循环）
+  s = createSim(DOJO_LEVELS[3], 2); // 迷雾小径最长布局
+  for (let i = 0; i < 200 && s.status === 'running'; i++) { apply(s, 'move', 'right'); apply(s, 'move', 'left'); }
+  if (s.status !== 'limit' || !s.reason.includes('步数用尽')) fail('来回走应在步数上限处终止');
+  s = createSim(DOJO_LEVELS[3], 0);
+  for (let i = 0; i <= MAX_QUERIES && s.status === 'running'; i++) apply(s, 'look');
+  if (s.status !== 'limit' || !s.reason.includes('死循环')) fail('只看不走应在查看上限处终止');
+  // 「停在旗子上」在程序结束时判定
+  s = createSim(DOJO_LEVELS[3], 0);
+  for (let i = 0; i < 4; i++) apply(s, 'move', 'right');
+  if (finish(s).status !== 'win') fail('停在旗子上应判定通关');
+  // 主线程重算：同一份动作列表得到同一个结果
+  s = createSim(L7, 0);
+  apply(s, 'move', 'right'); apply(s, 'attack'); apply(s, 'move', 'right');
+  finish(s); // simulate 末尾同样会做收尾判定
+  const re = simulate(L7, 0, s.actions);
+  if (re.x !== s.x || re.steps !== s.steps || re.status !== s.status || re.frames.length !== s.frames.length) fail('simulate 重算结果与逐步结算不一致');
+  ok('模拟器：look / attack / jump / 碎片 / 撞墙 / 落水 / 陷阱 / 步数与查看上限 / 停在旗子上 / 重算一致');
+
+  // 11c. 行数 / 步数 / 进度记录 / 清洗 / 解锁 / 报错翻译
+  if (countLines("# 注释\n\nmove('right')\n  # 缩进注释\nmove('up')\n") !== 2) fail('行数应只数非空非注释行');
+  if (countSteps([{ op: 'look' }, { op: 'move' }, { op: 'attack' }, { op: 'position' }]) !== 2) fail('步数不应计入查询');
+  let rec = recordClear(null, { lines: 6, steps: 9, code: 'x' });
+  rec = recordClear(rec, { lines: 8, steps: 7, sawSolution: true });
+  if (rec.clears !== 2 || rec.bestLines !== 6 || rec.bestSteps !== 7 || !rec.sawSolution) fail('个人最佳应分别取行数 / 步数的最小值');
+  const clean = sanitizeDojo({ 1: rec, 99: { cleared: true }, 2: 'bad', 3: { cleared: 'yes', bestLines: -1, code: 5 } }, DOJO_LEVELS.map((l) => l.id));
+  if (!clean[1] || clean[99] || clean[2] || clean[3].cleared || clean[3].bestLines || clean[3].code) fail('训练场进度清洗应丢掉非法关卡与字段');
+  if (Object.keys(sanitizeDojo('坏数据', [1])).length) fail('训练场进度清洗遇到非对象应返回空');
+  if (!levelUnlocked(DOJO_LEVELS, {}, 1) || levelUnlocked(DOJO_LEVELS, {}, 2) || !levelUnlocked(DOJO_LEVELS, { 1: { cleared: true } }, 2)) fail('关卡应逐关解锁');
+  const e1 = explainPyError({ type: 'NameError', msg: "name 'mvoe' is not defined", line: 3 }, ['move']);
+  const e2 = explainPyError({ type: 'SyntaxError', msg: "expected ':'", line: 1 });
+  if (!e1.startsWith('第 3 行') || !e1.includes('mvoe') || !e2.includes('冒号')) fail(`报错翻译不符：${e1} / ${e2}`);
+  ok('训练场进度：个人最佳取最小值、读档清洗坏数据、逐关解锁；Python 报错翻译成中文并带行号');
+
+  // 11d. 存档 v3：dojo 可选字段随序列化写出、读档清洗；旧档缺省为空
+  resetState();
+  G.dojo = { 1: rec };
+  const sv = serialize(G);
+  if (!sv.dojo || !sv.dojo[1] || validate(sv).length) fail('dojo 字段应写进存档且通过校验');
+  resetState();
+  hydrate(G, sv);
+  if (!G.dojo[1] || G.dojo[1].bestLines !== 6) fail('读档应恢复训练场进度');
+  resetState();
+  hydrate(G, migrate({ v: 2 }));
+  if (Object.keys(G.dojo).length) fail('旧存档缺省训练场进度应为空');
+  ok('存档 v3：训练场进度写出 / 读回 / 旧档缺省为空');
+
+  // 11e. 第二章森林里的训练场之门：站在可走的地面上，离符文 / 石碑 / 封印门都有距离，回程出生点也可走
+  const forest = buildForest(CHAPTERS[1]);
+  const door = forest.props.find((p) => p.type === 'dojo');
+  const tile = (x, y) => forest.grid[Math.floor(y / 128)][Math.floor(x / 128)];
+  if (!door) fail('第二章森林缺少训练场之门');
+  else {
+    if (forest.colliding.includes(tile(door.x, door.y))) fail('训练场之门不能放在水上');
+    const near = forest.props.filter((p) => ['rune', 'npc', 'doorlink', 'secret', 'tree'].includes(p.type)
+      && Math.hypot(p.x - door.x, p.y - door.y) < 300);
+    if (near.length) fail(`训练场之门离其他道具太近：${near.map((p) => p.type).join(',')}`);
+    const sp = forest.spawns.fromDojo;
+    if (!sp || forest.colliding.includes(tile(sp.x, sp.y))) fail('训练场回程出生点不可走');
+  }
+  ok('训练场之门：第二章森林空地上、离其他可交互道具 ≥ 300px、回程出生点可走');
+} catch (e) { fail(`代码训练场校验异常: ${e.message}`); }
 resetState();
 
 console.log(errors === 0 ? '\n全部通过 ✔' : `\n${errors} 个错误 ✘`);
