@@ -33,6 +33,7 @@ export const G = {
   current: 1,            // 玩家当前所在章节 id
   progress: buildAllProgress(),
   startTime: Date.now(),
+  observatory: {},       // 观测日志：观测台 id → 完成记录（core/observatory.js，可选小游戏）
 };
 
 export function resetState() {
@@ -44,6 +45,7 @@ export function resetState() {
   G.current = 1;
   G.progress = buildAllProgress();
   G.startTime = Date.now();
+  G.observatory = {};
 }
 
 /** 取某章进度（默认当前章） */

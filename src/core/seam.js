@@ -2,11 +2,11 @@
 // 测试接缝（test seam）：window.__PYQUEST__ 的语义化实现
 //
 // 只暴露两类入口，不再直接暴露可写的全局状态 G：
-//   只读查询 —— scene(key) / active() / state()
+//   只读查询 —— scene(key) / active() / state() / observatory()
 //     · state() 返回纯数据快照（Set → 数组、progress 深拷贝），
 //       可安全跨 Playwright evaluate 序列化
 //   语义动作 —— teleport / godmode / clearMinions / pinBoss /
-//     slayBoss / gotoChapter / setShards / applyTestState
+//     slayBoss / gotoChapter / setShards / setHearts / applyTestState
 //     每个动作一个明确语义，脚本侧无法绕过它们直接改写进度。
 //
 // 正常游戏路径完全不经过本模块（仅 main.js 启动时挂载一次）；
@@ -32,7 +32,14 @@ export function buildSeam(game, sceneKeys) {
       qAnswered: [...G.qAnswered],
       runeRolls: { ...G.runeRolls },
       progress: JSON.parse(JSON.stringify(G.progress)),
+      observatory: JSON.parse(JSON.stringify(G.observatory)),
     };
+  }
+
+  /** 观测台面板快照（只读）：是否打开、哪座观测台、当前参数 / 判定（未打开返回 null） */
+  function observatory() {
+    const s = active();
+    return s && s.observatory ? s.observatory.snapshot() : null;
   }
 
   // ---------- 语义动作（测试专用作弊指令） ----------
@@ -103,6 +110,12 @@ export function buildSeam(game, sceneKeys) {
     updateHud();
   }
 
+  /** 设定当前生命值（夹在 1..maxHearts；观测台「回满爱心」奖励测试用） */
+  function setHearts(n) {
+    G.hearts = Math.max(1, Math.min(G.maxHearts, n));
+    updateHud();
+  }
+
   /** 兼容旧脚本的低层进度注入（新脚本一律用上面的语义动作） */
   function applyTestState({ current, answered, progress } = {}) {
     if (typeof current === 'number') G.current = current;
@@ -118,8 +131,8 @@ export function buildSeam(game, sceneKeys) {
   }
 
   return {
-    scene, active, state,
+    scene, active, state, observatory,
     teleport, godmode, clearMinions, pinBoss, slayBoss,
-    gotoChapter, setShards, applyTestState,
+    gotoChapter, setShards, setHearts, applyTestState,
   };
 }

@@ -307,6 +307,7 @@ export const CHAPTERS = [
     boss: 'slime', bossName: '傅里叶魅影',
     npcKind: 'tablet', npcName: '信号石碑',
     pools: { shard: 'w7shard', heal: 'w7lair', lair: 'w7lair', boss: 'w7boss' },
+    observatory: 'tuning', // 野外观测台：频率调谐台（core/observatory.js）
     theme: {
       palette: 'grass', seed: 20270701, w: 32, h: 24,
       healRunes: 2, slimeVariant: 'crimson', slimes: 5,
@@ -345,6 +346,7 @@ export const CHAPTERS = [
     boss: 'snake', bossName: 'NFW 幻龙',
     npcKind: 'tablet', npcName: '深空石碑',
     pools: { shard: 'w8shard', heal: 'w8lair', lair: 'w8lair', boss: 'w8boss' },
+    observatory: 'nfw',    // 野外观测台：NFW 拟合台（core/observatory.js）
     theme: {
       palette: 'dungeon', seed: 20280801, w: 32, h: 24,
       healRunes: 2, slimeVariant: 'crimson', slimes: 4,

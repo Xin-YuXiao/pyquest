@@ -13,6 +13,8 @@ import { HUD } from '../ui/HUD.js';
 import { DialogueBox } from '../ui/DialogueBox.js';
 import { QuizOverlay } from '../ui/QuizOverlay.js';
 import { WorldMap } from '../ui/WorldMap.js';
+import { ObservatoryOverlay } from '../ui/ObservatoryOverlay.js';
+import { OBSERVATORIES, recordObservation } from '../core/observatory.js';
 import { pickQuestion } from '../data/quizData.js';
 import { saveGame } from '../core/save.js';
 import { sfx } from '../audio/sfx.js';
@@ -25,13 +27,15 @@ import { makeGroundTexture } from '../textures/ground.js';
 const INTERACT_RUNE_RADIUS = 260;
 /** 封印石门可交互/提示半径（px；判定锚点为 gate.y + 140） */
 const INTERACT_GATE_RADIUS = 340;
+/** 观测台可交互/提示半径（px；地图生成保证观测台离符文 / 石碑 ≥ 4 格，与其他半径互不重叠） */
+const INTERACT_OBSERVATORY_RADIUS = 260;
 
 /**
  * 章节道具描述对象（src/data/chapters.js 的 buildField/buildLair `props` 数组元素）。
  * 由 WorldScene.spawnProp 消费；交互类道具会进一步转化为 Interactable 供 tryInteract 使用。
  *
  * @typedef {Object} PropDef
- * @property {string} type 道具种类：'tree'|'house'|'npc'|'rune'|'gate'|'torch'|'bush'|'crystal'|'shroom'|'door'|'doorlink'
+ * @property {string} type 道具种类：'tree'|'house'|'npc'|'rune'|'gate'|'torch'|'bush'|'crystal'|'shroom'|'door'|'doorlink'|'observatory'
  * @property {number} x 世界坐标 x（px）
  * @property {number} y 世界坐标 y（px，多数贴图以此为锚/基准深度）
  * @property {string} [id] 仅 type='npc'：'tablet'（引导石碑）|'elder'（长老）等
@@ -41,13 +45,15 @@ const INTERACT_GATE_RADIUS = 340;
  * @property {string[]} [requires] 仅 type='doorlink'：解锁前置（meetsRequires 判定，缺省视为已锁）
  * @property {string} [label] 仅 type='doorlink'：提示/对话中的门名称（缺省 '封印之门'）
  * @property {string[]} [lockLines] 仅 type='doorlink'： locked 时被检查的对话行（缺省内置文案）
+ * @property {string} [kind] 仅 type='observatory'：观测台 id（core/observatory.js 的 OBSERVATORIES 键）
  */
 
 /**
  * spawnProp 生成的可交互对象（存入 this.interactables，由 tryInteract / updateInteractHint 消费）。
  *
  * @typedef {Object} Interactable
- * @property {'rune'|'doorlink'} kind 交互种类
+ * @property {'rune'|'doorlink'|'observatory'} kind 交互种类
+ * @property {string} [obs] kind='observatory'：观测台 id
  * @property {number} x 交互判定锚点 x
  * @property {number} y 交互判定锚点 y
  * @property {boolean} alive 是否仍可交互（符文已领悟 / 门已解锁后置 false 或改 locked）
@@ -138,12 +144,14 @@ export class WorldScene extends Phaser.Scene {
     this.dialogue = new DialogueBox(this);
     this.quiz = new QuizOverlay(this);
     this.worldmap = new WorldMap(this);
+    this.observatory = new ObservatoryOverlay(this);
     // 场景关闭时移除 DOM 监听，防止场景重启后监听器泄漏
     this.events.once('shutdown', () => {
       this.hud && this.hud.destroy();
       this.dialogue && this.dialogue.destroy();
       this.quiz && this.quiz.destroy();
       this.worldmap && this.worldmap.destroy();
+      this.observatory && this.observatory.destroy();
     });
 
     // ---------- 传送门 ----------
@@ -376,13 +384,25 @@ export class WorldScene extends Phaser.Scene {
         this.interactables.push(it);
         break;
       }
+      case 'observatory': {
+        // 观测台（可选小游戏）：程序化贴图（40×44，×5.5 显示）+ 金色光晕；
+        // 不加碰撞体——它只是可交互的地标，不挡路
+        const o = this.add.image(p.x, p.y + 34, 'observatory').setOrigin(0.5, 0.92).setDisplaySize(220, 242);
+        o.setDepth(p.y);
+        this.add.image(p.x, p.y + 30, 'ts_shadow').setDisplaySize(170, 80).setAlpha(0.5).setDepth(p.y - 1);
+        const aura = this.add.image(p.x, p.y - 110, 'particle')
+          .setTint(0xffd257).setAlpha(0.16).setScale(40).setDepth(p.y - 0.5);
+        this.tweens.add({ targets: aura, alpha: 0.28, scale: 48, duration: 1500, yoyo: true, repeat: -1, ease: 'sine.inout' });
+        this.interactables.push({ kind: 'observatory', obs: p.kind, x: p.x, y: p.y, sprite: o, alive: true });
+        break;
+      }
       default: break;
     }
   }
 
   // ---------- 交互 ----------
   tryInteract() {
-    if (this.quiz.isOpen || this.dialogue.isOpen || this.player.dying) return;
+    if (this.quiz.isOpen || this.dialogue.isOpen || this.observatory.isOpen || this.player.dying) return;
     const px = this.player.x, py = this.player.y;
     const dist = (x, y) => Phaser.Math.Distance.Between(px, py, x, y);
 
@@ -394,6 +414,10 @@ export class WorldScene extends Phaser.Scene {
       if (it.kind === 'rune' && dist(it.x, it.y) < INTERACT_RUNE_RADIUS) {
         if (!it.alive) { this.floatText(it.x, it.y - 300, '咒语已领悟 ✓', '#3ddad7'); return; }
         this.openRuneQuiz(it);
+        return;
+      }
+      if (it.kind === 'observatory' && dist(it.x, it.y) < INTERACT_OBSERVATORY_RADIUS) {
+        this.openObservatory(it);
         return;
       }
       if (it.kind === 'doorlink' && it.locked && dist(it.x, it.y) < 280) {
@@ -430,6 +454,31 @@ export class WorldScene extends Phaser.Scene {
         }
       },
     });
+  }
+
+  /** 观测台：打开小游戏面板；第 n 次挑战换一组数据（首次为讲义数字） */
+  openObservatory(it) {
+    const rec = G.observatory[it.obs];
+    this.observatory.open(it.obs, {
+      attempt: rec ? rec.clears : 0,
+      onSolved: (result) => this.onObservatorySolved(it, result),
+      onClose: () => {
+        // 面板打开期间场景暂停、tween 不跑，完成的浮字与粒子留到关面板时补上
+        if (!this._obsJustSolved) return;
+        this._obsJustSolved = false;
+        this.floatText(it.x, it.y - 320, `+❤ ${OBSERVATORIES[it.obs].title}观测完成`, '#ffd257');
+        this.spawnShardFx(it.x, it.y - 120);
+      },
+    });
+  }
+
+  /** 观测完成奖励：记入观测日志 + 回满爱心（不发碎片、不碰封印门——小游戏不阻塞主线） */
+  onObservatorySolved(it, result) {
+    G.observatory[it.obs] = recordObservation(G.observatory[it.obs], result);
+    healHearts(G.maxHearts); // 封顶 maxHearts；内部 updateHud → 自动存档
+    sfx.heal();
+    saveGame();
+    this._obsJustSolved = true;
   }
 
   spawnShardFx(x, y, tint = 0xffd257) {
@@ -546,6 +595,13 @@ export class WorldScene extends Phaser.Scene {
       for (const it of this.interactables) {
         if (it.kind === 'rune' && dist(it.x, it.y) < INTERACT_RUNE_RADIUS) {
           hint = it.alive ? '按 <kbd>E</kbd> 解读符文石' : null;
+          break;
+        }
+        if (it.kind === 'observatory' && dist(it.x, it.y) < INTERACT_OBSERVATORY_RADIUS) {
+          const title = OBSERVATORIES[it.obs].title;
+          hint = G.observatory[it.obs]
+            ? `按 <kbd>E</kbd> 再次使用${title}（已完成 ✓，换一组数据）`
+            : `按 <kbd>E</kbd> 使用${title}（可选小游戏）`;
           break;
         }
         if (it.kind === 'doorlink' && it.locked && dist(it.x, it.y) < 280) {

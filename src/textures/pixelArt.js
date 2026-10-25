@@ -3,7 +3,7 @@
 // 角色/地形/建筑使用 Tiny Swords 素材（src/assets/ts.js），
 // 这里只生成带有游戏身份、无现成素材的元素：
 // 代码碎片 / 爱心 / 传送门 / 水晶 / 蘑菇 /
-// 挥剑特效 / 粒子 / 石门 / 火炬
+// 挥剑特效 / 粒子 / 石门 / 火炬 / 观测台
 // 风格与 Kenney Tiny Town 对齐：平涂色块 + #3f2631 深紫描边
 // ============================================================
 
@@ -227,6 +227,30 @@ function drawTorch(ctx) {
   outline(ctx, 16, 32);
 }
 
+/** 观测台：石砌底座 + 青灰圆顶（观测缝）+ 黄铜望远镜斜指星空 */
+function drawObservatory(ctx) {
+  const w = 40, h = 44, cx = 20;
+  // 底座
+  rect(ctx, 6, 26, 28, 16, P.stone);
+  hline(ctx, 6, 33, 26, P.stoneL);
+  rect(ctx, 6, 39, 28, 3, P.stoneD);
+  hline(ctx, 7, 32, 33, P.stoneD);
+  rect(ctx, cx - 3, 32, 6, 10, '#2a2238');       // 门洞
+  px(ctx, 10, 30, P.gold); px(ctx, 29, 30, P.gold); // 小窗灯火
+  // 圆顶（上半椭圆，顶部提亮）
+  for (let y = 14; y <= 26; y++) {
+    const half = Math.round(13 * Math.sqrt(Math.max(0, 1 - ((26 - y) / 12) ** 2)));
+    rect(ctx, cx - half, y, half * 2 + 1, 1, y < 19 ? '#a9b8d6' : '#7d8fb3');
+  }
+  rect(ctx, cx - 1, 14, 3, 12, '#1c1830');         // 观测缝
+  // 黄铜望远镜（从观测缝斜伸向右上）
+  for (let i = 0; i < 11; i++) rect(ctx, cx + i, 18 - i, 3, 3, i % 4 === 0 ? P.goldD : '#d9a441');
+  rect(ctx, cx + 11, 6, 3, 3, P.crystalL);         // 物镜反光
+  // 星点
+  px(ctx, 5, 5, '#fff3c4'); px(ctx, 35, 13, '#fff3c4'); px(ctx, 9, 11, '#fff3c4');
+  outline(ctx, w, h);
+}
+
 // ============================================================
 // 入口：生成全部程序化贴图
 // ============================================================
@@ -239,6 +263,7 @@ export function generateAllTextures(scene) {
   makePx(scene, 'gate_closed', 64, 64, (ctx) => drawGate(ctx, false));
   makePx(scene, 'gate_open', 64, 64, (ctx) => drawGate(ctx, true));
   makePx(scene, 'torch_0', 16, 32, drawTorch);
+  makePx(scene, 'observatory', 40, 44, drawObservatory);
 
   makeSlash(scene);
   makeParticle(scene);
