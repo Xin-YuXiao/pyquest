@@ -295,6 +295,7 @@ export const CHAPTERS = [
     },
     npcKind: 'tablet', npcName: '神殿石碑',
     pools: { shard: 'w6shard', heal: 'w6lair', lair: 'w6lair', boss: 'w6boss' },
+    observatory: 'gravity',    // 野外观测台：引力沙盒（core/stations.js）
     theme: {
       palette: 'dungeon', seed: 20260601, w: 30, h: 24,
       healRunes: 2, slimeVariant: 'crimson', slimes: 4,

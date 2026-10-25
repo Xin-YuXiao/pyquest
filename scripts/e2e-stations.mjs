@@ -15,6 +15,7 @@ import { OBSERVATORIES } from '../src/core/observatory.js';
 import {
   MC, makeMonteCarlo,
   SCHED, makeTasks, roundRobin, greedyLPT, makespan,
+  GRAV, PLUNGE, simulateOrbit,
 } from '../src/core/stations.js';
 
 const BASE = process.env.BASE_URL || 'http://localhost:5173/';
@@ -74,6 +75,18 @@ async function until(pred, label, timeout = 20000) {
     await page.waitForTimeout(200);
   }
   throw new Error(`until 超时：${label}`);
+}
+
+/** 用方向键把面板里某个滑块推到目标值（大差距用 Shift 大步，最后单步收尾） */
+async function steer(read, target, step, coarse = 5) {
+  for (let i = 0; i < 300; i++) {
+    const v = await read();
+    const diff = target - v;
+    if (Math.abs(diff) <= step / 2 + 1e-9) return v;
+    const key = diff > 0 ? 'ArrowRight' : 'ArrowLeft';
+    await page.keyboard.press(Math.abs(diff) >= step * coarse ? `Shift+${key}` : key);
+  }
+  return read();
 }
 
 async function gotoChapter(id) {
@@ -208,6 +221,44 @@ try {
     const lpt = makespan(tasks, greedyLPT(tasks));
     check(st.makespan === lpt && lpt <= optimal * SCHED.tolerance, `贪心分配后总耗时 ${lpt} 秒 ≤ 最优的 1.1 倍`);
     await afterSolved(ch, 'st-03-scheduler-solved');
+  }
+
+  // ============================================================
+  // 第六章 · 引力沙盒
+  // ============================================================
+  {
+    const ch = await gotoChapter(6);
+    await setHearts(2);
+    await openStation(ch);
+    let st = await station();
+    check(st.speed === GRAV.speed.start && st.angle === 90 && st.eps === GRAV.eps.start && st.status === 'idle', `开局：速度 ${st.speed}、切向、ε = ${st.eps}，尚未发射`);
+    // 1) 开局速度太大：空格发射 → 逃逸
+    await page.keyboard.press('Space');
+    await until(async () => (await station()).status !== 'flying', '第一次发射结束');
+    st = await station();
+    check(st.status === 'escaped' && !(await obs()).solved, '开局速度超过逃逸速度：卫星逃逸，不判成功');
+    // 2) 破坏实验：ε 调到 0，按 P 近心掠过 → 被数值误差甩飞（与独立模拟一致）
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('ArrowDown');
+    check((await station()).selected === 2, '↓↓ 选中 softening ε 滑块');
+    await steer(async () => (await station()).eps, 0, GRAV.eps.step);
+    await page.keyboard.press('KeyP');
+    await until(async () => (await station()).status !== 'flying', 'ε = 0 近心掠过结束');
+    st = await station();
+    const raw = simulateOrbit({ ...PLUNGE, eps: 0 });
+    check(st.eps === 0 && st.status === raw.status && st.status === 'escaped', 'ε = 0 近心掠过：卫星被甩飞（与独立模拟一致）');
+    check(Math.abs(st.maxDrift - raw.maxDrift) < 1e-9 && st.maxDrift > 1, `能量误差暴涨到 ${Math.round(st.maxDrift * 100)}%（数值误差，不是物理）`);
+    check((await page.locator('#obs-status').textContent()).includes('数值误差'), '状态行点明是数值误差、提示调大 ε 或调小 dt');
+    await shot('st-04-gravity-plunge-eps0');
+    // 3) ε 调到 0.1 再掠过一次 → 轨道保住、绕满 3 圈 → 完成
+    await steer(async () => (await station()).eps, 0.1, GRAV.eps.step);
+    await page.keyboard.press('KeyP');
+    await until(async () => (await station()).status !== 'flying', 'ε = 0.1 近心掠过结束', 40000);
+    st = await station();
+    const soft = simulateOrbit({ ...PLUNGE, eps: 0.1 });
+    check(st.status === 'won' && soft.status === 'won' && st.orbits >= GRAV.orbitsToWin, `ε = 0.1：轨道保住、绕满 ${GRAV.orbitsToWin} 圈`);
+    check(st.maxDrift < raw.maxDrift / 10, `softening 让能量误差从 ${Math.round(raw.maxDrift * 100)}% 降到 ${Math.round(st.maxDrift * 100)}%`);
+    await afterSolved(ch, 'st-05-gravity-solved');
   }
 } catch (err) {
   failed = true;

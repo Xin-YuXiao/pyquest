@@ -40,6 +40,16 @@
 .st-legend i.lg-goal { border-color: #d99a28; border-top-style: dotted; }
 .st-legend i.lg-span { border-color: #ff6b81; }
 
+/* ---------- 引力沙盒 ---------- */
+.st-gr-canvas { width: 280px; height: 280px; border-radius: 10px; flex: none; touch-action: none; cursor: crosshair; }
+.st-gr-side { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.st-gr-readout { margin: 2px; gap: 4px 12px; font-size: var(--fs-caption); }
+.st-gr-eline { fill: none; stroke: #ffd257; stroke-width: 1.8; }
+.st-gr-side .st-actions { flex-wrap: nowrap; gap: 4px; }
+.st-gr-side .st-actions .btn { padding: 4px 8px; }
+.st-gr-sliders { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 8px; margin-top: 4px; }
+.st-gr-sliders .obs-slider { grid-template-columns: 30px 1fr 86px; gap: 6px; padding: 2px 6px; }
+
 /* ---------- 混淆矩阵（星系分类台） ---------- */
 .st-matrix { border-collapse: collapse; font-size: var(--fs-body); }
 .st-matrix caption { text-align: left; font-weight: bold; padding-bottom: 2px; }

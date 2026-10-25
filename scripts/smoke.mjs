@@ -694,6 +694,27 @@ try {
     spans.push(`${rr}→${lpt}`);
   }
   ok(`并行搬砖：轮转 = range(rank, nruns, size)（sp7）；6 次挑战最优 = Σ/4 = ${ST.SCHED.load}s，轮转→贪心总耗时 ${spans.join(' / ')}`);
+
+  // 11c. 引力沙盒：nm20 的 g(0) = 1/ε² = 4.0、g(1) = 0.8（ε = 0.5）；势能与力律配对（dΦ/dr = g，
+  //      否则能量曲线假漂移）；圆轨道能量守恒；开局速度先体验逃逸；ε = 0 近心掠过被数值误差甩飞、ε = 0.1 保住
+  if (Math.abs(ST.softAccel(0, 0.5) - 4) > 1e-12 || Math.abs(ST.softAccel(1, 0.5) - 0.8) > 1e-12) fail('引力沙盒：nm20 的 g(0) / g(1) 应为 4.0 / 0.8');
+  for (const eps of [0, 0.05, 0.1, 0.3]) {
+    for (const r of [0.05, 0.3, 1, 2.5]) {
+      const h = 1e-6;
+      const dPhi = (ST.softPotential(r + h, eps) - ST.softPotential(r - h, eps)) / (2 * h);
+      if (Math.abs(dPhi - ST.softAccel(r, eps)) > 1e-5 * Math.max(1, ST.softAccel(r, eps))) fail(`引力沙盒：ε=${eps}、r=${r} 处 dΦ/dr ≠ g（势能与力律不配对）`);
+    }
+  }
+  const circ = ST.simulateOrbit({ speed: ST.circularSpeed(1, ST.GRAV.eps.start), angle: 90, eps: ST.GRAV.eps.start, dt: ST.GRAV.dt.start });
+  if (circ.status !== 'won' || circ.maxDrift > 1e-6) fail(`引力沙盒：圆轨道应绕满 3 圈且能量守恒（${circ.status}，误差 ${circ.maxDrift}）`);
+  const opening = ST.simulateOrbit({ speed: ST.GRAV.speed.start, angle: ST.GRAV.angle.start, eps: ST.GRAV.eps.start, dt: ST.GRAV.dt.start });
+  if (opening.status !== 'escaped') fail(`引力沙盒：开局速度 ${ST.GRAV.speed.start} 应先体验逃逸（实际 ${opening.status}）`);
+  const raw = ST.simulateOrbit({ ...ST.PLUNGE, eps: 0 });
+  const soft = ST.simulateOrbit({ ...ST.PLUNGE, eps: 0.1 });
+  if (raw.status !== 'escaped' || raw.maxDrift < 1) fail(`引力沙盒：ε = 0 的近心掠过应被数值误差甩飞（${raw.status}，误差 ${raw.maxDrift.toFixed(2)}）`);
+  if (soft.status !== 'won' || soft.maxDrift > 0.3) fail(`引力沙盒：ε = 0.1 的近心掠过应保住轨道（${soft.status}，误差 ${soft.maxDrift.toFixed(2)}）`);
+  ok(`引力沙盒：nm20 力律 g(0)=4.0 / g(1)=0.8，势能与力律配对；圆轨道能量误差 ${circ.maxDrift.toExponential(1)}；`
+    + `近心掠过 ε=0 被甩飞（误差 ${Math.round(raw.maxDrift * 100)}%）、ε=0.1 保住（${Math.round(soft.maxDrift * 100)}%）`);
 } catch (e) { fail(`第二批观测站校验异常: ${e.message}`); }
 
 console.log(errors === 0 ? '\n全部通过 ✔' : `\n${errors} 个错误 ✘`);

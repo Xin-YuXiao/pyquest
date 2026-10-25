@@ -4,8 +4,10 @@
 //                误差按均值标准误 σ/√N 收敛（st5 / st14）
 //   - scheduler  第五章「并行搬砖」：独立任务摊给 4 个 worker（sp3 Pool.map / sp12 可并行判据），
 //                轮转分配 = range(rank, nruns, size)（sp7：任务 i 归 rank i % size）
+//   - gravity    第六章「引力沙盒」：softening 力律 g(r) = GM/(r² + ε²)（nm20），
+//                中心星 + 卫星的两体问题（两两位置差 nm6、成对求和 nm19 的最小情形）
 // 题库没覆盖、但小游戏必须用到的知识（不出题、只在面板上做演示，需助教确认讲解口径）：
-//   最长任务优先（LPT）贪心调度。
+//   最长任务优先（LPT）贪心调度、leapfrog 积分器、softening 力律对应的势能。
 // 小游戏不发碎片、不碰封印门，完成奖励由场景层发放（回满爱心 + 观测日志）。
 // ============================================================
 import { seeded } from './observatory.js';
@@ -135,3 +137,98 @@ export function makeTasks(attempt = 0) {
   }
   throw new Error('makeTasks: 找不到满足条件的任务集');
 }
+
+// ============================================================
+// 第六章 · 引力沙盒（中心星 + 卫星，固定步长 leapfrog）
+// ============================================================
+
+export const GRAV = {
+  gm: 1,               // G·M（模拟单位）
+  r0: 1,               // 卫星出发点 (r0, 0)
+  starRadius: 0.03,    // 撞上中心星（几乎是质点）
+  escapeR: 4,          // 飞出 4 倍出发半径算逃逸
+  orbitsToWin: 3,
+  stepsPerFrame: 10,
+  maxTime: 120,        // 单次发射最长模拟时间（模拟单位）
+  speed: { min: 0.2, max: 1.6, step: 0.01, start: 1.45 },  // 开局速度偏大：先体验「逃逸」
+  angle: { min: 0, max: 180, step: 1, start: 90 },          // 速度与半径方向的夹角（90° = 切向）
+  eps: { min: 0, max: 0.3, step: 0.01, start: 0.05 },       // softening 长度 ε（nm20）
+  dt: { min: 0.002, max: 0.05, step: 0.002, start: 0.01 },  // 积分步长
+};
+
+/** 软化后的引力加速度大小：g(r) = GM / (r² + ε²)（nm20：r = 0 处有限，r ≫ ε 时 ≈ 1/r²） */
+export const softAccel = (r, eps, gm = GRAV.gm) => gm / (r * r + eps * eps);
+
+/**
+ * 与 nm20 力律配对的势能：Φ(r) = −(GM/ε)(π/2 − arctan(r/ε))，满足 dΦ/dr = GM/(r² + ε²)、Φ(∞) = 0；
+ * ε = 0 时退回 −GM/r。（题库未覆盖：若误用 Plummer 势能 −GM/√(r²+ε²)，能量曲线会出现假漂移）
+ */
+export function softPotential(r, eps, gm = GRAV.gm) {
+  if (eps <= 0) return -gm / r;
+  return -(gm / eps) * (Math.PI / 2 - Math.atan(r / eps));
+}
+
+/** 圆轨道速度：v_c = √(r·g(r)) */
+export const circularSpeed = (r, eps, gm = GRAV.gm) => Math.sqrt(r * softAccel(r, eps, gm));
+
+const energyOf = (s) => 0.5 * (s.vx * s.vx + s.vy * s.vy) + softPotential(Math.hypot(s.x, s.y), s.eps);
+
+/** 发射：从 (r0, 0) 出发，速度大小 speed、与径向夹角 angle（度） */
+export function launchOrbit({ speed, angle, eps, dt }) {
+  const a = (angle * Math.PI) / 180;
+  const s = {
+    x: GRAV.r0, y: 0,
+    vx: speed * Math.cos(a), vy: speed * Math.sin(a),
+    eps, dt, t: 0, sweep: 0, theta: 0,
+    status: 'flying', orbits: 0, minR: GRAV.r0, maxDrift: 0,
+  };
+  s.e0 = energyOf(s);
+  s.energy = s.e0;
+  return s;
+}
+
+function accel(x, y, eps) {
+  const r = Math.hypot(x, y);
+  const g = softAccel(r, eps);
+  return [(-g * x) / r, (-g * y) / r];
+}
+
+/** 推进 n 步（leapfrog：半步 kick → drift → 半步 kick；题库未覆盖的积分器） */
+export function stepOrbit(s, n = 1) {
+  for (let i = 0; i < n && s.status === 'flying'; i++) {
+    let [ax, ay] = accel(s.x, s.y, s.eps);
+    s.vx += 0.5 * s.dt * ax; s.vy += 0.5 * s.dt * ay;
+    s.x += s.dt * s.vx; s.y += s.dt * s.vy;
+    [ax, ay] = accel(s.x, s.y, s.eps);
+    s.vx += 0.5 * s.dt * ax; s.vy += 0.5 * s.dt * ay;
+    s.t += s.dt;
+    // 绕行圈数：累计扫过的角度（跨 ±π 时按最短方向接续）
+    const th = Math.atan2(s.y, s.x);
+    let d = th - s.theta;
+    if (d > Math.PI) d -= 2 * Math.PI;
+    if (d < -Math.PI) d += 2 * Math.PI;
+    s.sweep += d;
+    s.theta = th;
+    s.orbits = Math.abs(s.sweep) / (2 * Math.PI);
+    const r = Math.hypot(s.x, s.y);
+    s.minR = Math.min(s.minR, r);
+    s.energy = energyOf(s);
+    s.maxDrift = Math.max(s.maxDrift, Math.abs((s.energy - s.e0) / s.e0));
+    if (r < GRAV.starRadius) s.status = 'crashed';
+    else if (r > GRAV.escapeR) s.status = 'escaped';
+    else if (s.orbits >= GRAV.orbitsToWin) s.status = 'won';
+    else if (s.t >= GRAV.maxTime) s.status = 'timeout';
+  }
+  return s;
+}
+
+/** 一口气模拟到结局（smoke 与 E2E 的独立期望值） */
+export function simulateOrbit(params) {
+  const s = launchOrbit(params);
+  const maxSteps = Math.ceil(GRAV.maxTime / params.dt) + 1;
+  stepOrbit(s, maxSteps);
+  return s;
+}
+
+/** 破坏实验预设：几乎径向的发射，近心点擦过中心星 */
+export const PLUNGE = { speed: 0.25, angle: 90, dt: 0.01 };
