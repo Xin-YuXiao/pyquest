@@ -4,7 +4,9 @@
 // ============================================================
 import './stations.css';
 import { createMonteCarlo } from './montecarlo.js';
+import { createScheduler } from './scheduler.js';
 
 export const STATIONS = {
   montecarlo: createMonteCarlo,
+  scheduler: createScheduler,
 };

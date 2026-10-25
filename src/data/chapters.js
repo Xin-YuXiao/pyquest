@@ -252,6 +252,7 @@ export const CHAPTERS = [
     },
     npcKind: 'tablet', npcName: '熔炉石碑',
     pools: { shard: 'w5shard', heal: 'w5lair', lair: 'w5lair', boss: 'w5boss' },
+    observatory: 'scheduler',  // 野外观测台：并行搬砖（core/stations.js）
     theme: {
       palette: 'dungeon', seed: 20260501, w: 30, h: 24,
       healRunes: 2, slimeVariant: 'crimson', slimes: 4,

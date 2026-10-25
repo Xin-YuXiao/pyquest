@@ -675,6 +675,25 @@ try {
     solvedAt.push(m.state.solvedAt);
   }
   ok(`蒙特卡洛估 π：4M/N 与 1/√N 口径对齐题库；6 次挑战分别在 N = ${solvedAt.join(' / ')} 估成（与撒点批量无关）`);
+
+  // 11b. 并行搬砖：轮转 = range(rank, nruns, size)（sp7：任务 7 归 rank 3）；最优 = Σ/4 恰好可达；
+  //      每次挑战都是「轮转明显不均、贪心够用」，学生先看到问题再找到办法
+  const rr15 = ST.roundRobin(Array.from({ length: 15 }, (_, i) => ({ id: i, cost: 1 })));
+  if (rr15[7] !== 3) fail(`并行搬砖：range(rank, 15, 4) 下任务 7 应归 rank 3（sp7），实际 ${rr15[7]}`);
+  const spans = [];
+  for (let a = 0; a < 6; a++) {
+    const { tasks, optimal, serial } = ST.makeTasks(a);
+    const sum = tasks.reduce((s, t) => s + t.cost, 0);
+    if (tasks.length !== ST.SCHED.workers * ST.SCHED.perWorker) fail(`并行搬砖第 ${a} 次：任务数 ${tasks.length}`);
+    if (sum !== serial || optimal !== sum / ST.SCHED.workers) fail(`并行搬砖第 ${a} 次：最优应为 Σ/4（Σ = ${sum}）`);
+    if (JSON.stringify(ST.makeTasks(a)) !== JSON.stringify({ tasks, optimal, serial })) fail(`并行搬砖第 ${a} 次：任务集不确定`);
+    const rr = ST.makespan(tasks, ST.roundRobin(tasks));
+    const lpt = ST.makespan(tasks, ST.greedyLPT(tasks));
+    if (rr <= optimal * ST.SCHED.tolerance) fail(`并行搬砖第 ${a} 次：轮转就过关了（${rr}），体会不到负载不均`);
+    if (lpt > optimal * ST.SCHED.tolerance) fail(`并行搬砖第 ${a} 次：贪心也过不了关（${lpt} > ${optimal * ST.SCHED.tolerance}）`);
+    spans.push(`${rr}→${lpt}`);
+  }
+  ok(`并行搬砖：轮转 = range(rank, nruns, size)（sp7）；6 次挑战最优 = Σ/4 = ${ST.SCHED.load}s，轮转→贪心总耗时 ${spans.join(' / ')}`);
 } catch (e) { fail(`第二批观测站校验异常: ${e.message}`); }
 
 console.log(errors === 0 ? '\n全部通过 ✔' : `\n${errors} 个错误 ✘`);

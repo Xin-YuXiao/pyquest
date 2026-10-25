@@ -12,7 +12,10 @@ import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
 import { CHAPTERS } from '../src/data/chapters.js';
 import { OBSERVATORIES } from '../src/core/observatory.js';
-import { MC, makeMonteCarlo } from '../src/core/stations.js';
+import {
+  MC, makeMonteCarlo,
+  SCHED, makeTasks, roundRobin, greedyLPT, makespan,
+} from '../src/core/stations.js';
 
 const BASE = process.env.BASE_URL || 'http://localhost:5173/';
 mkdirSync('scripts/shots', { recursive: true });
@@ -170,6 +173,41 @@ try {
     const txt = await page.locator('#st-mc-pi').textContent();
     check(/^3\.\d{4}$/.test(txt.trim()), `面板显示 π̂ = 4M/N（${txt.trim()}）`);
     await afterSolved(ch, 'st-01-montecarlo');
+  }
+
+  // ============================================================
+  // 第五章 · 并行搬砖
+  // ============================================================
+  {
+    const ch = await gotoChapter(5);
+    await setHearts(2);
+    await openStation(ch);
+    const { tasks, optimal } = makeTasks(0);
+    let st = await station();
+    check(JSON.stringify(st.costs) === JSON.stringify(tasks.map((t) => t.cost)) && st.optimal === optimal,
+      `12 个任务与独立计算一致（最优 ${optimal} 秒 = Σ/4）`);
+    check(!st.allAssigned && st.makespan === 0, '开局所有任务都未分配');
+    // 手动：选中第 0 个任务，按 2 交给 rank 1
+    await page.keyboard.press('Digit2');
+    await page.waitForTimeout(120);
+    st = await station();
+    check(st.assign[0] === 1 && st.selected === 1, '按 2 把选中的任务交给 rank 1，并自动跳到下一个任务');
+    // 轮转：range(rank, 12, 4)，总耗时超标、不判成功
+    await page.click('#st-sc-rr');
+    await page.waitForTimeout(150);
+    st = await station();
+    const rr = makespan(tasks, roundRobin(tasks));
+    check(st.allAssigned && JSON.stringify(st.assign) === JSON.stringify(roundRobin(tasks)), '轮转按编号摊派：任务 i 归 rank i % 4（sp7）');
+    check(st.makespan === rr && rr > optimal * SCHED.tolerance && !(await obs()).solved, `轮转总耗时 ${rr} 秒超过目标，不判成功`);
+    check((await page.locator('#obs-status').textContent()).includes('range(rank, 12, 4)'), '状态行解释轮转不看任务大小');
+    await shot('st-02-scheduler-rr');
+    // 贪心：最长任务先给最闲的 worker → 达标
+    await page.keyboard.press('KeyG');
+    await page.waitForTimeout(150);
+    st = await station();
+    const lpt = makespan(tasks, greedyLPT(tasks));
+    check(st.makespan === lpt && lpt <= optimal * SCHED.tolerance, `贪心分配后总耗时 ${lpt} 秒 ≤ 最优的 1.1 倍`);
+    await afterSolved(ch, 'st-03-scheduler-solved');
   }
 } catch (err) {
   failed = true;
