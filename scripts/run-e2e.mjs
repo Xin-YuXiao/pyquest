@@ -51,6 +51,10 @@ if (found === 'pyquest') {
   const port = Number(new URL(BASE).port) || 5173;
   server = await createServer({ server: { port, strictPort: true }, logLevel: 'warn' });
   await server.listen();
+  // 预热：先请求一次页面与入口模块，触发依赖预构建，
+  // 避免冷启动耗时全算在第一章 page.goto 的 30s 超时里（机器负载高时会超时）
+  await fetch(BASE).then((r) => r.text());
+  await fetch(new URL('src/main.js', BASE)).then((r) => r.text());
   console.log(`[e2e] 已临时启动开发服务器 ${BASE}（跑完自动关闭）`);
 }
 

@@ -9,7 +9,8 @@ import js from '@eslint/js';
 import globals from 'globals';
 
 export default [
-  { ignores: ['dist/', 'node_modules/', 'assets/', '.agents/', 'scripts/shots/'] },
+  // .claude/：Claude Code 本地目录（并行 agent 的 worktree 也建在这里），不属于项目源码
+  { ignores: ['dist/', 'node_modules/', 'assets/', '.agents/', '.claude/', 'scripts/shots/'] },
   js.configs.recommended,
   {
     files: ['src/**/*.js'],
