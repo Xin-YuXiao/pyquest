@@ -29,3 +29,5 @@ Blocked by: 01, 04
 - [ ] `npm run check` 全绿（本地与 CI）
 
 ## Comments
+
+- 2026-10-25：运行时已就绪（见 04）；把它用到「代码符文」（W6-8 numpy/scipy 判分）仍待做，需要额外自托管 numpy/scipy 包。

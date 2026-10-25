@@ -1,6 +1,6 @@
 # 04: 第一关：你是分类员（个人混淆矩阵）
 
-Status: needs-info
+Status: resolved
 Type: task
 Blocked by: 02, 03
 
@@ -22,3 +22,5 @@ Blocked by: 02, 03
 - [ ] `npm run check` 全绿
 
 ## Comments
+
+- 2026-10-25：feat/more-stations 实现：第十一章星系分类台第一关（玩家亲手分类 12 个星系，看自己的混淆矩阵）。

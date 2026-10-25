@@ -1,6 +1,6 @@
 # 05: 关卡铺开（W1–W2 全部概念）+ 训练场入口 + 个人最佳与分级提示
 
-Status: needs-info
+Status: resolved
 Type: task
 Blocked by: 01, 04
 
@@ -19,3 +19,5 @@ Blocked by: 01, 04
 - [ ] `npm run check` 全绿
 
 ## Comments
+
+- 2026-10-25：feat/code-dojo 实现：7 关（顺序 / for / if / while / def / 列表 / 综合）、第二章森林入口、行数 / 步数个人最佳；verify-dojo 用 CPython 实跑参考解。

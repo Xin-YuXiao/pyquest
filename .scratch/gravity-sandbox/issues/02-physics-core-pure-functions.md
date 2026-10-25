@@ -1,6 +1,6 @@
 # 02: 物理核心：固定步长积分、softening 与能量（纯函数）
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: None (can start immediately)
 
@@ -29,3 +29,5 @@ Blocked by: None (can start immediately)
 - [ ] `npm run check` 全绿
 
 ## Comments
+
+- 2026-10-25：feat/more-stations 实现：core/stations.js 固定步长积分、softening 力律 g=GM/(r²+ε²) 与配对势能、能量误差。

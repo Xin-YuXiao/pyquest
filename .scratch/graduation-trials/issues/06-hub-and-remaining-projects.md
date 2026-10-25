@@ -21,3 +21,5 @@ Project-4 样板跑通后，为扩展到八个 Project 做好容器和计划：
 - [ ] `npm run check` 全绿
 
 ## Comments
+
+- 2026-10-25：大厅已做；除 Project-4 外又做了 P1 双爱因斯坦环、P2 透镜建模、P5/7 星系与光谱分类；P3 / P6 / P8 待做。

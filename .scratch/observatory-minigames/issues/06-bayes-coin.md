@@ -1,6 +1,6 @@
 # 06: 小游戏：后验更新——偏心硬币（第九章）
 
-Status: needs-info
+Status: resolved
 Type: task
 Blocked by: 02
 
@@ -18,3 +18,5 @@ Blocked by: 02
 - [ ] `npm run check` 全绿
 
 ## Comments
+
+- 2026-10-25：feat/more-stations 实现：第九章贝叶斯硬币（对齐 st8 / st18 / st11）。

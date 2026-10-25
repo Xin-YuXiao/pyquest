@@ -1,6 +1,6 @@
 # 02: 运行时实测：Pyodide 体积、加载耗时、内置包版本与国内可达性
 
-Status: ready-for-agent
+Status: resolved
 Type: prototype
 Blocked by: None (can start immediately)
 
@@ -25,3 +25,5 @@ Blocked by: None (can start immediately)
 - [ ] 原型代码不进入主游戏构建、不影响 `npm run check`
 
 ## Comments
+
+- 2026-10-25：feat/code-dojo 实测：Pyodide 314.0.7 自托管，下载 13.53 MB（仅首次进训练场时），首次加载本机约 3.9 s，单次运行约 0.1 s，死循环 4 s 截停后 Worker 约 3.3 s 重建。

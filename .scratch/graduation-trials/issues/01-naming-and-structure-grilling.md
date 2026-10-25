@@ -24,3 +24,5 @@ Blocked by: None (can start immediately)
 - [ ] 02-06 号工单 Status 由维护者更新为 ready-for-agent（或注明仍缺什么）
 
 ## Comments
+
+- 2026-10-25：已按推荐实现：名称「Project 秘境」、第一部通关后开启、独立存档字段、每步固定题目允许与主线重复（间隔复习）；请助教确认。

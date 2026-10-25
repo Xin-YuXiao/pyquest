@@ -33,11 +33,12 @@ npm run check      # 全部验证（lint / 冒烟 / 题库实跑 / 构建 / 全�
 | --- | --- |
 | 方向键 / WASD | 移动 |
 | J / 空格 | 挥剑攻击 |
-| E | 交互（符文石 / NPC / 石门 / 观测台 / 秘藏石碑） |
+| E | 交互（符文石 / NPC / 石门 / 观测台 / 秘藏石碑 / 秘境与训练场之门） |
 | Tab | 世界地图（查看各章进度 / 快速传送已解锁章节 / 错题本入口） |
 | M | 静音开关（音效 + 背景音乐） |
 | N | 只开关背景音乐（设置会记住） |
 | Esc | 关闭观测台 / 秘藏卷轴；在「无限回廊」里按它跳出循环 |
+| Ctrl+Enter | 代码训练场里运行代码 |
 
 **手机 / 平板**：横屏最佳。左半屏任意位置按住拖动 = 虚拟摇杆；右下角「挥剑」「交互」按钮
 （附近有可交互物时交互键发金光）；右上角世界地图与静音。
@@ -74,12 +75,20 @@ npm run check      # 全部验证（lint / 冒烟 / 题库实跑 / 构建 / 全�
 4. **巢穴**：祝福符文（答对回心）+ **BOSS 符文**（答对破除护盾，才能造成伤害）。
 5. **击败 BOSS** → 本章结算（用时/谜题数/章节进度）→ 前方传送门通往下一章。
 
+## 🆕 新关卡
+
+| 关卡 | 入口与解锁 | 怎么玩 | 教学用意 |
+| --- | --- | --- | --- |
+| **Project 秘境**（4 个） | 诺瓦村庄东南角「秘境之门」，**第一部（第八章）通关后**开启 → 秘境大厅；世界地图东南角「Project 秘境」区块可直达 | 每个秘境是一张新地图：外庭里 5 块课题符文按 Project 工作流**按顺序**解锁（选题 → 文献 → 数据 → 分析 → 验证），圣所里第 6 步「报告」是 BOSS 符文，破盾后打 BOSS，通关得课题徽章。四个秘境：**P4 暗晕重建**（外庭还有 NFW 拟合台）、**P1 双爱因斯坦环**、**P2 透镜建模**、**P5/7 星系与光谱分类** | 把散落在各章的知识串成一个真实课题的完整工作流；全部复用题库已有题目（间隔复习），答错照样进错题本 |
+| **无尽试炼塔** | 世界地图西侧「试炼塔」地标，**第三章通关后**开放 | 随机生成的楼层，答对本层全部塔符文开启上楼阶梯；每 3 层小怪变多变强，每 5 层一个借用已通关章节 BOSS 机制的「守层者」，之后是能回 1 心的休息平台；爱心归零结束，结算页显示到达层数、正确率、本次复习了几道错题、个人最佳 | 只出已通关章节的题，**错题本里的题优先**、其次是很久没见过的题——游戏化的间隔复习；主线爱心与进度完全不受影响 |
+| **代码训练场**（7 关） | 第二章森林里的金色「代码训练场」门，**第一章通关后**开启 | 在编辑器里写**真 Python**（浏览器内 Pyodide 运行，离线可用），用 `move()` / `look()` / `jump()` / `attack()` 驱动勇者过格子房间：顺序执行 → for 长桥 → if 陷阱走廊 → while 迷雾小径 → def 台阶阵 → 列表碎片清单 → 综合关；运行后勇者逐步回放（可 3 倍速 / 跳过），报错翻成中文并标行号，两级提示，记录行数 / 步数个人最佳 | upstream 路线图的「真实代码执行」；关卡清单与概念顺序见 `docs/code-dojo.md`（待助教对照讲义审核） |
+
 ## ✨ 新玩法
 
 | 玩法 | 在哪 / 怎么玩 | 教学用意 |
 | --- | --- | --- |
 | **BOSS 招牌机制** | 每章 BOSS 破盾后各有一个与本章知识点呼应的机制，顶部横幅说明规则：第三章正弦弹道、第五章迟缓光环 + 「向量化」加速、第六章梯度下降冲锋（步长衰减）、第七章三个频率分身须按频率从低到高击破、第八章 NFW 引力牵引、第九章「后验更新」预判瞄准、第十章幻觉符文（只有带金印的是真的）、第十一章三途三阶段…… | 把抽象概念变成身体记得住的打法 |
-| **观测站小游戏** | 第八章野外「NFW 拟合台」：拖两个对数滑块调 ρ₀、Rₛ，实时看 χ²/dof，压到 1.5 以下并保持 1 秒即拟合成功（H 键看提示）；第七章「频率调谐台」：扫频率找出 1 / 4 / 7 Hz 三个峰 | 亲手调参数理解拟合与频谱，数字全部对齐题库 dm8 / dm9 / sg6 / st7 |
+| **观测站小游戏**（7 座） | 各章野外的观测台，按 E 打开：第三章**蒙特卡洛估 π**（撒点看误差按 1/√N 下降）· 第五章**并行搬砖**（12 个任务分给 4 个 worker，看甘特图做负载均衡）· 第六章**引力沙盒**（拖初速度让卫星绕 3 圈；把 softening 调到 0 看近距离飞散）· 第七章**频率调谐台**（找 1 / 4 / 7 Hz 三个峰）· 第八章 **NFW 拟合台**（拖对数滑块把 χ²/dof 压到 1.5 以下）· 第九章**贝叶斯硬币**（抛硬币看先验 × 似然 → 后验收窄）· 第十一章**星系分类台**（先自己分类看混淆矩阵，再选特征训练 kNN、识破「高准确率但稀有类召回为 0」的陷阱） | 亲手调参数理解拟合、频谱、统计与机器学习；数值全部对齐题库已有题目（代码注释里注明题号） |
 | **Python 秘藏** | 每章野外藏一块发光的 `>>>` 石碑（共 11 块），按 E 展开：`import this`、`0.1 + 0.2`、`from __future__ import braces`、`import antigravity`（勇者浮空，可飞越水面）、`while True` 无限回廊（按 Esc 发出 KeyboardInterrupt 跳出）…… 世界地图显示「秘藏 x / 11」 | Python 文化常识；石碑里的每段输出都由本机 python 实跑校验 |
 | **错题本** | 世界地图（Tab）头部「错题本（N）」：答错过的题自动入册，可按章节 / 符文类型筛选，点「复习」重做（选项打乱、不扣心、不发碎片），连续答对 2 次记为「已掌握」 | 答错不再只是扣一颗心；每次作答都记入学习记录 |
 | **背景音乐** | 零素材的程序化 8-bit 音乐：每章野外各有主题、巢穴 BOSS 战、胜利号角；答题时自动压低到 15%；N 键开关 | 有氛围但不打扰答题 |
@@ -156,6 +165,12 @@ src/
 ├── core/input.js            # 输入抽象：键盘 + 触控摇杆合并为 8 向移动；交互 / 攻击 / 地图 / 静音为语义动作
 ├── core/observatory.js      # 观测站纯数学层：NFW 数据与 χ²、频谱调谐、观测日志
 ├── core/bossMath.js         # BOSS 机制公式（正弦弹道 / NFW 引力 / 后验瞄准权重 / 学习率衰减）
+├── core/stations.js         # 第二批观测站纯数学：蒙特卡洛 π / 调度 / 引力积分 / Beta 后验 / 星系特征与 kNN
+├── core/realms.js           # Project 秘境进度规则（按序解锁 / 徽章 / HUD）
+├── core/tower.js            # 试炼塔规则（解锁 / 错题优先选题 / 楼层规划 / 战绩）
+├── core/dojoSim.js          # 代码训练场关卡模拟器（主线程与 Worker 共用）
+├── core/dojoPrelude.js      # 训练场的 Python 英雄 API 与中文报错翻译
+├── core/pyRuntime.js        # Pyodide 运行时（Worker 管理、超时重建）；core/pyWorker.js 为 Worker 本体
 ├── core/phase.js            # 章内阶段（新来/收集/集齐/门开/通关）：NPC 台词、HUD、世界地图的单一推断来源
 ├── core/quiz.js             # 答题行为层：随机抽题 pickQuestion + Python 语法高亮
 ├── core/seam.js             # 测试接缝：window.__PYQUEST__ 只读查询 + 语义动作（E2E 专用）
@@ -165,7 +180,10 @@ src/
 │   ├── quizBank.js          # Python 题库（251 题 · 34 个同难度题池）+ 槽位映射（题面权威源，ADR-0001）
 │   ├── quizData.js          # 兼容 re-export 枢纽（旧 import 路径，新代码直接用 quizBank / core/quiz）
 │   ├── bossMechanics.js     # 11 个 BOSS 招牌机制的种类与参数表（章节配置的 bossMechanic 引用）
-│   └── secrets.js           # 11 个 Python 秘藏彩蛋（REPL 片段 + 讲解）与确定性选址
+│   ├── secrets.js           # 11 个 Python 秘藏彩蛋（REPL 片段 + 讲解）与确定性选址
+│   ├── realms.js            # Project 秘境注册表（独立于 CHAPTERS）：每步课题符文引用的题目与理由
+│   ├── realmMaps.js         # 秘境大厅 / 外庭 / 圣所地图
+│   └── dojoLevels.js        # 代码训练场 7 关（目标 / API / 模板 / 提示 / 参考解 / 多布局）
 ├── assets/ts.js             # Tiny Swords 素材清单/加载/动画（素材本体在 assets/TinySwordsFreePack/，未入库）
 ├── textures/pixelArt.js     # 程序化补充贴图（代码碎片/爱心/传送门/石门等）
 ├── textures/ground.js       # 整图地面画布（草地 → 水/土路 → 岸沫分层绘制）
@@ -182,13 +200,18 @@ src/
     ├── BootScene.js         # 生成贴图动画 + 标题画面（继续冒险按最新章节落点）
     ├── WorldScene.js        # 世界基类：地图/交互/传送门封印/答题接线（章节驱动）
     ├── ChapterScene.js      # 通用章节场景：FieldScene（野外）+ LairScene（巢穴）+ 工厂
-    └── secrets.js           # 秘藏石碑交互（浮空 / 无限回廊等特效）
+    ├── secrets.js           # 秘藏石碑交互（浮空 / 无限回廊等特效）
+    ├── RealmScene.js        # Project 秘境大厅 / 外庭 / 圣所场景
+    ├── TowerScene.js        # 试炼塔（一个场景反复重启呈现每一层）
+    └── DojoScene.js         # 代码训练场（关卡房间 + 动作回放）
 ui/                          # DOM 覆盖层：HUD、对话框、答题面板（主线 / 复习两种模式）、结算、
-                             # 错题本、观测台、秘藏卷轴、BOSS 机制横幅、触控层、音乐开关
+                             # 错题本、观测台（stations/ 为第二批）、秘藏卷轴、BOSS 机制横幅、触控层、音乐开关、
+                             # 训练场编辑器面板、试炼塔结算页
 scripts/
 ├── smoke.mjs                # 无头冒烟测试（贴图/全部章节地图/题库/题池/抽题校验）
 ├── verify-quiz.mjs          # 题库自动校验（用本机 python 执行输出确定的题目，比对 stdout）
 ├── verify-secrets.mjs       # 秘藏彩蛋里展示的 Python 输出逐条用真 python 复现核对
+├── verify-dojo.mjs          # 训练场每关参考解在全部布局上用 CPython 实跑通关、初始模板不能通关
 ├── fixtures/                # 真实的 v1 / v2 存档样本（迁移测试用）
 ├── gen-ts-stubs.mjs         # 无素材环境（CI）生成 Tiny Swords 纯色占位图，让 E2E 可跑
 ├── run-e2e.mjs              # E2E 总入口（npm run test:e2e）：复用或临时启动 dev server，逐章跑并汇总
@@ -204,7 +227,8 @@ scripts/
 ├── e2e-ch9.mjs              # 第九章 E2E（统计圣所/后验回廊/贝叶斯祭司/衔接第十章）
 ├── e2e-ch10.mjs             # 第十章 E2E（灵思之塔/验证回廊/幻言魔像/衔接第十一章）
 ├── e2e-ch11.mjs             # 第十一章 E2E（毕业试炼/三途之门/三途守门人/全部通关）
-└── e2e-<功能>.mjs           # 功能 E2E（自动发现）：boss-mechanics / observatory / secrets / review / music / mobile
+└── e2e-<功能>.mjs           # 功能 E2E（自动发现）：boss-mechanics / observatory / stations / secrets / review / music /
+                             # mobile / realms / tower / dojo
 ```
 
 ## 🎨 画面技术（Tiny Swords 素材 + 程序化补充）
@@ -246,7 +270,7 @@ npm run check                # lint → test → build → test:e2e
 
 ```bash
 npm run lint                 # ESLint（flat config，仅 recommended 规则，不管格式）
-npm test                     # smoke（地图 / 题库 / 存档迁移 / 学习记录 / 各玩法数据）+ verify-quiz + verify-secrets（python 实跑核对）
+npm test                     # smoke（地图 / 题库 / 存档迁移 / 学习记录 / 各玩法数据）+ verify-quiz / verify-secrets / verify-dojo（python 实跑核对）
 npm run test:e2e             # 全部章节 E2E：5173 上已有 dev server 就复用，没有就临时起一个、跑完关掉
 npm run test:e2e -- 9 10 11  # 只跑指定章节
 npm run test:e2e -- review music  # 只跑指定功能（scripts/e2e-<功能>.mjs 自动发现）
@@ -282,8 +306,8 @@ node scripts/e2e-ch11.mjs    # E2E：第十一章（毕业试炼/三途之门/�
 - [x] ~~W4-W8 注册为可玩关卡（传送门链 + 起步题池）~~ ✅
 - [x] ~~W4-W8 题量充实 · 第一阶段（每章 20 题：shard×10 基础 / lair×7 进阶 / boss×3 综合，tier 11-25）~~ ✅
 - [ ] W4-W8 题量进一步充实（可选扩展至每章 40-60 题：FITS 实操、emcee 漫步、NFW 拟合数值题）
-- [ ] Pyodide 沙盒：W6-8 真实代码执行判分（跑 numpy/scipy 拟合 NFW）
-- [ ] 八个课程 Project 作为通关后「毕业试炼」隐藏关卡
+- [x] ~~Pyodide 真实代码执行~~ ✅ 第一步：代码训练场（纯 Python，W1-W2 概念）；W6-8 跑 numpy/scipy 判分仍待做（见 `.scratch/pyodide-sandbox/`）
+- [x] ~~课程 Project 作为通关后隐藏关卡~~ ✅ 已做 4 个（P1 / P2 / P4 / P5+7，名为「Project 秘境」）；P3 / P6 / P8 待做
 - [x] ~~移动端虚拟摇杆~~ ✅（触控层 + 答题面板触控适配）
 - [ ] 难度曲线（爱心上限/商店金币）——规格见 `.scratch/difficulty-economy/`
 
@@ -297,6 +321,7 @@ node scripts/e2e-ch11.mjs    # E2E：第十一章（毕业试炼/三途之门/�
 ### 已上线的新玩法与后续规划
 
 - [x] ~~BOSS 招牌机制、观测站小游戏、Python 秘藏、错题本 + 学习记录、程序化背景音乐、移动端触控~~ ✅（见「新玩法」）
+- [x] ~~新关卡：Project 秘境 ×4、无尽试炼塔、代码训练场（7 关）；观测站扩到 7 座~~ ✅（见「新关卡」）
 - 完整 backlog（33 个 effort · 193 张工单，含 Pyodide 代码沙盒、代码拼图、课堂投屏模式、学习报告、
   星系分类台、引力沙盒、写代码驱动勇者等）与设计依据见 [`.scratch/README.md`](.scratch/README.md)、
   [`.scratch/INSPIRATION.md`](.scratch/INSPIRATION.md)

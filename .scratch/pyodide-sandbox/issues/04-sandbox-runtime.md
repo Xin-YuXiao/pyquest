@@ -1,6 +1,6 @@
 # 04: 沙盒运行时：自托管 Pyodide + Web Worker 协议 + 超时恢复
 
-Status: needs-info
+Status: resolved
 Type: task
 Blocked by: 03
 
@@ -25,3 +25,5 @@ Blocked by: 03
 - [ ] `npm run check` 全绿（本地与 CI）
 
 ## Comments
+
+- 2026-10-25：feat/code-dojo 实现：npm pyodide 包经 vite 插件自托管（开发中间件 + 构建复制到 dist/pyodide/），ES Worker，超时重建；E2E 校验零 CDN 请求。

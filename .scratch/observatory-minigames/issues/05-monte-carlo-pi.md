@@ -1,6 +1,6 @@
 # 05: 小游戏：蒙特卡洛估 π（第三章）
 
-Status: needs-info
+Status: resolved
 Type: task
 Blocked by: 02
 
@@ -18,3 +18,5 @@ Blocked by: 02
 - [ ] `npm run check` 全绿
 
 ## Comments
+
+- 2026-10-25：feat/more-stations 实现：第三章蒙特卡洛估 π（对齐 mp5 / mp6 / st5 / st14）。

@@ -1,6 +1,6 @@
 # 03: 自由模式沙盒：放置、拖拽初速度、轨迹与能量曲线
 
-Status: needs-info
+Status: resolved
 Type: task
 Blocked by: 01, 02
 
@@ -22,3 +22,5 @@ Blocked by: 01, 02
 - [ ] `npm run check` 全绿
 
 ## Comments
+
+- 2026-10-25：feat/more-stations 实现：第六章引力沙盒（滑块 / 拖速度箭头、轨迹与能量读数）。

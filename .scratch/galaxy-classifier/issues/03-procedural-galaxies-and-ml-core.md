@@ -1,6 +1,6 @@
 # 03: 程序化星系生成 + 特征 + 分类器 + 评估指标（纯函数核心）
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: None (can start immediately)
 
@@ -25,3 +25,5 @@ Blocked by: None (can start immediately)
 - [ ] smoke 新增上述校验；`npm run check` 全绿
 
 ## Comments
+
+- 2026-10-25：feat/more-stations 实现：程序生成卡通星系 + 特征 + kNN + 混淆矩阵 / 召回（纯函数）。

@@ -20,3 +20,5 @@ Blocked by: 01, ../quiz-expansion-w4-w8/issues/01
 - [ ] 维护者 grilling 确认（Comments 记录），05 号工单 Status 更新
 
 ## Comments
+
+- 2026-10-25：样板没有等新题提纲：全部复用题库已有题目（选题理由写在 data/realms.js 注释里），守住 ADR-0001。若要专门的 Project 新题仍需本工单的提纲 + 素材。

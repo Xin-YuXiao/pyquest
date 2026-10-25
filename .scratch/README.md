@@ -27,6 +27,18 @@
 第一波**先按各 spec「待决策」的推荐方案落地**；对应的 grilling 工单仍保留并已在 Comments 里注明，
 助教试玩确认后如需调整再改。各工单的实现说明见其 Comments。
 
+## 第二波已实现：新关卡（全部合入 `dev`）
+
+| 分支 | 对应 effort | 内容 | 关闭的工单 |
+| --- | --- | --- | --- |
+| `feat/project-realms` | graduation-trials | **Project 秘境 ×4**（P4 暗晕重建 / P1 双爱因斯坦环 / P2 透镜建模 / P5+7 星系与光谱分类）：秘境大厅 + 每个秘境外庭五步课题符文按序解锁 + 圣所 BOSS + 徽章 | 02、03、05 |
+| `feat/endless-tower` | （新增关卡类型，衔接 challenge-modes / mistake-review） | **无尽试炼塔**：随机楼层、错题优先出题、每 5 层守层者、个人最佳；顺带修复「无水面草地图让环境粒子崩溃」 | — |
+| `feat/code-dojo` | code-the-hero + pyodide-sandbox | **代码训练场 7 关**：浏览器内 Pyodide 写真 Python 驱动勇者 | CH 02-05；PS 02、04 |
+| `feat/more-stations` | observatory-minigames + gravity-sandbox + galaxy-classifier | 再加 5 座观测台：蒙特卡洛 π / 并行搬砖 / 引力沙盒 / 贝叶斯硬币 / 星系分类台 | OM 04-06；GS 02、03、05；GC 03-05 |
+
+内容仍守 ADR-0001：秘境与试炼塔只引用题库已有题目；训练场是编程练习（清单见 `docs/code-dojo.md`，待助教对照讲义审核）；
+观测台用到的、题库未覆盖的知识（积分器、Beta 分位数数值积分、kNN 等）列在各工单 Comments 里待确认。
+
 ## 全部 effort
 
 ### 教学新题型（借鉴教学研究）

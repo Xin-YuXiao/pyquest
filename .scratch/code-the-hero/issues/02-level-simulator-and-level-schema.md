@@ -1,6 +1,6 @@
 # 02: 关卡模拟器纯函数 + 关卡数据契约（不依赖 Python）
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: None (can start immediately)
 
@@ -23,3 +23,5 @@ Blocked by: None (can start immediately)
 - [ ] `npm run check` 全绿
 
 ## Comments
+
+- 2026-10-25：feat/code-dojo 实现：core/dojoSim.js 关卡模拟器纯函数（主线程与 Worker 共用）+ data/dojoLevels.js。

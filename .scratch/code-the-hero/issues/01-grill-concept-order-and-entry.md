@@ -21,3 +21,5 @@ Blocked by: None (can start immediately)
 - [ ] 其余各项有明确结论
 
 ## Comments
+
+- 2026-10-25：已按推荐实现；关卡清单与概念顺序写在 docs/code-dojo.md，额外加了 jump()，请助教对照讲义审核。

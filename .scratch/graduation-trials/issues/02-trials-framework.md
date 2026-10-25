@@ -1,6 +1,6 @@
 # 02: 秘境框架：独立注册表、村庄入口、秘境场景骨架与测试接缝
 
-Status: needs-info
+Status: resolved
 Type: task
 Blocked by: 01
 
@@ -25,3 +25,5 @@ Blocked by: 01
 - [ ] `npm run check` 全绿
 
 ## Comments
+
+- 2026-10-25：feat/project-realms 实现并合入 dev：独立注册表 data/realms.js（不进 CHAPTERS）、村庄秘境之门（第八章通关后开启）、秘境大厅、世界地图「Project 秘境」区块、存档 v3 可选字段 realms。

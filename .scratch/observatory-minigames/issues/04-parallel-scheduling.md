@@ -1,6 +1,6 @@
 # 04: 小游戏：并行搬砖（第五章）
 
-Status: needs-info
+Status: resolved
 Type: task
 Blocked by: 02
 
@@ -19,3 +19,5 @@ Blocked by: 02
 - [ ] `npm run check` 全绿
 
 ## Comments
+
+- 2026-10-25：feat/more-stations 实现：第五章并行搬砖（12 任务 / 4 worker / 甘特图，对齐 sp7 / sp3 / sp12 / sp13）。

@@ -1,6 +1,6 @@
 # 03: 课题符文按序解锁（链 id + 步号）
 
-Status: needs-info
+Status: resolved
 Type: task
 Blocked by: 02
 
@@ -23,3 +23,5 @@ Blocked by: 02
 - [ ] `npm run check` 全绿
 
 ## Comments
+
+- 2026-10-25：feat/project-realms 实现：课题符文按序解锁，未解锁时提示「先完成第 n 步」；作答记为 kind=trial 进学习记录 / 错题本。

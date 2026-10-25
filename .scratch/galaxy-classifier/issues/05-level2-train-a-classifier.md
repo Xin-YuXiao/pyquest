@@ -1,6 +1,6 @@
 # 05: 第二关：训练分类器与稀有类挑战
 
-Status: needs-info
+Status: resolved
 Type: task
 Blocked by: 02, 03, 04
 
@@ -20,3 +20,5 @@ Blocked by: 02, 03, 04
 - [ ] `npm run check` 全绿
 
 ## Comments
+
+- 2026-10-25：feat/more-stations 实现：第二关选特征训练 kNN，默认「只看颜色」准确率约 94% 但不规则星系召回为 0、不能过关（对齐 pj16）。

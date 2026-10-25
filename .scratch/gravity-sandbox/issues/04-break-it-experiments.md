@@ -18,3 +18,5 @@ Blocked by: 01, 03
 - [ ] `npm run check` 全绿
 
 ## Comments
+
+- 2026-10-25：已做 softening=0 近距离飞散的破坏实验（P 键预设）；步长破坏实验未单独做。

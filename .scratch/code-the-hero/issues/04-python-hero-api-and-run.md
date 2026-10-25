@@ -1,6 +1,6 @@
 # 04: Python 英雄 API + 编辑器 + 运行 → 回放
 
-Status: needs-info
+Status: resolved
 Type: task
 Blocked by: 03, ../pyodide-sandbox/issues/01
 
@@ -23,3 +23,5 @@ Blocked by: 03, ../pyodide-sandbox/issues/01
 - [ ] `npm run check` 全绿
 
 ## Comments
+
+- 2026-10-25：feat/code-dojo 实现：Python 英雄 API（move / look / jump / attack）经 Pyodide Worker 同步调用模拟器产出动作轨迹；中文报错带行号。

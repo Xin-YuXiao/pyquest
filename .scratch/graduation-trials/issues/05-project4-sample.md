@@ -1,6 +1,6 @@
 # 05: Project-4 样板落地：六步题目、课题封印页与徽章
 
-Status: needs-info
+Status: resolved
 Type: task
 Blocked by: 03, 04
 
@@ -23,3 +23,5 @@ Blocked by: 03, 04
 - [ ] `npm run check` 全绿
 
 ## Comments
+
+- 2026-10-25：feat/project-realms 实现：Project-4 暗晕重建（dm1/dm15/dm16/dm14/pj18/st17 + 外庭 NFW 拟合台 + 暗晕吞噬者 BOSS）。

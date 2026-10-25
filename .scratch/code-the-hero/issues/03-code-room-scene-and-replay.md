@@ -1,6 +1,6 @@
 # 03: 代码训练场场景与动作回放（用预置动作演示）
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: 02
 
@@ -21,3 +21,5 @@ Blocked by: 02
 - [ ] `npm run check` 全绿
 
 ## Comments
+
+- 2026-10-25：feat/code-dojo 实现：DojoScene 关卡房间 + 逐步回放（3 倍速 / 跳过）。

@@ -1,6 +1,6 @@
 # 05: 挑战关卡：三圈不坠毁 / 三体十秒 / 最省燃料入轨
 
-Status: needs-info
+Status: resolved
 Type: task
 Blocked by: 01, 03
 
@@ -18,3 +18,5 @@ Blocked by: 01, 03
 - [ ] `npm run check` 全绿
 
 ## Comments
+
+- 2026-10-25：feat/more-stations 实现了「卫星绕 3 圈不坠毁不逃逸」挑战；三体十秒 / 最省燃料入轨未做。
