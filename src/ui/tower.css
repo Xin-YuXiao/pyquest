@@ -1,0 +1,76 @@
+/* ============================================================
+   试炼塔：结算页（复用胜利封印页的羊皮纸证书）+ 世界地图上的「试炼塔」地标
+   ============================================================ */
+
+/* ---- 结算页：容器与 #victory 同款暗色暖光底，纸面 / 统计印沿用 .seal-* 共享样式 ---- */
+#tower-result {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(120% 90% at 50% 38%, rgba(30, 36, 66, .62), rgba(10, 10, 22, .88));
+  overflow: hidden;
+  z-index: 40;
+}
+#tower-result.hidden { display: none; }
+#tower-result .seal-band {
+  background: linear-gradient(180deg, #34406e 0%, #2b3560 100%);
+}
+#tower-result h1 {
+  font-size: var(--fs-hero); color: var(--gold);
+  text-shadow: 0 3px 0 #8a5a00, 0 7px 16px rgba(0, 0, 0, .5);
+  letter-spacing: 3px;
+}
+#tower-result .seal-sub b { color: #6b4a1e; }
+#tower-result .btn.ghost {
+  background: #fff; border-color: var(--panel-border);
+  color: var(--ink); box-shadow: 0 3px 0 rgba(0, 0, 0, .15);
+}
+.tr-best-line {
+  font-family: var(--font-kai); font-size: var(--fs-body);
+  color: #7a5f3a; margin: -10px 0 20px;
+}
+.tr-best.new {
+  display: inline-block; margin-right: 6px; padding: 0 8px;
+  border-radius: 6px; background: #ffd257; color: #5b3a05;
+  font-family: inherit;
+}
+
+/* ---- 世界地图地标：与章节地标同构（.mn-pin / .mn-disc / .mn-plate），独立类名不计入章节节点 ---- */
+.map-tower {
+  position: absolute;
+  left: calc(var(--x) * 10px);
+  top: calc(var(--y) * 6px);
+  width: 142px; height: 116px;
+  margin: -23px 0 0 -71px;
+  padding: 0; border: 0; background: none;
+  font-family: inherit; color: inherit; text-align: left;
+  cursor: pointer; pointer-events: auto;
+  z-index: 2;
+  -webkit-tap-highlight-color: transparent;
+}
+.map-tower .mn-disc {
+  font-family: var(--font-kai);
+  background: radial-gradient(circle at 34% 26%, #6a7fc9 0%, #3e4c8c 62%, #2c3566 100%);
+  border-color: #8fa2e6;
+}
+.map-tower:hover:not(.locked),
+.map-tower:focus-visible { z-index: 5; }
+.map-tower:hover:not(.locked) .mn-pin {
+  transform: translate(-50%, calc(-50% - 5px));
+  filter: drop-shadow(0 0 9px rgba(143, 162, 230, .6));
+}
+.map-tower:hover:not(.locked) .mn-plate {
+  transform: translate(-50%, -4px);
+  border-color: #8fa2e6;
+}
+.map-tower.locked { cursor: default; }
+.map-tower.locked .mn-disc {
+  background: radial-gradient(circle at 34% 26%, #4a4458 0%, #332e3f 62%, #26222f 100%);
+  border-color: #5b5468; color: #9a93aa;
+}
+.map-tower.locked .mn-plate { opacity: .82; }
+.map-tower .mn-status.best { color: #fff3c4; border-color: rgba(143, 162, 230, .45); }
+
+@media (prefers-reduced-motion: reduce) {
+  #tower-result .seal-paper, #tower-result .victory-stamp, #tower-result .victory-stamp::after,
+  #tower-result .stat-seal, #tower-result .seal-actions { animation: none; }
+}

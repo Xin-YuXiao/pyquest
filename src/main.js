@@ -6,6 +6,8 @@ import Phaser from 'phaser';
 import BootScene from './scenes/BootScene.js';
 import DojoScene from './scenes/DojoScene.js';
 import { makeFieldScene, makeLairScene } from './scenes/ChapterScene.js';
+import { TowerScene } from './scenes/TowerScene.js';
+import { TOWER_KEY } from './core/tower.js';
 import { CHAPTERS } from './data/chapters.js';
 import { initAutosave } from './core/save.js';
 
@@ -22,6 +24,9 @@ for (const ch of CHAPTERS) {
 }
 // 代码训练场（第二章森林里的可选关卡，写真 Python 驱动勇者）
 scenes.push(DojoScene);
+// 试炼塔（章节之外的爬塔关卡，第三章通关后从世界地图进入；一个场景反复重启呈现每一层）
+scenes.push(TowerScene);
+sceneKeys.push(TOWER_KEY);
 
 const config = {
   type: Phaser.AUTO,

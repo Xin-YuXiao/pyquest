@@ -153,9 +153,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.anims.stop();
     this.setTint(0x888888);
     const scene = this.scene;
-    // 塞尔达式圆形转场：回到本章野外重生
+    // 塞尔达式圆形转场：回到本章野外重生（试炼塔等场景可接管：onPlayerDefeated）
     const ch = scene.ch;
     wipeTransition(() => {
+      if (scene.onPlayerDefeated) { scene.onPlayerDefeated(); return; }
       G.hearts = G.maxHearts;
       updateHud();
       scene.scene.start(ch.fieldKey, { spawn: ch.id === 1 ? 'start' : 'fromPrev' });

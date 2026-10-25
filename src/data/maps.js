@@ -623,3 +623,138 @@ export function buildLair(ch) {
     ],
   };
 }
+
+// ============================================================
+// 试炼塔楼层生成器（core/tower.js 的 floorPlan 决定内容，种子决定布局）
+// 一层 = 一间封闭房间：南侧出生点、北侧上楼阶梯（本层通过后开启）、西南角出塔之门，
+// 中间散布塔符文与史莱姆；守层者层北部留出 BOSS 区与 BOSS 符文；
+// 休息平台 = 小房间 + 中央篝火（无符文、无怪）。
+// 地貌：grass 草原（树围）/ dungeon 地牢（墙围 + 火把）/ deep 深空（墙围 + 虚空裂隙 + 水晶）。
+// 符文槽 id：t{层}r{n} 塔符文 / t{层}h{n} 祝福符文 / t{层}boss（只在本次挑战内有效，不进 G.answered）
+// ============================================================
+export const TOWER_INTERACT_GAP = 3; // 符文与阶梯 / 出塔门 / 篝火至少相隔的格数（E 键不互相抢）
+
+export function buildTowerFloor({ plan, seed, rest = false, bossType = 'slime' }) {
+  const guardian = !rest && plan.guardian;
+  const w = rest ? 16 : guardian ? 26 : 24;
+  const h = rest ? 12 : guardian ? 20 : 18;
+  const rand = lcg((seed % 2147483646) + 1);
+  const cx = Math.floor(w / 2);
+  const palette = plan.palette;
+  const walled = palette !== 'grass';
+
+  const grid = Array.from({ length: h }, () => Array.from({ length: w }, () => {
+    if (walled) return T.DFLOOR;
+    const r = rand();
+    if (r < 0.06) return T.GRASS3;
+    if (r < 0.18) return T.GRASS2;
+    if (r < 0.23) return T.GRASS4;
+    return T.GRASS;
+  }));
+
+  const forbidden = new Set();
+  const block = (x, y) => { if (x >= 0 && y >= 0 && x < w && y < h) forbidden.add(`${x},${y}`); };
+  const blockAround = (tx, ty, r) => { for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) block(tx + dx, ty + dy); };
+
+  const props = [];
+  // 外圈：草原用树，地牢 / 深空用墙
+  for (let x = 0; x < w; x++) {
+    for (const y of [0, h - 1]) {
+      block(x, y);
+      if (walled) grid[y][x] = T.DWALL; else props.push({ type: 'tree', x: pc(x), y: pc(y) });
+    }
+  }
+  for (let y = 1; y < h - 1; y++) {
+    for (const x of [0, w - 1]) {
+      block(x, y);
+      if (walled) grid[y][x] = T.DWALL; else props.push({ type: 'tree', x: pc(x), y: pc(y) });
+    }
+  }
+
+  // 固定锚点：出生点（南）、阶梯（北）、出塔之门（西南角）、篝火（休息平台中央）
+  const spawn = { tx: cx, ty: h - 3 };
+  const stairs = { tx: cx, ty: 2 };
+  const exit = { tx: 2, ty: h - 3 };
+  blockAround(spawn.tx, spawn.ty, 1);
+  blockAround(stairs.tx, stairs.ty, TOWER_INTERACT_GAP - 1);
+  blockAround(exit.tx, exit.ty, TOWER_INTERACT_GAP - 1);
+  props.push({ type: 'tower_stairs', x: pc(stairs.tx), y: px(stairs.ty + 0.4) });
+  props.push({ type: 'tower_exit', x: pc(exit.tx), y: px(exit.ty + 0.4) });
+
+  let boss = null;
+  const runeSlots = [];
+  if (rest) {
+    const fire = { tx: cx, ty: Math.floor(h / 2) };
+    blockAround(fire.tx, fire.ty, TOWER_INTERACT_GAP - 1);
+    props.push({ type: 'tower_campfire', x: pc(fire.tx), y: pc(fire.ty) });
+  } else {
+    if (guardian) {
+      // 北部 BOSS 区（阶梯南侧）+ 正下方的 BOSS 符文
+      for (let y = 3; y <= 8; y++) for (let x = cx - 3; x <= cx + 3; x++) block(x, y);
+      boss = { type: bossType, x: pc(cx), y: pc(5) };
+      blockAround(cx, 9, TOWER_INTERACT_GAP - 1);
+      runeSlots.push({ type: 'rune', x: pc(cx), y: pc(9), qid: `t${plan.floor}boss`, bossRune: true });
+    }
+    const spots = scatterSlots(rand, w, h, plan.runes + plan.healRunes, 3, forbidden);
+    spots.forEach((s, i) => {
+      blockAround(s.tx, s.ty, 1);
+      runeSlots.push(i < plan.runes
+        ? { type: 'rune', x: pc(s.tx), y: pc(s.ty), qid: `t${plan.floor}r${i + 1}` }
+        : { type: 'rune', x: pc(s.tx), y: pc(s.ty), qid: `t${plan.floor}h${i - plan.runes + 1}`, healRune: true });
+    });
+  }
+  props.push(...runeSlots);
+
+  // 史莱姆：离出生点 ≥ 4 格（不出生即接敌）、离阶梯 / 出塔门 ≥ 2 格；按占比换成黑勇士
+  const keepOut = [{ ...spawn, r: 4 }, { ...stairs, r: 2 }, { ...exit, r: 2 }];
+  const slimeSpots = rest ? [] : scatterSlots(rand, w, h, plan.slimes, 2, forbidden, keepOut);
+  const crimsonN = Math.round(slimeSpots.length * plan.crimson);
+  const slimes = slimeSpots.map((s, i) => ({ x: pc(s.tx), y: pc(s.ty), variant: i < crimsonN ? 'crimson' : 'red' }));
+
+  // 装饰：草原零星树丛与花；地牢 / 深空四角火把 + 水晶（深空再挖几处虚空裂隙）
+  const free = (tx, ty) => tx > 1 && ty > 1 && tx < w - 2 && ty < h - 2 && !forbidden.has(`${tx},${ty}`);
+  if (!walled) {
+    for (let i = 0; i < 10; i++) {
+      const tx = 1 + Math.floor(rand() * (w - 2)), ty = 1 + Math.floor(rand() * (h - 2));
+      if (!forbidden.has(`${tx},${ty}`)) grid[ty][tx] = T.FLOWER;
+    }
+    for (let i = 0; i < 4; i++) {
+      const tx = 2 + Math.floor(rand() * (w - 4)), ty = 2 + Math.floor(rand() * (h - 4));
+      if (!free(tx, ty)) continue;
+      props.push({ type: rand() < 0.5 ? 'tree' : 'bush', x: pc(tx), y: pc(ty) });
+      blockAround(tx, ty, 1);
+    }
+  } else {
+    [[1.6, 1.6], [w - 2.6, 1.6], [1.6, h - 2.6], [w - 2.6, h - 2.6]].forEach(([tx, ty]) =>
+      props.push({ type: 'torch', x: px(tx + 0.5), y: px(ty + 0.5) + 32 }));
+    const crystals = palette === 'deep' ? 4 : 2;
+    for (let i = 0; i < crystals; i++) {
+      const tx = 2 + Math.floor(rand() * (w - 4)), ty = 2 + Math.floor(rand() * (h - 4));
+      if (!free(tx, ty)) continue;
+      props.push({ type: 'crystal', x: pc(tx), y: pc(ty) });
+      blockAround(tx, ty, 1);
+    }
+    if (palette === 'deep' && !rest) {
+      const quad = [[0, 0], [1, 0], [0, 1], [1, 1]];
+      for (let i = 0; i < 3; i++) {
+        const tx = 2 + Math.floor(rand() * (w - 5)), ty = 2 + Math.floor(rand() * (h - 5));
+        if (!quad.every(([dx, dy]) => free(tx + dx, ty + dy))) continue;
+        for (const [dx, dy] of quad) { grid[ty + dy][tx + dx] = T.VOID; block(tx + dx, ty + dy); }
+      }
+    }
+  }
+
+  return {
+    key: `Tower_${plan.floor}${rest ? 'r' : ''}_${seed >>> 0}`,
+    name: rest ? `试炼塔 · 第 ${plan.floor} 层休息平台` : `试炼塔 · 第 ${plan.floor} 层`,
+    w, h,
+    grid,
+    colliding: walled ? [T.DWALL, T.VOID] : [T.WATER, T.WATER2],
+    ambient: palette === 'dungeon' ? 0x231a33 : palette === 'deep' ? 0x0d1230 : null,
+    spawns: { fromBelow: { x: pc(spawn.tx), y: pc(spawn.ty) } },
+    props,
+    slimes,
+    boss,
+    portals: [],
+  };
+}

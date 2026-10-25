@@ -5,6 +5,7 @@ import { G, chapterShards, cp } from '../core/state.js';
 import { phaseOf, PHASE } from '../core/phase.js';
 import { CHAPTERS, getChapter } from '../data/chapters.js';
 import { ICON } from './icons.js';
+import { towerHud } from '../core/tower.js';
 
 const SVG_HEART = (fill, shine) => `
   <svg viewBox="0 0 9 8" shape-rendering="crispEdges">
@@ -80,6 +81,15 @@ export class HUD {
       this.heartsEl.classList.add('hurt-flash');
       clearTimeout(this._hurtT);
       this._hurtT = setTimeout(() => this.heartsEl.classList.remove('hurt-flash'), 200);
+    }
+
+    // 试炼塔：碎片胶囊换成「试炼塔 第 N 层」，目标行显示本次正确率与本层目标
+    if (G.towerRun) {
+      const t = towerHud(G.towerRun);
+      this.shardEl.innerHTML = `${SVG_SHARD} <span>${t.badge}</span>`;
+      this.objectiveEl.innerHTML = t.objective;
+      this._lastShards = null; // 出塔回主线后首次 render 不误播碎片弹跳
+      return;
     }
 
     const cur = chapterShards();

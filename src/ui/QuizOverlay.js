@@ -9,7 +9,7 @@
 // ============================================================
 import { highlight } from '../data/quizData.js';
 import { optionOrder } from '../core/quiz.js';
-import { damageHearts, chapterShards } from '../core/state.js';
+import { damageHearts, loseHearts, chapterShards } from '../core/state.js';
 import { recordAttempt, recordSkip } from '../core/records.js';
 import { sfx } from '../audio/sfx.js';
 import { music } from '../audio/music.js';
@@ -98,8 +98,9 @@ export class QuizOverlay {
    * 打开答题面板。
    * main：slot / kind 标明是哪块符文石（kind: shard 碎片 / heal 祝福 / boss）；
    * review：onDone 在复习面板关闭后回调（答对领完或中途取消都会调）。
+   * 试炼塔：lethal = 答错可以扣到 0 心（塔里爱心归零即挑战结束）；onWrong 在每次答错扣心后回调。
    */
-  open(q, { onCorrect, onCancel, onDone, mode = 'main', slot = '', kind = 'shard' } = {}) {
+  open(q, { onCorrect, onCancel, onDone, onWrong, lethal = false, mode = 'main', slot = '', kind = 'shard' } = {}) {
     this.isOpen = true;
     this.q = q;
     this.selected = -1;
@@ -112,6 +113,8 @@ export class QuizOverlay {
     this.onCorrect = onCorrect || null;
     this.onCancel = onCancel || null;
     this.onDone = onDone || null;
+    this.onWrong = onWrong || null;
+    this.lethal = lethal;
     this._startTimer();
 
     // 复位上一次「碎片入袋」飞行的残留（快速连续答题时飞行可能未结束）
@@ -210,8 +213,9 @@ export class QuizOverlay {
       this.panel.classList.remove('shake');
       void this.panel.offsetWidth; // 重启动画
       this.panel.classList.add('shake');
-      if (!review) damageHearts(1);
+      if (!review) (this.lethal ? loseHearts : damageHearts)(1);
       sfx.wrong();
+      if (this.onWrong) this.onWrong();
     }
   }
 

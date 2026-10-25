@@ -38,6 +38,14 @@ export function freshRecords() {
   return { stats: {}, log: [], dropped: 0 };
 }
 
+/**
+ * 试炼塔累计战绩的空结构（存档 v3 可选字段 tower，见 core/tower.js）：
+ *   best —— 个人最佳到达层数；runs —— 挑战次数；answered / correct —— 塔内累计答题 / 答对数
+ */
+export function freshTowerStats() {
+  return { best: 0, runs: 0, answered: 0, correct: 0 };
+}
+
 export const G = {
   hearts: 6,
   maxHearts: 6,
@@ -52,6 +60,8 @@ export const G = {
   dojo: {},              // 代码训练场：关卡 id → 通关记录 / 个人最佳 / 代码草稿（core/dojoSim.js）
   playMs: 0,             // 有效游玩时长（存档 v3 起预留；计时见 learning-records 后续工单）
   records: freshRecords(), // 学习记录：作答日志 + 每题汇总（core/records.js 维护）
+  tower: freshTowerStats(), // 试炼塔累计战绩（持久化）
+  towerRun: null,           // 进行中的一次试炼塔挑战（不持久化；结构见 core/tower.js 的 newRun）
 };
 
 export function resetState() {
@@ -68,6 +78,8 @@ export function resetState() {
   G.dojo = {};
   G.playMs = 0;
   G.records = freshRecords();
+  G.tower = freshTowerStats();
+  G.towerRun = null;
 }
 
 /** 取某章进度（默认当前章） */
@@ -105,6 +117,12 @@ export function discoverSecret(id) {
 
 export function damageHearts(n = 1) {
   G.hearts = Math.max(1, G.hearts - n); // 答题失误最多扣到 1，不会答死
+  updateHud();
+}
+
+/** 试炼塔专用：答错可以扣到 0（塔里爱心归零 = 本次挑战结束，主线答题仍是 damageHearts 保底 1 心） */
+export function loseHearts(n = 1) {
+  G.hearts = Math.max(0, G.hearts - n);
   updateHud();
 }
 

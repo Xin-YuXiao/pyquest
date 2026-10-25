@@ -3,15 +3,16 @@
 //
 // 只暴露两类入口，不再直接暴露可写的全局状态 G：
 //   只读查询 —— scene(key) / active() / state() / audio() / observatory() / secrets() / bossMech(key) /
-//     mistakes() / quizInfo() / input() / dojo()
+//     mistakes() / quizInfo() / input() / dojo() / tower()
 //     · state() 返回纯数据快照（Set → 数组、progress / 学习记录深拷贝），
 //       可安全跨 Playwright evaluate 序列化
 //     · secrets() 返回秘藏快照（已发现 / 总数 / 本场景石碑位置 / 特效状态）
 //     · bossMech() 返回 BOSS 招牌机制的 JSON 快照（entities/bossMechanics.js）
 //     · mistakes() 错题本视图；quizInfo() 答题面板模式与正确项展示下标
+//     · tower() 试炼塔快照（是否开放 / 累计战绩 / 进行中的挑战 / 本层符文与阶梯位置 / 结算页）
 //   语义动作 —— teleport / godmode / clearMinions / pinBoss / hitBoss /
 //     breakBossShield / slayBoss / gotoChapter / gotoLair / setShards / setHearts / applyTestState /
-//     openDojo（直达代码训练场；dojo() 返回训练场关卡 / 运行阶段 / 结果 / Python 运行时 / 进度）
+//     openDojo / towerJump（openDojo 直达代码训练场；dojo() 返回训练场关卡 / 运行阶段 / 结果 / Python 运行时 / 进度）
 //     每个动作一个明确语义，脚本侧无法绕过它们直接改写进度。
 //
 // 正常游戏路径完全不经过本模块（仅 main.js 启动时挂载一次）；
@@ -26,6 +27,7 @@ import { buildMistakeEntries, pendingCount } from './mistakes.js';
 import { isTouchMode, getStick, moveDir } from './input.js';
 import { pyRuntime } from './pyRuntime.js';
 import { DOJO_KEY } from '../scenes/DojoScene.js';
+import { TOWER_KEY, towerUnlocked, floorCleared } from './tower.js';
 
 export function buildSeam(game, sceneKeys) {
   // ---------- 只读查询 ----------
@@ -81,6 +83,42 @@ export function buildSeam(game, sceneKeys) {
   function mistakes() {
     const entries = buildMistakeEntries(G.records.stats, QUESTIONS);
     return { pending: pendingCount(entries), entries };
+  }
+
+  /** 试炼塔快照（纯 JSON）：塔场景不在前台时 floor / result 为 null */
+  function tower() {
+    const run = G.towerRun;
+    const s = active();
+    const ts = s && s.scene.key === TOWER_KEY ? s : null;
+    const pos = (o) => (o ? { x: o.x, y: o.y } : null);
+    return {
+      unlocked: towerUnlocked(G.progress),
+      stats: { ...G.tower },
+      run: run ? {
+        floor: run.floor,
+        rest: run.rest,
+        correct: run.correct,
+        total: run.total,
+        reviewed: run.reviewed.slice(),
+        mainHearts: run.main.hearts,
+        cleared: floorCleared(run),
+        shielded: !!(run.floorState && run.floorState.shielded),
+        guardianDown: !!(run.floorState && run.floorState.guardianDown),
+        rested: !!(run.floorState && run.floorState.rested),
+        assign: run.floorState ? JSON.parse(JSON.stringify(run.floorState.assign)) : {},
+        solved: run.floorState ? run.floorState.solved.slice() : [],
+      } : null,
+      floor: ts && ts.interactables ? {
+        runes: ts.interactables.filter((it) => it.kind === 'rune').map((it) => ({
+          slot: it.qid, x: it.x, y: it.y, alive: it.alive, bossRune: it.bossRune, healRune: it.healRune,
+        })),
+        stairs: pos(ts.stairs),
+        exit: pos(ts.exitDoor),
+        campfire: pos(ts.campfire),
+        guardian: !!ts.boss,
+      } : null,
+      result: ts && ts.towerResult ? ts.towerResult.snapshot() : null,
+    };
   }
 
   /** 当前场景答题面板的只读状态：模式、题目、正确项的展示下标（复习模式选项被打乱） */
@@ -252,6 +290,18 @@ export function buildSeam(game, sceneKeys) {
   }
 
   /** 设定当前生命值（夹在 1..maxHearts；观测台「回满爱心」奖励测试用） */
+  /** 试炼塔：直接跳到第 floor 层（需在塔内、挑战进行中；同 gotoChapter 的跳关作弊，不刷新个人最佳） */
+  function towerJump(floor) {
+    const run = G.towerRun;
+    const s = scene(TOWER_KEY);
+    if (!run || !s || !s.sys.isActive()) return false;
+    run.floor = floor;
+    run.rest = false;
+    run.floorState = null;
+    s.scene.restart();
+    return true;
+  }
+
   function setHearts(n) {
     G.hearts = Math.max(1, Math.min(G.maxHearts, n));
     updateHud();
@@ -272,8 +322,8 @@ export function buildSeam(game, sceneKeys) {
   }
 
   return {
-    scene, active, state, audio, observatory, secrets, bossMech, mistakes, quizInfo, input, dojo,
+    scene, active, state, audio, observatory, secrets, bossMech, mistakes, quizInfo, input, dojo, tower,
     teleport, godmode, clearMinions, pinBoss, hitBoss, breakBossShield, slayBoss,
-    gotoChapter, gotoLair, setShards, setHearts, applyTestState, openDojo,
+    gotoChapter, gotoLair, setShards, setHearts, applyTestState, openDojo, towerJump,
   };
 }
