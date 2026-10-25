@@ -106,6 +106,7 @@ export function buildSeam(game, sceneKeys) {
     const b = scene(sceneKey).boss;
     if (!b) return;
     b.hp = 1;
+    b.hurtCdUntil = 0; // 清受击冷却：紧跟在上一击之后补刀时（机器负载高、游戏时钟走得慢）不会被吞掉
     b.hurt(1, b.x, b.y + 224);
   }
 
