@@ -20,6 +20,7 @@ import { wipeTransition } from '../ui/wipe.js';
 import { T } from '../data/maps.js';
 import { makeGroundTexture } from '../textures/ground.js';
 import { ACTION_EVENT, isTouchMode, pressLabel } from '../core/input.js';
+import { touchControls } from '../ui/TouchControls.js';
 
 // ---------- 交互判定半径（玩法冻结：数值即原字面量，勿改） ----------
 /** 符文石可交互/提示半径（px，世界坐标距离） */
@@ -168,7 +169,8 @@ export class WorldScene extends Phaser.Scene {
     this._onAction = (e) => this.act(e.detail.name);
     document.addEventListener(ACTION_EVENT, this._onAction);
     this.events.once('shutdown', () => document.removeEventListener(ACTION_EVENT, this._onAction));
-    this.interactReady = false; // 附近有可交互物（供触控层高亮交互按钮）
+    this.interactReady = false; // 附近有可交互物（触控层据此高亮交互按钮）
+    touchControls.attach(this);
 
     updateHud();
     this.startAmbient();

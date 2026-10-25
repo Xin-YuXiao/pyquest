@@ -66,4 +66,5 @@ export const sfx = {
   shieldBreak: () => { noise(0.3, 0.16, 500); tone(880, 0.3, { type: 'triangle', vol: 0.14, slide: -400 }); },
   bossDie: () => { [440, 330, 262, 175].forEach((f, i) => tone(f, 0.3, { type: 'sawtooth', vol: 0.13, delay: i * 0.18 })); },
   toggleMute: () => { muted = !muted; return muted; },
+  isMuted: () => muted,
 };
