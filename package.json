@@ -8,7 +8,11 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test": "node scripts/smoke.mjs && node scripts/verify-quiz.mjs",
+    "test:e2e": "node scripts/run-e2e.mjs",
+    "stubs": "node scripts/gen-ts-stubs.mjs",
+    "check": "npm run lint && npm test && npm run build && npm run test:e2e"
   },
   "dependencies": {
     "phaser": "^3.90.0"
