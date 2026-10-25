@@ -715,6 +715,31 @@ try {
   if (soft.status !== 'won' || soft.maxDrift > 0.3) fail(`引力沙盒：ε = 0.1 的近心掠过应保住轨道（${soft.status}，误差 ${soft.maxDrift.toFixed(2)}）`);
   ok(`引力沙盒：nm20 力律 g(0)=4.0 / g(1)=0.8，势能与力律配对；圆轨道能量误差 ${circ.maxDrift.toExponential(1)}；`
     + `近心掠过 ε=0 被甩飞（误差 ${Math.round(raw.maxDrift * 100)}%）、ε=0.1 保住（${Math.round(soft.maxDrift * 100)}%）`);
+
+  // 11d. 贝叶斯硬币：st18 的 Beta(1,1) + 3 正 2 反 → Beta(4,3)、众数 0.6、均值 4/7；
+  //      95% 区间口径（Beta(1,1) → [0.025, 0.975]）；每枚硬币在区间窄到 0.2 时的结论与真值一致
+  const st18 = ST.posterior(ST.COIN.priors.flat, 3, 2);
+  if (st18.a !== 4 || st18.b !== 3 || ST.betaMode(4, 3) !== 0.6 || Math.abs(ST.betaMean(4, 3) - 4 / 7) > 1e-12) fail('贝叶斯硬币：st18 的 Beta(4,3)、众数 0.6、均值 4/7 不对');
+  const flatCI = ST.betaInterval(1, 1);
+  if (Math.abs(flatCI[0] - 0.025) > 1e-3 || Math.abs(flatCI[1] - 0.975) > 1e-3) fail(`贝叶斯硬币：Beta(1,1) 的 95% 区间应为 [0.025, 0.975]，实际 ${flatCI.map((v) => v.toFixed(4))}`);
+  const symCI = ST.betaInterval(50, 50);
+  if (Math.abs(symCI[0] + symCI[1] - 1) > 1e-3) fail('贝叶斯硬币：对称 Beta(50,50) 的区间应关于 0.5 对称');
+  const tosses = [];
+  for (const which of ['flat', 'informed']) {
+    for (let a = 0; a < ST.COIN.truths.length; a++) {
+      const c = ST.makeCoin(a);
+      let iv;
+      do {
+        c.flip(10);
+        const p = ST.posterior(ST.COIN.priors[which], c.state.heads, c.state.tails);
+        iv = ST.betaInterval(p.a, p.b);
+      } while (iv[1] - iv[0] >= ST.COIN.widthGoal && c.state.flips.length < 1000);
+      const truth = c.state.p === 0.5 ? 'fair' : 'biased';
+      if (ST.coinVerdict(iv) !== truth) fail(`贝叶斯硬币第 ${a} 枚（${which}）：区间 [${iv.map((v) => v.toFixed(3))}] 的结论与真值 p = ${c.state.p} 不符`);
+      if (which === 'flat') tosses.push(c.state.flips.length);
+    }
+  }
+  ok(`贝叶斯硬币：st18 的 Beta(4,3) 众数 0.6；95% 区间口径正确；6 枚硬币两种先验下结论都与真值一致（均匀先验各抛 ${tosses.join(' / ')} 次）`);
 } catch (e) { fail(`第二批观测站校验异常: ${e.message}`); }
 
 console.log(errors === 0 ? '\n全部通过 ✔' : `\n${errors} 个错误 ✘`);

@@ -6,8 +6,11 @@
 //                轮转分配 = range(rank, nruns, size)（sp7：任务 i 归 rank i % size）
 //   - gravity    第六章「引力沙盒」：softening 力律 g(r) = GM/(r² + ε²)（nm20），
 //                中心星 + 卫星的两体问题（两两位置差 nm6、成对求和 nm19 的最小情形）
+//   - bayes      第九章「贝叶斯硬币」：后验 ∝ 先验 × 似然（st8），Beta 先验 + 计数 → Beta 后验，
+//                众数 (a−1)/(a+b−2)（st18），先验选择与数据量（st11）
 // 题库没覆盖、但小游戏必须用到的知识（不出题、只在面板上做演示，需助教确认讲解口径）：
-//   最长任务优先（LPT）贪心调度、leapfrog 积分器、softening 力律对应的势能。
+//   最长任务优先（LPT）贪心调度、leapfrog 积分器、softening 力律对应的势能、
+//   Beta 分布分位数的数值积分。
 // 小游戏不发碎片、不碰封印门，完成奖励由场景层发放（回满爱心 + 观测日志）。
 // ============================================================
 import { seeded } from './observatory.js';
@@ -232,3 +235,84 @@ export function simulateOrbit(params) {
 
 /** 破坏实验预设：几乎径向的发射，近心点擦过中心星 */
 export const PLUNGE = { speed: 0.25, angle: 90, dt: 0.01 };
+
+// ============================================================
+// 第九章 · 贝叶斯硬币
+// ============================================================
+
+export const COIN = {
+  seed: 20260909,
+  truths: [0.7, 0.5, 0.3, 0.75, 0.5, 0.25],  // 第 n 次挑战的真实正面概率（循环）
+  widthGoal: 0.2,      // 后验 95% 区间宽度 < 0.2 才能下结论
+  level: 0.95,
+  priors: {
+    flat: { a: 1, b: 1, name: '均匀先验 Beta(1, 1)' },                   // st18 的无信息先验
+    informed: { a: 10, b: 10, name: '有信息先验 Beta(10, 10)' },         // 「以往见过的硬币大多公平」（st11）
+  },
+};
+
+export const coinTruth = (attempt = 0) => COIN.truths[attempt % COIN.truths.length];
+
+/** 第 attempt 枚硬币：flip(k) 抛 k 次（确定性随机流），1 = 正面 */
+export function makeCoin(attempt = 0) {
+  const p = coinTruth(attempt);
+  const rand = seeded(COIN.seed + attempt * 6151);
+  const s = { p, heads: 0, tails: 0, flips: [] };
+  return {
+    state: s,
+    flip(k = 1) {
+      for (let i = 0; i < k; i++) {
+        const h = rand() < p ? 1 : 0;
+        s.flips.push(h);
+        if (h) s.heads++; else s.tails++;
+      }
+    },
+  };
+}
+
+/** 后验 = 先验 × 似然：Beta(a, b) 先验 + h 次正面 t 次反面 → Beta(a + h, b + t)（st18） */
+export const posterior = (prior, heads, tails) => ({ a: prior.a + heads, b: prior.b + tails });
+
+/** Beta 众数 (a−1)/(a+b−2)（a, b > 1 时，st18）；Beta(4,3) → 0.6 */
+export const betaMode = (a, b) => (a > 1 && b > 1 ? (a - 1) / (a + b - 2) : null);
+export const betaMean = (a, b) => a / (a + b);
+
+/** ln Γ(x)（Lanczos 近似，x > 0） */
+function lgamma(x) {
+  const g = 7;
+  const c = [0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313,
+    -176.61502916214059, 12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
+  if (x < 0.5) return Math.log(Math.PI / Math.sin(Math.PI * x)) - lgamma(1 - x);
+  x -= 1;
+  let a = c[0];
+  const t = x + g + 0.5;
+  for (let i = 1; i < g + 2; i++) a += c[i] / (x + i);
+  return 0.5 * Math.log(2 * Math.PI) + (x + 0.5) * Math.log(t) - t + Math.log(a);
+}
+
+/** Beta(a, b) 概率密度 */
+export function betaPdf(p, a, b) {
+  if (p <= 0 || p >= 1) return 0;
+  return Math.exp((a - 1) * Math.log(p) + (b - 1) * Math.log(1 - p) + lgamma(a + b) - lgamma(a) - lgamma(b));
+}
+
+/** Beta 分布的中心可信区间（数值积分 CDF，网格 4000 段；题库未覆盖的数值方法） */
+export function betaInterval(a, b, level = COIN.level) {
+  const n = 4000;
+  const lo = (1 - level) / 2, hi = 1 - lo;
+  let cdf = 0;
+  let qLo = null, qHi = null;
+  // 端点密度可能为 0 或发散（a 或 b < 1）：用中点规则积分
+  for (let i = 0; i < n; i++) {
+    const pm = (i + 0.5) / n;
+    const step = betaPdf(pm, a, b) / n;
+    const before = cdf;
+    cdf += step;
+    if (qLo == null && cdf >= lo) qLo = i / n + ((lo - before) / step) / n;
+    if (qHi == null && cdf >= hi) { qHi = i / n + ((hi - before) / step) / n; break; }
+  }
+  return [qLo ?? 0, qHi ?? 1];
+}
+
+/** 由可信区间下结论：0.5 不在区间里 → 偏心；在区间里 → 与公平相容 */
+export const coinVerdict = ([lo, hi]) => (lo > 0.5 || hi < 0.5 ? 'biased' : 'fair');

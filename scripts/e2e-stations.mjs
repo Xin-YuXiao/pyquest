@@ -16,6 +16,7 @@ import {
   MC, makeMonteCarlo,
   SCHED, makeTasks, roundRobin, greedyLPT, makespan,
   GRAV, PLUNGE, simulateOrbit,
+  COIN, coinTruth, makeCoin, posterior, betaInterval, coinVerdict,
 } from '../src/core/stations.js';
 
 const BASE = process.env.BASE_URL || 'http://localhost:5173/';
@@ -259,6 +260,46 @@ try {
     check(st.status === 'won' && soft.status === 'won' && st.orbits >= GRAV.orbitsToWin, `ε = 0.1：轨道保住、绕满 ${GRAV.orbitsToWin} 圈`);
     check(st.maxDrift < raw.maxDrift / 10, `softening 让能量误差从 ${Math.round(raw.maxDrift * 100)}% 降到 ${Math.round(st.maxDrift * 100)}%`);
     await afterSolved(ch, 'st-05-gravity-solved');
+  }
+
+  // ============================================================
+  // 第九章 · 贝叶斯硬币
+  // ============================================================
+  {
+    const ch = await gotoChapter(9);
+    await setHearts(2);
+    await openStation(ch);
+    let st = await station();
+    check(st.prior === 'flat' && st.a === 1 && st.b === 1 && !st.canDecide, '开局：均匀先验 Beta(1, 1)，区间太宽不能下结论');
+    check(await page.locator('#st-by-biased').isDisabled(), '区间宽度 ≥ 0.2 时判定按钮不可用');
+    // 独立计算：每次抛 10 下，直到区间窄到 0.2 以内
+    const c = makeCoin(0);
+    let iv;
+    do { c.flip(10); const p = posterior(COIN.priors.flat, c.state.heads, c.state.tails); iv = betaInterval(p.a, p.b); }
+    while (iv[1] - iv[0] >= COIN.widthGoal);
+    for (let i = 0; i < 100 && !(await station()).canDecide; i++) await page.keyboard.press('Digit2');
+    st = await station();
+    check(st.heads + st.tails === c.state.flips.length && st.heads === c.state.heads, `抛了 ${st.heads + st.tails} 次（正面 ${st.heads}），与独立计算一致`);
+    check(st.a === 1 + st.heads && st.b === 1 + st.tails, `后验 = Beta(1 + h, 1 + t) = Beta(${st.a}, ${st.b})（st18）`);
+    check(st.canDecide && st.width < COIN.widthGoal, `区间宽 ${st.width.toFixed(3)} < ${COIN.widthGoal}，可以下结论`);
+    // 切换有信息先验：同一份数据，后验参数整体加 9（Beta(10,10) 比 Beta(1,1) 多 9 + 9）
+    await page.keyboard.press('KeyI');
+    await page.waitForTimeout(120);
+    const st2 = await station();
+    check(st2.prior === 'informed' && st2.a === st.a + 9 && st2.b === st.b + 9, '换成有信息先验 Beta(10, 10)：同样的数据，后验参数各多 9');
+    await page.keyboard.press('KeyU');
+    await page.waitForTimeout(120);
+    // 先故意判错：给出与区间相反的结论 → 不判成功，状态行解释
+    const verdict = coinVerdict(iv);
+    await page.keyboard.press(verdict === 'biased' ? 'KeyF' : 'KeyB');
+    await page.waitForTimeout(150);
+    check(!(await obs()).solved && (await page.locator('#obs-status').textContent()).includes('区间'), '与区间矛盾的结论不判成功，状态行用区间解释原因');
+    await shot('st-06-bayes-wrong');
+    await page.keyboard.press(verdict === 'biased' ? 'KeyB' : 'KeyF');
+    await page.waitForTimeout(150);
+    st = await station();
+    check(st.truth === coinTruth(0), `判定正确后揭晓真值 p = ${st.truth}（${verdict === 'biased' ? '偏心' : '公平'}）`);
+    await afterSolved(ch, 'st-07-bayes-solved');
   }
 } catch (err) {
   failed = true;

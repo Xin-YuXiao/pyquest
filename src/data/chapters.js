@@ -425,6 +425,7 @@ export const CHAPTERS = [
     },
     npcKind: 'tablet', npcName: '统计石碑',
     pools: { shard: 'w9shard', heal: 'w9lair', lair: 'w9lair', boss: 'w9boss' },
+    observatory: 'bayes',      // 野外观测台：贝叶斯硬币（core/stations.js）
     theme: {
       palette: 'grass', seed: 20260901, w: 32, h: 24,
       healRunes: 2, slimeVariant: 'crimson', slimes: 4,

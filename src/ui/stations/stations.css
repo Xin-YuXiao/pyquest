@@ -50,6 +50,24 @@
 .st-gr-sliders { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 8px; margin-top: 4px; }
 .st-gr-sliders .obs-slider { grid-template-columns: 30px 1fr 86px; gap: 6px; padding: 2px 6px; }
 
+/* ---------- 贝叶斯硬币 ---------- */
+.st-by-band { fill: rgba(255,210,87,.16); }
+.st-by-fair { stroke: rgba(232,227,245,.55); stroke-width: 1.5; stroke-dasharray: 3 4; }
+.st-by-prior { fill: none; stroke: #c9bfe0; stroke-width: 1.6; stroke-dasharray: 6 5; }
+.st-by-like { fill: none; stroke: #3ddad7; stroke-width: 1.6; stroke-dasharray: 2 3; }
+.st-by-post { fill: none; stroke: #ffd257; stroke-width: 2.6; }
+.st-by-truth { stroke: #ff6b81; stroke-width: 2.5; }
+.st-by-w[data-ok="true"] { color: #2e7d32; }
+.st-by-flips {
+  margin: 2px 2px 4px; font-family: "JetBrains Mono", Consolas, monospace; font-size: 12px;
+  color: #6b5a4a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.st-legend i.lg-prior { border-color: #9b8fc0; border-top-style: dashed; }
+.st-legend i.lg-like { border-color: #26a8a5; border-top-style: dotted; }
+.st-legend i.lg-post { border-color: #d9a400; }
+.st-legend i.lg-band { height: 10px; border: 0; background: rgba(217,164,0,.3); }
+.st-legend i.lg-fair { border-color: #8a7f99; border-top-style: dashed; width: 10px; }
+
 /* ---------- 混淆矩阵（星系分类台） ---------- */
 .st-matrix { border-collapse: collapse; font-size: var(--fs-body); }
 .st-matrix caption { text-align: left; font-weight: bold; padding-bottom: 2px; }
