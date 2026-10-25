@@ -1,5 +1,5 @@
 // ============================================================
-// 循环之王（第一章 BOSS）：紫军勇士 · 1.6x 巨型化 + 头顶金徽
+// 史莱姆型 BOSS（第一 / 三 / 五 / 七 / 九 / 十一章，名字取自章节配置 bossName）：紫军勇士 · 1.6x 巨型化 + 头顶金徽
 // 护盾状态下免伤（答对 boss 符文破盾），血量 6/3 时召唤小兵
 // ============================================================
 import Phaser from 'phaser';
@@ -85,7 +85,7 @@ export class BossSlime extends Slime {
       this.spawnedWave1 = true;
       this.scene.spawnSlime(this.x - 240, this.y);
       this.scene.spawnSlime(this.x + 240, this.y);
-      this.scene.floatText(this.x, this.y - 130, '循环之王召唤了帮手！', '#ff9db3');
+      this.scene.floatText(this.x, this.y - 130, `${this.scene.ch.bossName}召唤了帮手！`, '#ff9db3');
     }
     if (this.hp <= 3 && !this.spawnedWave2) {
       this.spawnedWave2 = true;

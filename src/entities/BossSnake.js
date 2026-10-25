@@ -162,7 +162,7 @@ export class BossSnake extends Slime {
       });
     }
     s.destroy();
-    this.scene.floatText(this.x, this.y - 120, '巨蟒的尾巴断了一节！', '#9dff9d');
+    this.scene.floatText(this.x, this.y - 120, `${this.scene.ch.bossName}的尾巴断了一节！`, '#9dff9d');
     if (this.mech) this.mech.segmentHook(this.segs.length);
   }
 
