@@ -228,7 +228,9 @@ try {
   await wait(500);
 
   // 不按键：回廊自动中断，不会困住玩家
-  await page.keyboard.press('KeyE');
+  // 先走回石碑旁再触碰：回廊圆心在石碑下方 190、半径 110，跳出点离石碑 80~300 不等，
+  // 可能已在交互半径（240）之外——玩家实际也得走回去，这里同样重新站位
+  await touchSecret(s.here);
   check(await untilFx('scripted', true, 8000), '再次触碰重新进入回廊');
   check(await untilFx('scripted', false, 40000), '不按键也会自动中断（不会被困住）');
   if (await untilScroll(true)) { await page.keyboard.press('Enter'); await untilScroll(false); }
