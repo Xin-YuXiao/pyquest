@@ -25,6 +25,10 @@ export const CHAPTERS = [
     fieldName: '诺瓦村庄', lairName: '数据地牢',
     buildField: buildVillage, buildLair: buildDungeon,
     boss: 'slime', bossName: '数据史莱姆王',
+    bossMechanic: {
+      kind: 'appendSummons', name: '列表召唤',
+      tip: '它每受一次重创就 append 一批帮手，而且一批比一批多（1 → 2 → 3）——先清小兵再集火！',
+    },
     npcKind: 'elder', npcName: '长老 賽璐',
     pools: { shard: 'w1field', heal: 'w1lair', lair: 'w1lair', boss: 'w1boss' },
     // 引导台词：按章内阶段查表（core/phase.js）；跨章问候走 extraGreets
@@ -90,6 +94,10 @@ export const CHAPTERS = [
     fieldName: '函数之森', lairName: '控制流洞窟',
     buildField: buildForest, buildLair: buildCave,
     boss: 'snake', bossName: '巨蟒毕森',
+    bossMechanic: {
+      kind: 'rangeCountdown', name: '循环倒数',
+      tip: '它的身体是一个列表：每断一节，for 循环就少迭代一轮——数到 0，它就 break 了！',
+    },
     npcKind: 'tablet', npcName: '函数石碑',
     pools: { shard: 'w2field', heal: 'w2heal', lair: 'w2lair', boss: 'w2boss' },
     // 引导台词：按章内阶段查表（core/phase.js）；门开后无专属词条，
@@ -144,6 +152,10 @@ export const CHAPTERS = [
     fieldName: '科学计算高原', lairName: '混沌巢穴',
     buildField: buildField, buildLair: buildLair,
     boss: 'slime', bossName: '混沌曲线魔君',
+    bossMechanic: {
+      kind: 'sineBullets', name: '正弦混沌弹',
+      tip: '混沌弹沿 y = A·sin(ωt) 蛇行前进——看清振幅和周期，从波谷钻过去！',
+    },
     npcKind: 'tablet', npcName: '科学石碑',
     pools: { shard: 'w3shard', heal: 'w3heal', lair: 'w3heal', boss: 'w3boss' },
     theme: {
@@ -191,6 +203,10 @@ export const CHAPTERS = [
     fieldName: '星图塔平原', lairName: 'FITS 神殿',
     buildField, buildLair,
     boss: 'snake', bossName: '单位术士',
+    bossMechanic: {
+      kind: 'unitTraps', name: '单位符印',
+      tip: '术士的尾巴会在地上留下单位符印，踩进去就被「单位不匹配」拖慢脚步——检查你的单位！',
+    },
     npcKind: 'tablet', npcName: '星图石碑',
     pools: { shard: 'w4shard', heal: 'w4lair', lair: 'w4lair', boss: 'w4boss' },
     theme: {
@@ -229,6 +245,10 @@ export const CHAPTERS = [
     fieldName: '加速熔炉', lairName: '迟缓深渊',
     buildField, buildLair,
     boss: 'slime', bossName: '迟缓巨魔',
+    bossMechanic: {
+      kind: 'slowAura', name: '迟缓光环',
+      tip: '巨魔的迟缓光环会让你步履维艰；破盾瞬间你获得 8 秒「向量化」加速，光环暂时无效——趁现在猛攻！',
+    },
     npcKind: 'tablet', npcName: '熔炉石碑',
     pools: { shard: 'w5shard', heal: 'w5lair', lair: 'w5lair', boss: 'w5boss' },
     theme: {
@@ -267,6 +287,10 @@ export const CHAPTERS = [
     fieldName: '数值神殿外庭', lairName: '优化迷宫',
     buildField, buildLair,
     boss: 'snake', bossName: '优化牛头怪',
+    bossMechanic: {
+      kind: 'gradientCharge', name: '梯度冲锋',
+      tip: '牛头怪按梯度下降冲锋，学习率一次比一次小；步子太大冲过头撞墙就会眩晕——引它撞墙！',
+    },
     npcKind: 'tablet', npcName: '神殿石碑',
     pools: { shard: 'w6shard', heal: 'w6lair', lair: 'w6lair', boss: 'w6boss' },
     theme: {
@@ -305,6 +329,10 @@ export const CHAPTERS = [
     fieldName: '信号圣殿平原', lairName: '频域回廊',
     buildField, buildLair,
     boss: 'slime', bossName: '傅里叶魅影',
+    bossMechanic: {
+      kind: 'fourierEchoes', name: '频谱分身',
+      tip: '魅影分出三个以不同频率脉动的分身：按频率从低到高（先打闪得最慢的）逐个滤除，魅影就会相位锁定！',
+    },
     npcKind: 'tablet', npcName: '信号石碑',
     pools: { shard: 'w7shard', heal: 'w7lair', lair: 'w7lair', boss: 'w7boss' },
     theme: {
@@ -343,6 +371,10 @@ export const CHAPTERS = [
     fieldName: '深空晕环', lairName: '暗物质核心',
     buildField, buildLair,
     boss: 'snake', bossName: 'NFW 幻龙',
+    bossMechanic: {
+      kind: 'nfwGravity', name: '暗物质引力',
+      tip: '幻龙的暗物质晕把你往核心拉：离核心越近引力越强（NFW 轮廓内陡外缓）——保持移动，别被吸进去！',
+    },
     npcKind: 'tablet', npcName: '深空石碑',
     pools: { shard: 'w8shard', heal: 'w8lair', lair: 'w8lair', boss: 'w8boss' },
     theme: {
@@ -382,6 +414,10 @@ export const CHAPTERS = [
     fieldName: '圣所外庭', lairName: '后验回廊',
     buildField, buildLair,
     boss: 'slime', bossName: '贝叶斯祭司',
+    bossMechanic: {
+      kind: 'bayesianAim', name: '后验瞄准',
+      tip: '祭司的弹幕起初只瞄你此刻的位置；每被你击中一次就更新后验，越来越会预判走位——记得变向！',
+    },
     npcKind: 'tablet', npcName: '统计石碑',
     pools: { shard: 'w9shard', heal: 'w9lair', lair: 'w9lair', boss: 'w9boss' },
     theme: {
@@ -420,6 +456,10 @@ export const CHAPTERS = [
     fieldName: '灵思之塔底层', lairName: '验证回廊',
     buildField, buildLair,
     boss: 'snake', bossName: '幻言魔像',
+    bossMechanic: {
+      kind: 'fakeRunes', name: '幻觉符文',
+      tip: '巢穴里混进了幻觉符文石：真的 BOSS 符文头顶有金色印记，假的光晕会闪——先验证再信任！破盾后它还会谎称护盾恢复，别信。',
+    },
     npcKind: 'tablet', npcName: '灵思石碑',
     pools: { shard: 'w10shard', heal: 'w10lair', lair: 'w10lair', boss: 'w10boss' },
     theme: {
@@ -459,6 +499,10 @@ export const CHAPTERS = [
     fieldName: '毕业试炼场', lairName: '三途之门',
     buildField, buildLair,
     boss: 'slime', bossName: '三途守门人',
+    bossMechanic: {
+      kind: 'threePaths', name: '三途试炼',
+      tip: '守门人依次化身三途：拟合之途射出曲线弹 → 模拟之途展开引力场 → 学习之途预判你的走位。每过一途，攻势都会换！',
+    },
     npcKind: 'tablet', npcName: '试炼石碑',
     pools: { shard: 'w11shard', heal: 'w11lair', lair: 'w11lair', boss: 'w11boss' },
     final: true,

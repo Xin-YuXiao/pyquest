@@ -1,0 +1,38 @@
+/* BOSS 战开场横幅（BossBanner.js 动态创建，挂在 #ui-scale 的 960×640 设计坐标系内）。
+   选择器带 #ui-scale 前缀：压过 index.html 里 `#ui-scale > *` 的 pointer-events: auto，
+   横幅永不拦截点击。 */
+#ui-scale > #boss-banner {
+  position: absolute;
+  top: calc(78px + var(--cam-pad, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 640px;
+  padding: 8px 20px 10px;
+  background: rgba(24, 16, 38, .88);
+  border: 2px solid var(--gold);
+  border-radius: 12px;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, .35);
+  color: #fff;
+  text-align: center;
+  pointer-events: none;
+  transition: opacity .25s, transform .25s;
+}
+#ui-scale > #boss-banner.hidden {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-10px);
+}
+#boss-banner .bb-title {
+  font-size: var(--fs-display);
+  color: var(--gold);
+  letter-spacing: 2px;
+}
+#boss-banner .bb-tip {
+  margin-top: 3px;
+  font-family: var(--font-kai);
+  font-size: var(--fs-body);
+  line-height: 1.5;
+}
+@media (prefers-reduced-motion: reduce) {
+  #ui-scale > #boss-banner { transition: none; }
+  #ui-scale > #boss-banner.hidden { transform: translateX(-50%); }
+}
