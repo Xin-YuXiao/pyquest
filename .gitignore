@@ -23,3 +23,6 @@ scripts/tmp-*.mjs
 .idea/
 .vscode/
 .slim/deepwork/
+
+# Claude Code 本地 worktree（并行 agent 的临时工作副本）
+.claude/worktrees/
