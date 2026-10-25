@@ -24,6 +24,7 @@ npm install
 npm run dev        # 开发服务器 http://localhost:5173
 npm run build      # 产出 dist/，可部署到任意静态托管
 npm run preview    # 本地预览构建产物
+npm run check      # 全部验证（lint / 冒烟 / 题库实跑 / 构建 / 全章节 E2E），见「测试」
 ```
 
 ## 🕹️ 操作
@@ -157,6 +158,7 @@ scripts/
 ├── smoke.mjs                # 无头冒烟测试（贴图/全部章节地图/题库/题池/抽题校验）
 ├── verify-quiz.mjs          # 题库自动校验（用本机 python 执行输出确定的题目，比对 stdout）
 ├── gen-ts-stubs.mjs         # 无素材环境（CI）生成 Tiny Swords 纯色占位图，让 E2E 可跑
+├── run-e2e.mjs              # E2E 总入口（npm run test:e2e）：复用或临时启动 dev server，逐章跑并汇总
 ├── e2e/lib/runner.mjs       # 章节 E2E 共享运行器：各章脚本只声明 labels + steps
 ├── e2e.mjs                  # Playwright E2E：第一章全流程 + 存档
 ├── e2e-ch2.mjs              # 第二章 E2E（森林/洞窟/巨蟒/进入第三章/读档续玩）
@@ -200,11 +202,30 @@ scripts/
 
 ## 🧪 测试
 
+一条命令跑完全部验证（本地与 CI 相同）：
+
 ```bash
-npm run dev &                # 先起服务器
-node scripts/smoke.mjs       # 数据层冒烟测试（全部章节地图 + 题库校验）
-node scripts/verify-quiz.mjs # 题库自动校验（本机 python 实跑输出确定的题目比对 stdout）
-node scripts/gen-ts-stubs.mjs # 没有 Tiny Swords 素材时先生成占位图（检测到真实素材包会跳过）
+npm run check                # lint → test → build → test:e2e
+```
+
+也可以分开跑：
+
+```bash
+npm run lint                 # ESLint（flat config，仅 recommended 规则，不管格式）
+npm test                     # smoke（全部章节地图 + 题库校验）+ verify-quiz（python 实跑题目比对 stdout）
+npm run test:e2e             # 全部章节 E2E：5173 上已有 dev server 就复用，没有就临时起一个、跑完关掉
+npm run test:e2e -- 9 10 11  # 只跑指定章节
+npm run stubs                # 没有 Tiny Swords 素材时先生成占位图（检测到真实素材包会跳过）
+```
+
+- verify-quiz 需要本机 python 带 numpy / scipy / astropy / scikit-learn
+  （CI 按 `scripts/requirements-verify.txt` 安装，numpy 锁 1.x 与课程环境一致）
+- CI（`.github/workflows/ci.yml`）：每次 push / PR 在 Ubuntu 上生成占位素材后跑 `lint`、`test`、
+  `build`、`test:e2e`，失败时上传 E2E 截图
+
+单独跑某一章的 E2E（需先 `npm run dev`）：
+
+```bash
 node scripts/e2e.mjs         # E2E：第一章（答题/开门/BOSS/进第二章/存档）
 node scripts/e2e-ch2.mjs     # E2E：第二章（森林/洞窟/巨蟒/进第三章/读档续玩）
 node scripts/e2e-ch3.mjs     # E2E：第三章样板章（NumPy 符文/破盾/魔君/衔接第四章/读档）
