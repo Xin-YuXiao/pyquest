@@ -16,6 +16,7 @@ import { WorldMap } from '../ui/WorldMap.js';
 import { pickQuestion } from '../data/quizData.js';
 import { saveGame } from '../core/save.js';
 import { sfx } from '../audio/sfx.js';
+import { music } from '../audio/music.js';
 import { wipeTransition } from '../ui/wipe.js';
 import { T } from '../data/maps.js';
 import { makeGroundTexture } from '../textures/ground.js';
@@ -163,12 +164,25 @@ export class WorldScene extends Phaser.Scene {
     this.input.keyboard.on('keydown-J', () => this.player.tryAttack());
     this.input.keyboard.on('keydown-SPACE', () => this.player.tryAttack());
     this.input.keyboard.on('keydown-M', () => {
+      // M = 音效与背景音乐一起静音
       const muted = sfx.toggleMute();
+      music.setMuted(muted);
       this.flashHint(muted ? '🔇 已静音（按 M 恢复）' : '🔊 声音已开启', 1400);
+    });
+    this.input.keyboard.on('keydown-N', () => {
+      // N = 只开关背景音乐（设置持久化，见 audio/music.js）
+      const on = music.toggle();
+      const muted = music.state().muted;
+      this.flashHint(on
+        ? (muted ? '🎵 背景音乐已开启（当前静音中，按 M 恢复声音）' : '🎵 背景音乐已开启')
+        : '🎵 背景音乐已关闭（按 N 恢复）', 1600);
     });
 
     updateHud();
     this.startAmbient();
+    // 背景音乐：场景决定曲目（野外按章主题 / 巢穴 BOSS 战），新场景总是从未压低开始
+    music.duck(false);
+    if (this.musicCue) music.play(this.musicCue());
     this.onSceneCreated && this.onSceneCreated();
   }
 

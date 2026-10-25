@@ -15,6 +15,11 @@ function ensure() {
   return ctx;
 }
 
+/** 共享 AudioContext（背景音乐 audio/music.js 复用同一个上下文；无 WebAudio 时返回 null） */
+export function audioContext() {
+  return ensure();
+}
+
 function tone(freq, dur = 0.1, { type = 'square', vol = 0.12, slide = 0, delay = 0 } = {}) {
   if (muted) return;
   const c = ensure();
