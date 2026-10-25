@@ -6,7 +6,6 @@
 // - 蓄力后向前冲刺突咬
 // ============================================================
 import Phaser from 'phaser';
-import { G } from '../core/state.js';
 import { sfx } from '../audio/sfx.js';
 import { Slime } from './Slime.js';
 import { attachMechanic } from './bossMechanics.js';
@@ -45,7 +44,7 @@ export class BossSnake extends Slime {
     }
     this.trail = [];
 
-    if (G.progress[scene.ch.id].bossShielded) this.setTint(0x7f9dff);
+    if (scene.isBossShielded()) this.setTint(0x7f9dff);
     this.shadow.setDisplaySize(180, 90);
 
     this.nextDartAt = scene.time.now + 3000;
@@ -65,7 +64,7 @@ export class BossSnake extends Slime {
     const p = this.scene.player;
     const dist = p ? Phaser.Math.Distance.Between(this.x, this.y, p.x, p.y) : 9999;
 
-    if (G.progress[this.scene.ch.id].bossShielded) {
+    if (this.scene.isBossShielded()) {
       // 护盾期：缓慢游荡（象征符文封印）
       if (now > this.wanderUntil) {
         this.wanderUntil = now + Phaser.Math.Between(1200, 2200);
@@ -128,7 +127,7 @@ export class BossSnake extends Slime {
 
   hurt(dmg, fromX, fromY) {
     if (this.dead) return;
-    if (G.progress[this.scene.ch.id].bossShielded) {
+    if (this.scene.isBossShielded()) {
       const now = this.scene.time.now;
       if (now < this.hurtCdUntil) return;
       this.hurtCdUntil = now + 400;

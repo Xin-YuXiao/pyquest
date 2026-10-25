@@ -57,7 +57,12 @@ const INTERACT_OBSERVATORY_RADIUS = 260;
  * spawnProp 生成的可交互对象（存入 this.interactables，由 tryInteract / updateInteractHint 消费）。
  *
  * @typedef {Object} Interactable
- * @property {'rune'|'doorlink'|'observatory'|'secret'} kind 交互种类（secret 的行为见 scenes/secrets.js）
+ * @property {'rune'|'doorlink'|'observatory'|'secret'|string} kind 交互种类（secret 的行为见 scenes/secrets.js）
+ * @property {boolean} [custom] 自带交互逻辑的可交互物（如秘境课题符文）：半径 radius 内按 E 调 onInteract(it)，
+ *   交互提示取 hint(press)（返回 null 表示不提示）；由各玩法模块自行生成，WorldScene 只负责分发
+ * @property {number} [radius] custom：交互 / 提示半径（px）
+ * @property {(it: Interactable) => void} [onInteract] custom：按 E 时调用
+ * @property {(press: string) => (string|null)} [hint] custom：交互提示文案
  * @property {string} [obs] kind='observatory'：观测台 id
  * @property {number} x 交互判定锚点 x
  * @property {number} y 交互判定锚点 y
@@ -81,8 +86,7 @@ export class WorldScene extends Phaser.Scene {
 
     const def = this.mapDef;
     this.def = def;
-    cp(this.ch.id);           // 确保本章进度已初始化（cp 惰性创建）
-    G.current = this.ch.id;   // 跟踪玩家所在章节（HUD / 碎片计数用）
+    this.enterRegion();       // 记下玩家所在区域（章节场景更新当前章；秘境场景覆写，不碰章节进度）
 
     // ---------- 地面（TS tileset 拼接画布，1:1 像素完美） + 碰撞体 ----------
     const groundKey = makeGroundTexture(this, def);
@@ -434,6 +438,10 @@ export class WorldScene extends Phaser.Scene {
       return;
     }
     for (const it of this.interactables) {
+      if (it.custom && dist(it.x, it.y) < it.radius) {
+        it.onInteract(it);
+        return;
+      }
       if (it.kind === 'rune' && dist(it.x, it.y) < INTERACT_RUNE_RADIUS) {
         if (it.onInteract) { it.onInteract(it); return; } // 机制布置的特殊符文石（如 W10 幻觉符文）
         if (!it.alive) { this.floatText(it.x, it.y - 300, '咒语已领悟 ✓', '#3ddad7'); return; }
@@ -665,6 +673,10 @@ export class WorldScene extends Phaser.Scene {
       hint = this.npc.id === 'elder' ? `${press} 与长老对话` : `${press} 阅读石碑`;
     } else {
       for (const it of this.interactables) {
+        if (it.custom && dist(it.x, it.y) < it.radius) {
+          hint = it.hint(press);
+          break;
+        }
         if (it.kind === 'rune' && dist(it.x, it.y) < INTERACT_RUNE_RADIUS) {
           hint = it.alive ? `${press} 解读符文石` : null;
           break;
@@ -694,6 +706,14 @@ export class WorldScene extends Phaser.Scene {
   }
 
   // ---------- 子类可覆写的钩子 ----------
+  /** 进入场景时记下玩家所在区域：章节场景 = 当前章（HUD / 碎片计数用），离开秘境 */
+  enterRegion() {
+    cp(this.ch.id);           // 确保本章进度已初始化（cp 惰性创建）
+    G.current = this.ch.id;   // 跟踪玩家所在章节（HUD / 碎片计数用）
+    G.realm = null;
+  }
+  /** 本场景 BOSS 是否处于护盾状态（BOSS 实体经此读取；秘境圣所按课题进度覆写） */
+  isBossShielded() { return cp(this.ch.id).bossShielded; }
   talkToElder() {}
   breakBossShield() {}
   onBossDefeated() {}
