@@ -1,15 +1,27 @@
 // 自动校验：用本机 python3 执行题库中「输出确定」的题目 code，比对 stdout。
 // 机制：内置 { 题id: 期望stdout } 校验表——只收无填空占位符（___）、
 // 输出确定的题；期望值先在本机 python 跑过确认后写死。
-// 比对规则：stdout 去尾随空白后与期望全等；执行超时 10s；任一失败 exit 1。
+// 比对规则：stdout 统一换行（Windows 的 \r\n → \n）再去尾随空白后全等；
+// 执行超时 10s；任一失败 exit 1。
 import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { QUESTIONS } from '../src/data/quizData.js';
 
 // python3 优先用 anaconda（astropy 7.2 / numpy 1.26 / scipy 1.15 / sklearn 1.9 齐备），
-// 找不到则退回 PATH 中的 python3。
-const ANACONDA = '/Users/uranus/Applications/anaconda3/bin/python3';
-const PYTHON = existsSync(ANACONDA) ? ANACONDA : 'python3';
+// 依次探测：macOS anaconda → python3 → python（Windows Git Bash 常无 python3，只有 python）。
+// 用 spawnSync 探活而非 existsSync：Windows 上 python 可能是 App Execution Alias，
+// 存在于 PATH 但 existsSync 查不到，反之 PATH 上不存在的名字要跳过。
+const CANDIDATES = ['/Users/uranus/Applications/anaconda3/bin/python3', 'python3', 'python'];
+let PYTHON = null;
+for (const cand of CANDIDATES) {
+  if (cand.includes('/') && !existsSync(cand)) continue; // 绝对路径不存在 → 直接跳过
+  const probe = spawnSync(cand, ['-c', 'pass'], { timeout: 15000 });
+  if (probe.status === 0) { PYTHON = cand; break; }
+}
+if (!PYTHON) {
+  console.error('找不到可用的 python 解释器（依次尝试过 ' + CANDIDATES.join(' / ') + '）');
+  process.exit(1);
+}
 
 // { 题id: 期望 stdout }（尾随空白在比对时会被剥掉）
 const CASES = {
@@ -60,7 +72,11 @@ const fail = (msg) => { errors++; console.error('  ✗', msg); };
 const ok = (msg) => console.log('  ✓', msg);
 
 console.log(`[verify-quiz] python3 = ${PYTHON}`);
-const trimEnd = (s) => s.replace(/\s+$/, '');
+const norm = (s) => s.replace(/\r\n/g, '\n');
+const trimEnd = (s) => norm(s).replace(/\s+$/, '');
+// 强制 python 以 UTF-8 输出：Windows 中文系统的控制台默认 GBK，
+// 题目里 print 中文时按 utf8 解码会成乱码
+const PY_ENV = { ...process.env, PYTHONIOENCODING: 'utf-8' };
 
 for (const [id, expected] of Object.entries(CASES)) {
   const q = QUESTIONS[id];
@@ -68,7 +84,7 @@ for (const [id, expected] of Object.entries(CASES)) {
   if (q.fill || q.code.includes('___')) { fail(`${id} 含填空占位符，不应进校验表`); continue; }
   let res;
   try {
-    res = spawnSync(PYTHON, ['-c', q.code], { timeout: 10000, encoding: 'utf8' });
+    res = spawnSync(PYTHON, ['-c', norm(q.code)], { timeout: 10000, encoding: 'utf8', env: PY_ENV });
   } catch (e) {
     fail(`${id} 启动 python3 异常: ${e.message}`);
     continue;

@@ -1,0 +1,10 @@
+# 统一 LF 换行：仓库在 macOS / Windows 间协作，
+# 避免 core.autocrlf 不同的机器提交出 CRLF 混合换行
+* text=auto eol=lf
+
+*.png binary
+*.webp binary
+*.jpg binary
+*.ogg binary
+*.mp3 binary
+*.wav binary
