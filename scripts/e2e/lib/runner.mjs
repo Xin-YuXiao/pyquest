@@ -2,7 +2,7 @@
 // 章节端到端测试 · 共享运行器（runChapterE2E）
 //
 // 各章脚本（scripts/e2e-chN.mjs）只声明章节差异（labels + steps），
-// 完整流程与全部断言在此统一执行，保证八章测试行为一致：
+// 完整流程与全部断言在此统一执行，保证各章测试行为一致：
 //   新游戏 → gotoChapter 跳章 → 集碎片 → 封印门（不足/集齐）→ 进巢穴 →
 //   祝福符文 → BOSS 符文破盾 → 挥剑命中（蛇：断尾两击）→ 击败通关 →
 //   存档 → 下一章衔接（ch3：抽题/世界地图）→ 刷新续玩
@@ -392,7 +392,7 @@ export async function runChapterE2E(spec) {
       const gEnd = await state();
       check(gEnd.progress[CH.id].done, L.done);
       if (step.allDoneIds) {
-        check(step.allDoneIds.every((id) => gEnd.progress[id].done === true), '八章进度全部标记完成');
+        check(step.allDoneIds.every((id) => gEnd.progress[id].done === true), '通关章节进度全部标记完成');
       }
       check(await page.locator('#victory').evaluate((el) => !el.classList.contains('hidden')), '胜利画面出现');
       let title = await page.locator('#victory-title').textContent();
@@ -455,7 +455,7 @@ export async function runChapterE2E(spec) {
       check(await page.locator('#map-backdrop.show').count() === 1, 'Tab 呼出世界地图');
       if (step.shotOpen) await shot(step.shotOpen);
       const nodeCount = await page.locator('#map-path .map-node').count();
-      check(nodeCount === 8, `地图显示 8 个章节节点（实际 ${nodeCount}）`);
+      check(nodeCount === CHAPTERS.length, `地图显示 ${CHAPTERS.length} 个章节节点（实际 ${nodeCount}）`);
       check(await page.locator(`.map-node[data-id="${step.lockedNodeId}"].locked`).count() === 1,
         `${badgeName(step.lockedNodeId)}未解锁显示为锁定 🔒`);
       for (const id of step.doneNodeIds) {

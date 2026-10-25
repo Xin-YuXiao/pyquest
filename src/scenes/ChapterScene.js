@@ -2,7 +2,7 @@
 // 通用章节场景：数据驱动的野外（Field）与巢穴（Lair）
 // - FieldScene：碎片符文 + 引导 NPC + 巢穴封印门（集齐碎片解锁）
 // - LairScene：BOSS 符文破盾 + BOSS 战 + 通关结算（进入下一章）
-// 由 main.js 按 chapters.js 注册表批量生成（8 章 × 2 场景）
+// 由 main.js 按 chapters.js 注册表批量生成（11 章 × 2 场景）
 // ============================================================
 import { G, updateHud, cp } from '../core/state.js';
 import { npcLinesFor } from '../core/phase.js';

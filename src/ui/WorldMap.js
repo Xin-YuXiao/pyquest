@@ -1,7 +1,8 @@
 // ============================================================
 // 世界地图（全局关卡地图）：Tab 呼出 / 关闭
 // - 羊皮纸大地图：各章地形色块 + landmark 图标 + 小径连线
-// - 8 个章节地标散布在地图上（左下的村庄 → 右上的深空）
+// - 11 个章节地标散布在地图上（左下的村庄 → 右上的深空，
+//   再折向顶部第二部三地：统计圣所 → 灵思之塔 → 毕业试炼）
 // - 解锁规则与传送门一致：通关前一章节即解锁，点击地标快速传送
 //   到该章野外（塞尔达式圆形转场）
 // ============================================================
@@ -18,6 +19,7 @@ const MAP_H = 600;
 // 地标在画布上的位置（百分比）。叙事顺序：
 // W1 草原村庄（左下）→ W2 森林 → W3 高原 → W4 星图塔 → W5 熔炉
 // → W6 神殿 → W7 圣殿 → W8 深空晕环（右上）
+// → 第二部：W9 统计圣所 → W10 灵思之塔 → W11 毕业试炼（顶部向西）
 const NODE_POS = {
   1: [12, 80],
   2: [23, 53],
@@ -27,6 +29,9 @@ const NODE_POS = {
   6: [75, 53],
   7: [78, 30],
   8: [90, 6],
+  9: [70, 13],
+  10: [50, 8],
+  11: [28, 12],
 };
 
 // ---------- 静态地图美术（羊皮纸 + 地形 + landmark） ----------
@@ -118,6 +123,30 @@ const ART = `
       <ellipse cx="880" cy="46" rx="76" ry="42" fill="#5c4877"/>
       <ellipse cx="900" cy="30" rx="108" ry="24" fill="none" stroke="#9c86c9" stroke-width="1.4" opacity=".7" transform="rotate(-14 900 30)"/>
     </g>
+
+    <!-- W9 统计圣所（顶部 · 第二部） -->
+    <g>
+      <path d="M628 100C650 64 734 50 790 64C840 76 850 104 828 122C802 143 718 148 674 132C644 121 616 116 628 100Z"
+        fill="#9fd8c8" stroke="#7cb8a6"/>
+      <ellipse cx="730" cy="94" rx="62" ry="27" fill="#b9e8da"/>
+      <path d="M656 122C714 142 792 140 826 118" fill="none" stroke="#88c4b1" stroke-width="2" opacity=".6"/>
+    </g>
+
+    <!-- W10 灵思之塔（顶部中央 · 第二部） -->
+    <g>
+      <path d="M436 68C452 32 528 18 578 32C622 44 632 72 608 89C580 108 496 112 458 98C432 88 424 82 436 68Z"
+        fill="#d9a8dd" stroke="#bb87c2"/>
+      <ellipse cx="532" cy="56" rx="56" ry="23" fill="#e7c3ea"/>
+      <path d="M460 86C516 104 582 102 608 84" fill="none" stroke="#c899ce" stroke-width="2" opacity=".6"/>
+    </g>
+
+    <!-- W11 毕业试炼（顶部西侧 · 第二部） -->
+    <g>
+      <path d="M216 102C230 66 300 52 350 64C396 75 406 102 384 118C358 137 280 142 240 128C214 118 204 114 216 102Z"
+        fill="#ecd28e" stroke="#cfb069"/>
+      <ellipse cx="308" cy="88" rx="56" ry="23" fill="#f5e2ac"/>
+      <path d="M240 118C296 134 364 132 388 114" fill="none" stroke="#dcbc76" stroke-width="2" opacity=".65"/>
+    </g>
   </g>
 
   <!-- 左上角装饰：雾丘、池塘、飞鸟（空出的纸面不显得荒） -->
@@ -133,9 +162,9 @@ const ART = `
       <path d="M212 214l7-16 7 16z"/><path d="M236 220l6-13 6 13z"/>
     </g>
     <g fill="#fffaf0" opacity=".75">
-      <ellipse cx="322" cy="96" rx="34" ry="12"/>
-      <ellipse cx="340" cy="88" rx="20" ry="10"/>
-      <ellipse cx="306" cy="90" rx="18" ry="9"/>
+      <ellipse cx="258" cy="44" rx="34" ry="12"/>
+      <ellipse cx="278" cy="36" rx="20" ry="10"/>
+      <ellipse cx="240" cy="38" rx="18" ry="9"/>
       <ellipse cx="416" cy="132" rx="24" ry="8"/>
     </g>
     <g fill="none" stroke="#a98f6a" stroke-width="1.6" opacity=".55">
@@ -251,6 +280,28 @@ const ART = `
       <ellipse rx="12" ry="4.5" transform="rotate(-18)" stroke-width="1.4"/>
       <circle cx="0" cy="0" r="2.6" fill="#fff3c4" stroke="none"/>
     </g>
+    <!-- 统计圣所 -->
+    <g transform="translate(700,78)">
+      <path d="M-13 8L0 -14L13 8Z" fill="#bfe8dc" stroke="#6b4f2e" stroke-width="1.8"/>
+      <rect x="-12" y="8" width="24" height="4" fill="#9fd0c0" stroke="#6b4f2e" stroke-width="1.4"/>
+      <path d="M-7 12v9M0 12v9M7 12v9" stroke="#6b4f2e" stroke-width="1.8"/>
+      <rect x="-12" y="21" width="24" height="4" fill="#9fd0c0" stroke="#6b4f2e" stroke-width="1.4"/>
+      <circle cx="0" cy="-18" r="3" fill="#ffd257" stroke="#6b4f2e" stroke-width="1.2"/>
+    </g>
+    <!-- 灵思之塔 -->
+    <g transform="translate(500,48)">
+      <path d="M-8 26h16V-10h-16z" fill="#e7c3ea" stroke="#6b4f2e" stroke-width="2"/>
+      <path d="M-11 -10L0 -30L11 -10z" fill="#bb87c2" stroke="#6b4f2e" stroke-width="2"/>
+      <path d="M0 -30v-7" stroke="#6b4f2e" stroke-width="1.6"/>
+      <circle cx="0" cy="0" r="2.4" fill="#ffd257" stroke="none"/>
+      <circle cx="0" cy="11" r="2.4" fill="#ffd257" stroke="none"/>
+    </g>
+    <!-- 毕业试炼凯旋门 -->
+    <g transform="translate(280,72)">
+      <path d="M-16 14v-8a16 16 0 0 1 32 0v8" fill="none" stroke="#6b4f2e" stroke-width="2.4"/>
+      <path d="M-20 14h40" stroke="#6b4f2e" stroke-width="2"/>
+      <circle cx="0" cy="-15" r="3.4" fill="#ffd257" stroke="#6b4f2e" stroke-width="1.4"/>
+    </g>
   </g>
 
   <!-- 手绘小注记 -->
@@ -361,7 +412,7 @@ export class WorldMap {
 
   render() {
     const doneCount = CHAPTERS.filter((c) => phaseOf(c.id) === PHASE.DONE).length;
-    this.subEl.innerHTML = `P4A 八周旅程<span class="dot-sep"></span>已通关 <b>${doneCount} / ${CHAPTERS.length}</b><span class="dot-sep"></span><kbd>Tab</kbd> 关闭`;
+    this.subEl.innerHTML = `P4A 学程 · 第一部 + 第二部<span class="dot-sep"></span>已通关 <b>${doneCount} / ${CHAPTERS.length}</b><span class="dot-sep"></span><kbd>Tab</kbd> 关闭`;
 
     // 连线：目的地已通关 = 金色实线；已解锁未通关 = 流动金色点线；未解锁 = 暗色虚线
     const segs = CHAPTERS.slice(0, -1).map((ch, i) => {

@@ -1,8 +1,9 @@
 // ============================================================
-// 章节注册表：P4A@UCAS 八周课程 → 八章关卡（数据驱动）
+// 章节注册表：P4A@UCAS 64 学时课程 → 十一章关卡（数据驱动）
 // 每章 = 野外（field：碎片符文 + 引导 NPC + 封印门）+ 巢穴（lair：BOSS）
 // W1-W2 复用手工地图（村庄/地牢/森林/洞窟，已按周次重对齐题池），
-// W3 为完整样板章，W4-W8 由通用生成器按主题生成（后续逐周充实）。
+// W3 为完整样板章，W4-W8 由通用生成器按主题生成；
+// 第二部 W9-W11（统计圣所/灵思之塔/毕业试炼）同为通用生成器关卡。
 // ============================================================
 
 import {
@@ -28,9 +29,9 @@ export const CHAPTERS = [
     pools: { shard: 'w1field', heal: 'w1lair', lair: 'w1lair', boss: 'w1boss' },
     // 引导台词：按章内阶段查表（core/phase.js）；跨章问候走 extraGreets
     extraGreets: (G) => {
-      if (G.progress[8] && G.progress[8].done) {
+      if (G.progress[11] && G.progress[11].done) {
         return [
-          '从变量到暗物质晕……八周的旅程你已全部走完！',
+          '从变量到毕业试炼……第一部与第二部的旅程你已全部走完！',
           '这片大陆的每一块符文石都记得你的名字，勇者。',
         ];
       }
@@ -94,7 +95,7 @@ export const CHAPTERS = [
     // 引导台词：按章内阶段查表（core/phase.js）；门开后无专属词条，
     // 回退沿用收集进度台词（与原 if-梯子行为一致）
     extraGreets: (G) => {
-      if (G.progress[8] && G.progress[8].done) {
+      if (G.progress[11] && G.progress[11].done) {
         return ['石碑上的符文已全部亮起——你完成了整段旅程。'];
       }
       if (G.progress[3] && G.progress[3].done) {
@@ -151,7 +152,7 @@ export const CHAPTERS = [
       lairHealRunes: 3, lairAmbient: 0x1a1430,
     },
     extraGreets: (G) => {
-      if (G.progress[8] && G.progress[8].done) {
+      if (G.progress[11] && G.progress[11].done) {
         return ['高原的风依旧——而你已把整门课程装进了行囊。'];
       }
       return null;
@@ -320,7 +321,7 @@ export const CHAPTERS = [
       ],
       collecting: ({ cp }) => [`已收集 ${cp.shards} / ${cp.shardsNeeded} 枚频谱碎片。任何信号都是不同频率正弦波的叠加。`],
       ready: ['频谱碎片集齐！频域回廊的封印正在瓦解……'],
-      done: ['傅里叶魅影已消散！东侧传送门通往最后的「深空晕环」。'],
+      done: ['傅里叶魅影已消散！东侧传送门通往「深空晕环」。'],
     },
     victory: {
       title: '📡 第七章 完成！',
@@ -330,7 +331,7 @@ export const CHAPTERS = [
   },
 
   // ------------------------------------------------------------
-  // 第八章 · Week 8：宇宙学 N-body 与暗物质晕 NFW 轮廓（终章）
+  // 第八章 · Week 8：宇宙学 N-body 与暗物质晕 NFW 轮廓（第一部终章）
   // ------------------------------------------------------------
   {
     id: 8, week: 8,
@@ -344,7 +345,6 @@ export const CHAPTERS = [
     boss: 'snake', bossName: 'NFW 幻龙',
     npcKind: 'tablet', npcName: '深空石碑',
     pools: { shard: 'w8shard', heal: 'w8lair', lair: 'w8lair', boss: 'w8boss' },
-    final: true,
     theme: {
       palette: 'dungeon', seed: 20280801, w: 32, h: 24,
       healRunes: 2, slimeVariant: 'crimson', slimes: 4,
@@ -355,15 +355,132 @@ export const CHAPTERS = [
         '欢迎来到宇宙的尽头——暗物质晕的深处。',
         '引力把万亿粒子聚成晕；NFW 轮廓刻画着它们的密度分布。',
         '在半径 r 处把密度积分到 200 倍临界密度，就得到晕的质量；用 curve_fit 拟合模拟数据，便能看到暗物质的真容。',
-        `收集 ${cp.shardsNeeded} 枚暗物质碎片，进入核心，直面最终的 NFW 幻龙！`,
+        `收集 ${cp.shardsNeeded} 枚暗物质碎片，进入核心，直面 NFW 幻龙！`,
       ],
       collecting: ({ cp }) => [`已收集 ${cp.shards} / ${cp.shardsNeeded} 枚暗物质碎片。NFW 轮廓：ρ(r) ∝ 1 / [r(1+r/rs)²]。`],
       ready: ['暗物质碎片集齐！核心之门正在开启……幻龙在等你。'],
-      done: ['NFW 幻龙已被封印。八周的旅程，圆满了。'],
+      done: ['NFW 幻龙已被封印。第一部的旅程到此圆满——但传说，深空之后还有「第二部」的大陆。'],
     },
     victory: {
-      title: '🌌 全 部 通 关 ！',
-      text: '你击败了 NFW 幻龙，测出了暗物质晕的密度轮廓！<br />从变量到宇宙学——八周课程圆满，<br />你已是真正的 Python 天文勇者！',
+      title: '🌌 第八章 完成！',
+      text: '你击败了 NFW 幻龙，测出了暗物质晕的密度轮廓！<br />第一部「八周课程」圆满！<br />深空的尽头，第二部的大陆正在浮现……',
+      next: '▶ 进入第九章 · 统计圣所（第二部）',
+    },
+  },
+
+  // ------------------------------------------------------------
+  // 第九章 · Part II：天文学中的统计学基础（到 MCMC 后验分布为止）
+  // 与 W8 的分工：本章讲「为什么」（原理），W8 emcee 题讲「怎么用」（应用）
+  // ------------------------------------------------------------
+  {
+    id: 9, week: 9,
+    title: '第九章 · 统计圣所',
+    subtitle: 'Part II · Statistics for Astronomy',
+    shardLabel: '证据碎片',
+    shardsNeeded: 3,
+    fieldKey: 'C9F', lairKey: 'C9L',
+    fieldName: '圣所外庭', lairName: '后验回廊',
+    buildField, buildLair,
+    boss: 'slime', bossName: '贝叶斯祭司',
+    npcKind: 'tablet', npcName: '统计石碑',
+    pools: { shard: 'w9shard', heal: 'w9lair', lair: 'w9lair', boss: 'w9boss' },
+    theme: {
+      palette: 'grass', seed: 20260901, w: 32, h: 24,
+      healRunes: 2, slimeVariant: 'crimson', slimes: 4,
+      lairHealRunes: 3, lairAmbient: 0x0f2420,
+    },
+    npcLines: {
+      new: ({ cp }) => [
+        '第二部的大陆欢迎你——这里是统计圣所，一切测量的良心。',
+        '没有误差的数字只是传闻：泊松涨落、误差传播、置信区间，才是观测的舌头。',
+        '似然与先验在祭坛上结合，产出后验；χ² 与 AIC 在回廊里审判模型。',
+        `收集 ${cp.shardsNeeded} 枚证据碎片，深入后验回廊，直面贝叶斯祭司。`,
+      ],
+      collecting: ({ cp }) => [`已收集 ${cp.shards} / ${cp.shardsNeeded} 枚证据碎片。计数涨落 σ=√N：1000 个光子计数也有 ±31.6 的呼吸。`],
+      ready: ['证据碎片集齐！后验回廊的封印正在瓦解……'],
+      done: ['贝叶斯祭司已俯首！东侧传送门通往第二部的「灵思之塔」。'],
+    },
+    victory: {
+      title: '📊 第九章 完成！',
+      text: '你说服了贝叶斯祭司，<br />误差传播、似然、假设检验与 MCMC 诊断的圣所之钥已入手！',
+      next: '▶ 进入第十章 · 灵思之塔',
+    },
+  },
+
+  // ------------------------------------------------------------
+  // 第十章 · Part II：Vibe Coding 工具方法论（正确性验证 workflow 为成体系考点）
+  // ------------------------------------------------------------
+  {
+    id: 10, week: 10,
+    title: '第十章 · 灵思之塔',
+    subtitle: 'Part II · Vibe Coding',
+    shardLabel: '灵感碎片',
+    shardsNeeded: 3,
+    fieldKey: 'C10F', lairKey: 'C10L',
+    fieldName: '灵思之塔底层', lairName: '验证回廊',
+    buildField, buildLair,
+    boss: 'snake', bossName: '幻言魔像',
+    npcKind: 'tablet', npcName: '灵思石碑',
+    pools: { shard: 'w10shard', heal: 'w10lair', lair: 'w10lair', boss: 'w10boss' },
+    theme: {
+      palette: 'dungeon', seed: 20261001, w: 30, h: 24,
+      healRunes: 2, slimeVariant: 'crimson', slimes: 4,
+      lairHealRunes: 3, lairAmbient: 0x1f1030,
+    },
+    npcLines: {
+      new: ({ cp }) => [
+        '灵思之塔——与 AI 对话就能筑起代码之塔的地方。',
+        '但塔砖会撒谎：AI 按统计规律生成「看起来对」的代码，幻觉藏在常数与 API 名里。',
+        '塔的守护法则是「先验证、再信任」：测试先行、小步迭代、回归检查。',
+        `收集 ${cp.shardsNeeded} 枚灵感碎片，登上验证回廊，看穿幻言魔像的每一句花言巧语。`,
+      ],
+      collecting: ({ cp }) => [`已收集 ${cp.shards} / ${cp.shardsNeeded} 枚灵感碎片。口诀：需求说清楚、测试先写好、一次只生成一小步。`],
+      ready: ['灵感碎片集齐！验证回廊的大门正在开启……'],
+      done: ['幻言魔像已被拆穿！塔顶的传送门通往最后的「毕业试炼」。'],
+    },
+    victory: {
+      title: '🪄 第十章 完成！',
+      text: '你看穿了幻言魔像的每一句幻觉，<br />vibe coding 的验证法则——测试先行、小步迭代、回归检查——已刻上塔壁！',
+      next: '▶ 进入第十一章 · 毕业试炼',
+    },
+  },
+
+  // ------------------------------------------------------------
+  // 第十一章 · Part II：Project-driven Study 毕业试炼（全课程终章）
+  // 三类标准 workflow：数据拟合（Project-2/4）/ 模拟（Project-1/3）/ 机器学习（Project-5/6/7）
+  // ------------------------------------------------------------
+  {
+    id: 11, week: 11,
+    title: '第十一章 · 毕业试炼',
+    subtitle: 'Part II · Project-driven Study',
+    shardLabel: '试炼印记',
+    shardsNeeded: 3,
+    fieldKey: 'C11F', lairKey: 'C11L',
+    fieldName: '毕业试炼场', lairName: '三途之门',
+    buildField, buildLair,
+    boss: 'slime', bossName: '三途守门人',
+    npcKind: 'tablet', npcName: '试炼石碑',
+    pools: { shard: 'w11shard', heal: 'w11lair', lair: 'w11lair', boss: 'w11boss' },
+    final: true,
+    theme: {
+      palette: 'dungeon', seed: 20261101, w: 32, h: 24,
+      healRunes: 2, slimeVariant: 'crimson', slimes: 4,
+      lairHealRunes: 3, lairAmbient: 0x241a08,
+    },
+    npcLines: {
+      new: ({ cp }) => [
+        '毕业试炼场——三个方向的守门人在三途之门后等你。',
+        '数据拟合之途：建模 → 拟合 → 参数 → 不确定度；模拟之途：物理模型 → 模拟 → 观测效应 → 分析。',
+        '机器学习之途：数据 → 特征 → 训练 → 评估 → 泛化。三途同源：选题 → 文献 → 数据 → 分析 → 验证 → 报告。',
+        `收集 ${cp.shardsNeeded} 枚试炼印记，推开三途之门，通过最后的守门人！`,
+      ],
+      collecting: ({ cp }) => [`已收集 ${cp.shards} / ${cp.shardsNeeded} 枚试炼印记。记住：没有不确定度的参数、没有泛化的模型，都过不了守门人的眼。`],
+      ready: ['试炼印记集齐！三途之门正在开启……'],
+      done: ['三途守门人已向你低头。全部课程，至此圆满。'],
+    },
+    victory: {
+      title: '🎓 全 部 通 关 ！',
+      text: '你通过了三途守门人的毕业试炼！<br />从变量到宇宙学，从统计到 vibe coding——<br />64 学时的完整旅程，你已是独当一面的 Python 天文勇者！',
       next: '返回村庄 · 自由探索',
     },
   },

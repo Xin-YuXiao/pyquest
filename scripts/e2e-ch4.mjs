@@ -20,7 +20,7 @@ runChapterE2E({
     shieldBroken: '答对天文包谜题，单位术士护盾破碎',
     done: '击败单位术士，第四章通关',
     victoryTitle: '第四章',
-    stats: '4 / 8',
+    stats: '4 / 11',
     statsLabel: '结算显示章节进度',
     next: '通关后进入第五章 · 加速熔炉',
     resumeBtn: '第5章',

@@ -74,7 +74,7 @@ export function showVictory(ch, { hasNext, onNext, onRestart } = {}) {
   };
   btnRestart.onclick = () => {
     // 对齐标题界面「新的冒险」的安全标准：清档前确认
-    if (!window.confirm('确定要放弃这次冒险吗？八周进度将被清除。')) return;
+    if (!window.confirm('确定要放弃这次冒险吗？全部冒险进度将被清除。')) return;
     clearSave();
     location.reload();
   };

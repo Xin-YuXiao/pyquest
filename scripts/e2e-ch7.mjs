@@ -20,7 +20,7 @@ runChapterE2E({
     shieldBroken: '答对信号谜题，傅里叶魅影护盾破碎',
     done: '击败傅里叶魅影，第七章通关',
     victoryTitle: '第七章',
-    stats: '7 / 8',
+    stats: '7 / 11',
     statsLabel: '结算显示章节进度',
     next: '通关后进入第八章 · 深空晕环',
     resumeBtn: '第8章',

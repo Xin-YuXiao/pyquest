@@ -21,7 +21,7 @@ runChapterE2E({
     shieldBroken: '答对 NumPy 谜题，魔君护盾破碎',
     done: '击败混沌曲线魔君，第三章通关',
     victoryTitle: '第三章',
-    stats: '3 / 8',
+    stats: '3 / 11',
     statsLabel: '结算显示章节进度',
     next: '进入第四章 · 星图塔平原（占位章链路通）',
     resumeBtn: '第4章',
@@ -42,7 +42,7 @@ runChapterE2E({
     { type: 'saveCheck' },
     { type: 'nextChapter', shot: '33-c4f' },
     { type: 'sampleNextRune', pool: '天文包' },
-    { type: 'worldMap', stats: '3 / 8', lockedNodeId: 5, doneNodeIds: [1, 3], hereNodeId: 4, travelToId: 1, shotOpen: '35-worldmap', shotTravel: '36-worldmap-travel' },
+    { type: 'worldMap', stats: '3 / 11', lockedNodeId: 5, doneNodeIds: [1, 3], hereNodeId: 4, travelToId: 1, shotOpen: '35-worldmap', shotTravel: '36-worldmap-travel' },
     { type: 'resume', shot: '34-resume-c4' },
   ],
 });

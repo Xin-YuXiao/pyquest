@@ -1,6 +1,6 @@
 // ============================================================
 // PyQuest · Python 冒险记 —— 游戏入口
-// P4A@UCAS 八周课程 = 八章关卡（data/chapters.js 注册表驱动）
+// P4A@UCAS 64 学时课程 = 十一章关卡（data/chapters.js 注册表驱动）
 // ============================================================
 import Phaser from 'phaser';
 import BootScene from './scenes/BootScene.js';

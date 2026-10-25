@@ -20,7 +20,7 @@ runChapterE2E({
     shieldBroken: '答对数值方法谜题，优化牛头怪护盾破碎',
     done: '击败优化牛头怪，第六章通关',
     victoryTitle: '第六章',
-    stats: '6 / 8',
+    stats: '6 / 11',
     statsLabel: '结算显示章节进度',
     next: '通关后进入第七章 · 信号圣殿',
     resumeBtn: '第7章',

@@ -1,8 +1,8 @@
 // 无头冒烟测试：不需要浏览器
 // 1) 验证所有像素图行宽一致（pixelTexture 会 throw）
-// 2) 验证八章地图构建器输出（尺寸、越界、必需要素、传送门链）
+// 2) 验证全部章节地图构建器输出（尺寸、越界、必需要素、传送门链）
 // 3) 验证题库引用完整、题池同难度、槽位映射完整、随机抽题行为
-// 4) 验证 W4-W8 三池式结构（15 新池齐备 / tier 对齐 / 旧池不残留 / 章节映射）
+// 4) 验证 W4-W11 三池式结构（24 个通用池齐备 / tier 对齐 / 旧池不残留 / 章节映射）
 import { generateAllTextures } from '../src/textures/pixelArt.js';
 import { makeGroundTexture } from '../src/textures/ground.js';
 import { buildVillage, buildDungeon, buildForest, buildCave, buildField, buildLair } from '../src/data/maps.js';
@@ -53,8 +53,8 @@ try {
   for (const k of need) if (!textures[k]) fail(`缺少贴图 ${k}`);
 } catch (e) { fail(`贴图生成抛出异常: ${e.message}`); }
 
-// ---- 2. 八章地图 ----
-console.log('[2] 八章地图构建');
+// ---- 2. 全部章节地图 ----
+console.log('[2] 全部章节地图构建');
 function checkMap(def, label) {
   if (def.grid.length !== def.h) fail(`${label} 行数不符`);
   def.grid.forEach((row, y) => {
@@ -118,16 +118,17 @@ for (const ch of CHAPTERS) {
     allLairs.push(lair);
   } catch (e) { fail(`第 ${ch.id} 章 ${ch.title} 构建异常: ${e.message}`); }
 }
-ok(`八章 ${allFields.length} 野外 + ${allLairs.length} 巢穴全部构建成功`);
+ok(`全部 ${allFields.length} 章：${allFields.length} 野外 + ${allLairs.length} 巢穴全部构建成功`);
 
-// 地面画布（抽查四章：两手工图 + 两通用图）
+// 地面画布（抽查五章：两手工图 + 通用图首尾——高原 / 暗物质核心 / 三途之门）
 try {
   const g1 = makeGroundTexture(sceneStub, allFields[0]);
   const g2 = makeGroundTexture(sceneStub, allLairs[0]);
   const g3 = makeGroundTexture(sceneStub, allFields[2]);
   const g4 = makeGroundTexture(sceneStub, allLairs[7]);
-  if (!textures[g1] || !textures[g2] || !textures[g3] || !textures[g4]) fail('地面画布生成失败');
-  ok(`地面画布生成成功（村庄/地牢/高原/暗物质核心）`);
+  const g5 = makeGroundTexture(sceneStub, allLairs[10]);
+  if (!textures[g1] || !textures[g2] || !textures[g3] || !textures[g4] || !textures[g5]) fail('地面画布生成失败');
+  ok('地面画布生成成功（村庄/地牢/高原/暗物质核心/三途之门）');
 } catch (e) { fail(`地面画布异常: ${e.message}`); }
 
 // ---- 3. 题库 ----
@@ -154,17 +155,21 @@ for (const [name, ids] of Object.entries(POOLS)) {
 }
 ok(`题池 ${Object.keys(POOLS).length} 个，池内难度一致（同池同难度随机抽题）`);
 
-// 3b'. W4-W8 三池式结构改造：15 个新池齐备非空 / tier 与提纲一致（11-25）/ 旧池不残留 / 章节映射有效
+// 3b'. W4-W11 三池式结构改造：24 个通用池齐备非空 / tier 与提纲一致（11-34）/ 旧池不残留 / 章节映射有效
+// （W9 提纲 grilling 决议：w9shard 为 11 题，其余 shard 池 10 题）
 {
   const newPools = [];
-  for (let w = 4; w <= 8; w++) for (const k of ['shard', 'lair', 'boss']) newPools.push(`w${w}${k}`);
+  for (let w = 4; w <= 11; w++) for (const k of ['shard', 'lair', 'boss']) newPools.push(`w${w}${k}`);
   newPools.forEach((name) => {
     if (!POOLS[name]) fail(`缺少新题池 ${name}`);
     else if (!POOLS[name].length) fail(`新题池 ${name} 为空`);
   });
-  ['w4', 'w5', 'w6', 'w7', 'w8'].forEach((name) => { if (POOLS[name]) fail(`旧题池 ${name} 仍残留`); });
-  const expectTier = { 4: [11, 12, 13], 5: [14, 15, 16], 6: [17, 18, 19], 7: [20, 21, 22], 8: [23, 24, 25] };
-  for (let w = 4; w <= 8; w++) {
+  ['w4', 'w5', 'w6', 'w7', 'w8', 'w9', 'w10', 'w11'].forEach((name) => { if (POOLS[name]) fail(`旧题池 ${name} 仍残留`); });
+  const expectTier = {
+    4: [11, 12, 13], 5: [14, 15, 16], 6: [17, 18, 19], 7: [20, 21, 22],
+    8: [23, 24, 25], 9: [26, 27, 28], 10: [29, 30, 31], 11: [32, 33, 34],
+  };
+  for (let w = 4; w <= 11; w++) {
     ['shard', 'lair', 'boss'].forEach((k, i) => {
       (POOLS[`w${w}${k}`] || []).forEach((id) => {
         if (QUESTIONS[id] && QUESTIONS[id].tier !== expectTier[w][i]) {
@@ -178,7 +183,7 @@ ok(`题池 ${Object.keys(POOLS).length} 个，池内难度一致（同池同难�
       if (!POOLS[ch.pools[k]]) fail(`第 ${ch.id} 章 pools.${k} 指向不存在的题池 ${ch.pools[k]}`);
     });
   });
-  ok('W4-W8 三池式：15 个新池齐备、tier 对齐提纲（11-25）、旧池已清、章节映射有效');
+  ok('W4-W11 三池式：24 个通用池齐备、tier 对齐提纲（11-34）、旧池已清、章节映射有效');
 }
 
 // 3c. 每张地图的符文 qid 都是合法槽位，且指向非空题池（题量充足）
@@ -191,14 +196,14 @@ allRunes.forEach((p) => {
 });
 ok(`符文-题池映射完整（${allRunes.length} 个符文槽）`);
 
-// 3c'. W4-W8 池题量下限：w{N}shard ≥ 10 / w{N}lair ≥ 7 / w{N}boss ≥ 3（用下限而非精确值，留扩充余地）
-for (let w = 4; w <= 8; w++) {
+// 3c'. W4-W11 池题量下限：w{N}shard ≥ 10 / w{N}lair ≥ 7 / w{N}boss ≥ 3（用下限而非精确值，留扩充余地）
+for (let w = 4; w <= 11; w++) {
   [['shard', 10], ['lair', 7], ['boss', 3]].forEach(([k, n]) => {
     const pool = POOLS[`w${w}${k}`];
     if (pool && pool.length < n) fail(`题池 w${w}${k} 题量不足（${pool.length} < ${n}）`);
   });
 }
-ok('W4-W8 题池题量达标（shard ≥ 10 / lair ≥ 7 / boss ≥ 3）');
+ok('W4-W11 题池题量达标（shard ≥ 10 / lair ≥ 7 / boss ≥ 3）');
 
 // 3d. 每章符文槽位抽到的题目所属章节正确（章→池归属抽查）
 for (const ch of CHAPTERS) {

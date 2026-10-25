@@ -20,7 +20,7 @@ runChapterE2E({
     shieldBroken: '答对加速谜题，迟缓巨魔护盾破碎',
     done: '击败迟缓巨魔，第五章通关',
     victoryTitle: '第五章',
-    stats: '5 / 8',
+    stats: '5 / 11',
     statsLabel: '结算显示章节进度',
     next: '通关后进入第六章 · 数值方法神殿',
     resumeBtn: '第6章',
