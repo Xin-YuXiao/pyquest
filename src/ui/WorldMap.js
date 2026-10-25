@@ -5,10 +5,12 @@
 //   再折向顶部第二部三地：统计圣所 → 灵思之塔 → 毕业试炼）
 // - 解锁规则与传送门一致：通关前一章节即解锁，点击地标快速传送
 //   到该章野外（塞尔达式圆形转场）
+// - 头部显示秘藏（Python 彩蛋）发现数；已发现秘藏的章节地标带 ✦
 // ============================================================
 import { G, cp } from '../core/state.js';
 import { phaseOf, PHASE } from '../core/phase.js';
 import { CHAPTERS } from '../data/chapters.js';
+import { SECRET_TOTAL, countFound, secretForChapter } from '../data/secrets.js';
 import { sfx } from '../audio/sfx.js';
 import { wipeTransition } from './wipe.js';
 import { ICON } from './icons.js';
@@ -356,6 +358,7 @@ export class WorldMap {
     if (s.quiz && s.quiz.isOpen) return;
     if (s.dialogue && s.dialogue.isOpen) return;
     if (s.observatory && s.observatory.isOpen) return;
+    if (s.secretScroll && s.secretScroll.isOpen) return;
     if (s.transitioning) return;
     if (s.player && s.player.dying) return;
 
@@ -412,7 +415,7 @@ export class WorldMap {
 
   render() {
     const doneCount = CHAPTERS.filter((c) => phaseOf(c.id) === PHASE.DONE).length;
-    this.subEl.innerHTML = `P4A 学程 · 第一部 + 第二部<span class="dot-sep"></span>已通关 <b>${doneCount} / ${CHAPTERS.length}</b><span class="dot-sep"></span><kbd>Tab</kbd> 关闭`;
+    this.subEl.innerHTML = `P4A 学程 · 第一部 + 第二部<span class="dot-sep"></span>已通关 <b>${doneCount} / ${CHAPTERS.length}</b><span class="dot-sep"></span>秘藏 <b>${countFound(G.secrets)} / ${SECRET_TOTAL}</b><span class="dot-sep"></span><kbd>Tab</kbd> 关闭`;
 
     // 连线：目的地已通关 = 金色实线；已解锁未通关 = 流动金色点线；未解锁 = 暗色虚线
     const segs = CHAPTERS.slice(0, -1).map((ch, i) => {
@@ -450,6 +453,9 @@ export class WorldMap {
           ? { cls: 'done', text: `已通关 · ${p.shards}/${p.shardsNeeded}` }
           : { cls: '', text: `待挑战 · ${p.shards}/${p.shardsNeeded}` };
       const shortName = ch.title.replace(/^第[一二三四五六七八九十]+章\s*·\s*/, '');
+      const secret = secretForChapter(ch.id);
+      const secretFound = !!secret && G.secrets.has(secret.id);
+      if (secretFound) classes.push('has-secret');
       const [x, y] = NODE_POS[ch.id];
 
       const btn = document.createElement('button');
@@ -465,7 +471,7 @@ export class WorldMap {
           <span class="mn-badge">${badge}</span>
         </span>
         <span class="mn-plate">
-          <span class="mn-week"><span>第 ${ch.week} 周</span>${here ? '<span class="mn-here-tag">当前</span>' : ''}</span>
+          <span class="mn-week"><span>第 ${ch.week} 周${secretFound ? `<span class="mn-secret" title="已发现秘藏「${secret.name}」">✦</span>` : ''}</span>${here ? '<span class="mn-here-tag">当前</span>' : ''}</span>
           <span class="mn-name">${shortName}</span>
           <span class="mn-status ${status.cls}">${status.text}</span>
         </span>`;

@@ -28,6 +28,7 @@ export function saveGame() {
       answered: [...G.answered],
       qAnswered: [...G.qAnswered],
       runeRolls: { ...G.runeRolls },
+      secrets: [...G.secrets], // 可选字段：缺省（旧存档）视为未发现任何秘藏
       progress: JSON.parse(JSON.stringify(G.progress)),
       observatory: JSON.parse(JSON.stringify(G.observatory)), // 可选字段（观测日志），旧档缺省
     };
@@ -77,6 +78,7 @@ export function loadGame() {
     G.qAnswered = new Set(d.qAnswered || []);
     G.runeRolls = d.runeRolls || {};
     G.observatory = sanitizeObservationLog(d.observatory);
+    G.secrets = new Set(Array.isArray(d.secrets) ? d.secrets : []);
     // 逐章恢复进度（缺省字段按初始值补齐）
     for (const ch of CHAPTERS) {
       const saved = d.progress && d.progress[ch.id];

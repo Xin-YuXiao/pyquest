@@ -5,6 +5,7 @@
 // 4) 验证 W4-W11 三池式结构（24 个通用池齐备 / tier 对齐 / 旧池不残留 / 章节映射）
 // 5) 验证背景音乐曲目数据（记谱合法、可编译）与章节曲目映射
 // 6) 验证观测站小游戏：NFW / 频谱数学对齐题库（dm8 / dm9 / sg6 / st7）、观测台选址、观测日志
+// 7) 验证秘藏彩蛋：数据完整、每章野外选址合法且确定（不与符文/出生点/传送门/障碍冲突）
 import { generateAllTextures } from '../src/textures/pixelArt.js';
 import { makeGroundTexture } from '../src/textures/ground.js';
 import { CHAPTERS } from '../src/data/chapters.js';
@@ -15,6 +16,7 @@ import {
   OBSERVATORIES, NFW, TUNING, makeNfwData, nfwDensity, nfwChi2, nfwChi2dof, nfwLogSlope,
   makeTuner, findPeaks, readoutMagnitude, amplitudeOf, recordObservation, sanitizeObservationLog,
 } from '../src/core/observatory.js';
+import { SECRETS, SECRET_RULES, placeSecret, withSecret, secretForChapter } from '../src/data/secrets.js';
 
 let errors = 0;
 const fail = (msg) => { errors++; console.error('  ✗', msg); };
@@ -55,7 +57,7 @@ try {
     'portal_door', 'crystal', 'shroom',
     'gate_closed', 'gate_open', 'torch_0',
     'slash_0', 'slash_1', 'slash_2',
-    'particle', 'observatory'];
+    'particle', 'observatory', 'secret_stone'];
   for (const k of need) if (!textures[k]) fail(`缺少贴图 ${k}`);
 } catch (e) { fail(`贴图生成抛出异常: ${e.message}`); }
 
@@ -365,6 +367,61 @@ try {
   }
   ok('观测日志：完成次数 / 首次时间 / 最好成绩合并正确，读档清洗丢弃坏数据');
 } catch (e) { fail(`观测站小游戏异常: ${e.message}`); }
+// ---- 7. 秘藏彩蛋 ----
+console.log('[7] 秘藏彩蛋');
+try {
+  const ids = new Set();
+  const chs = new Set();
+  for (const s of SECRETS) {
+    if (ids.has(s.id)) fail(`秘藏 id 重复：${s.id}`);
+    ids.add(s.id);
+    if (chs.has(s.chapter)) fail(`第 ${s.chapter} 章有多个秘藏（每章最多一个）`);
+    chs.add(s.chapter);
+    if (!CHAPTERS.some((c) => c.id === s.chapter)) fail(`秘藏 ${s.id} 指向不存在的第 ${s.chapter} 章`);
+    if (!s.name || !s.repl?.length || !s.lines?.length) fail(`秘藏 ${s.id} 缺 name / repl / lines`);
+    if (s.repl.every((r) => r.run === false) && !(s.checks || []).length) fail(`秘藏 ${s.id} 没有任何可实跑核实的内容`);
+  }
+  ok(`${SECRETS.length} 个秘藏：id 唯一、每章最多一个、内容齐全`);
+
+  // 选址：独立复核几何（不复用 placeSecret 内部判定），并确认确定性
+  const R = SECRET_RULES;
+  const tileOf = (p) => [Math.floor(p.x / 128), Math.floor(p.y / 128)];
+  const cheb = (a, b) => Math.max(Math.abs(a[0] - b[0]), Math.abs(a[1] - b[1]));
+  for (const ch of CHAPTERS) {
+    const secret = secretForChapter(ch.id);
+    if (!secret) continue;
+    const def = ch.buildField(ch);
+    const spot = placeSecret(def, secret);
+    if (!spot) { fail(`第 ${ch.id} 章找不到秘藏 ${secret.id} 的合法位置`); continue; }
+    const again = placeSecret(ch.buildField(ch), secret);
+    if (!again || again.tx !== spot.tx || again.ty !== spot.ty) fail(`第 ${ch.id} 章秘藏选址不确定`);
+    const t = [spot.tx, spot.ty];
+    const label = `第 ${ch.id} 章秘藏 ${secret.id}@(${spot.tx},${spot.ty})`;
+    if (spot.tx < R.margin || spot.ty < R.margin || spot.tx > def.w - 1 - R.margin || spot.ty > def.h - 1 - R.margin) fail(`${label} 太靠边`);
+    const c = secret.near === 'water' ? R.nearClearance : R.clearance;
+    for (let dy = -c; dy <= c; dy++) for (let dx = -c; dx <= c; dx++) {
+      const row = def.grid[spot.ty + dy];
+      if (!row || def.colliding.includes(row[spot.tx + dx])) fail(`${label} 周边 ${c} 格内有不可走瓦片`);
+    }
+    for (const p of def.props) {
+      const d = cheb(t, tileOf(p));
+      if (['rune', 'npc', 'door', 'doorlink', 'gate'].includes(p.type) && d < R.interact) fail(`${label} 离 ${p.type}${p.qid ? ' ' + p.qid : ''} 只有 ${d} 格`);
+      if (['tree', 'crystal', 'torch'].includes(p.type) && d < R.solid) fail(`${label} 离 ${p.type} 只有 ${d} 格`);
+    }
+    for (const s of Object.values(def.spawns)) if (cheb(t, tileOf(s)) < R.spawn) fail(`${label} 离出生点太近`);
+    for (const s of def.slimes || []) if (cheb(t, tileOf(s)) < R.slime) fail(`${label} 离史莱姆初始位置太近`);
+    for (const p of def.portals || []) {
+      const cx = Math.floor((p.rect.x + p.rect.w / 2) / 128), cy = Math.floor((p.rect.y + p.rect.h / 2) / 128);
+      if (cheb(t, [cx, cy]) < R.portal) fail(`${label} 离传送门太近`);
+    }
+    // withSecret 只追加一个 secret 道具，不改动其他道具
+    const withS = withSecret(ch, ch.buildField(ch));
+    const added = withS.props.filter((p) => p.type === 'secret');
+    if (added.length !== 1 || added[0].secretId !== secret.id) fail(`第 ${ch.id} 章 withSecret 未正确挂上秘藏`);
+    if (withS.props.length !== def.props.length + 1) fail(`第 ${ch.id} 章 withSecret 改动了其他道具`);
+  }
+  ok('每章秘藏选址合法（不贴边 / 周边可走 / 远离符文·石碑·门·出生点·史莱姆·传送门）且确定可复现');
+} catch (e) { fail(`秘藏校验异常: ${e.message}`); }
 
 console.log(errors === 0 ? '\n全部通过 ✔' : `\n${errors} 个错误 ✘`);
 process.exit(errors === 0 ? 0 : 1);
