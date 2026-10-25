@@ -62,6 +62,8 @@ export const G = {
   records: freshRecords(), // 学习记录：作答日志 + 每题汇总（core/records.js 维护）
   tower: freshTowerStats(), // 试炼塔累计战绩（持久化）
   towerRun: null,           // 进行中的一次试炼塔挑战（不持久化；结构见 core/tower.js 的 newRun）
+  realms: {},            // Project 秘境进度：秘境 id → { steps, done, doneAt }（core/realms.js；不计入章节进度）
+  realm: null,           // 玩家当前所在的秘境：null 不在秘境 / 'hall' 秘境大厅 / 秘境 id（不存档，场景进入时设定）
 };
 
 export function resetState() {
@@ -80,6 +82,8 @@ export function resetState() {
   G.records = freshRecords();
   G.tower = freshTowerStats();
   G.towerRun = null;
+  G.realms = {};
+  G.realm = null;
 }
 
 /** 取某章进度（默认当前章） */

@@ -99,8 +99,9 @@ export class QuizOverlay {
    * main：slot / kind 标明是哪块符文石（kind: shard 碎片 / heal 祝福 / boss）；
    * review：onDone 在复习面板关闭后回调（答对领完或中途取消都会调）。
    * 试炼塔：lethal = 答错可以扣到 0 心（塔里爱心归零即挑战结束）；onWrong 在每次答错扣心后回调。
+   * heading：面板顶部的标签（缺省为题目的章节标签；秘境课题符文显示「Project-4 · 第 3 步 · 数据」）。
    */
-  open(q, { onCorrect, onCancel, onDone, onWrong, lethal = false, mode = 'main', slot = '', kind = 'shard' } = {}) {
+  open(q, { onCorrect, onCancel, onDone, onWrong, lethal = false, mode = 'main', slot = '', kind = 'shard', heading = '' } = {}) {
     this.isOpen = true;
     this.q = q;
     this.selected = -1;
@@ -134,7 +135,7 @@ export class QuizOverlay {
     this.backdrop.classList.toggle('review', mode === 'review');
     this.panel.dataset.mode = mode;
 
-    this.chapterEl.textContent = mode === 'review' ? `复习 · ${q.chapter}` : q.chapter;
+    this.chapterEl.textContent = mode === 'review' ? `复习 · ${q.chapter}` : (heading || q.chapter);
     this.chapterEl.classList.toggle('boss', !!q.chapterBoss);
     this.promptEl.textContent = q.prompt;
     this.codeEl.innerHTML = highlight(q.code);

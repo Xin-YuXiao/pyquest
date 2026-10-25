@@ -5,8 +5,8 @@
 // - 迁移链 v1 → v2 → v3 逐级纯函数升级；首次成功写入 v3 后才删除旧键
 // - 分层：序列化（G → 存档对象）/ 迁移（旧版本 → v3）/ 校验（问题列表）/
 //   水合（存档对象 → G）四个纯函数 + 一层薄的 localStorage 读写
-// - 可选字段 secrets（已发现的秘藏）/ observatory（观测日志）/ dojo（代码训练场）/ tower（试炼塔累计战绩）：
-//   旧档缺省为空，读档时清洗
+// - 可选字段 secrets（已发现的秘藏）/ observatory（观测日志）/ dojo（代码训练场）/ tower（试炼塔累计战绩）/
+//   realms（Project 秘境进度）：旧档缺省为空，读档时清洗
 // - 试炼塔挑战进行中写档：爱心写进塔前的主线爱心（塔里的伤害不进主线存档，见 core/tower.js）
 // - saveGame()：HUD / 学习记录变化、关页、切后台时自动写档
 // ============================================================
@@ -16,6 +16,7 @@ import { sanitizeObservationLog } from './observatory.js';
 import { sanitizeDojo } from './dojoSim.js';
 import { DOJO_LEVELS } from '../data/dojoLevels.js';
 import { sanitizeTowerStats } from './tower.js';
+import { sanitizeRealms } from './realms.js';
 
 export const SAVE_VERSION = 3;
 export const SAVE_KEY = 'pyquest:save:v3';
@@ -60,6 +61,7 @@ export function serialize(g, now = Date.now()) {
     observatory: JSON.parse(JSON.stringify(g.observatory || {})),  // 可选：观测日志
     dojo: JSON.parse(JSON.stringify(g.dojo || {})),                // 可选：代码训练场进度
     tower: sanitizeTowerStats(g.tower),                             // 可选：试炼塔累计战绩
+    realms: JSON.parse(JSON.stringify(g.realms || {})),            // 可选：Project 秘境进度
     records: {
       stats: JSON.parse(JSON.stringify(r.stats)),
       log: r.log.slice(),
@@ -160,6 +162,7 @@ export function validate(d) {
   if (d.observatory !== undefined && !isPlainObj(d.observatory)) problems.push('observatory 不是对象');
   if (d.dojo !== undefined && !isPlainObj(d.dojo)) problems.push('dojo 不是对象');
   if (d.tower !== undefined && !isPlainObj(d.tower)) problems.push('tower 不是对象');
+  if (d.realms !== undefined && !isPlainObj(d.realms)) problems.push('realms 不是对象');
   const r = d.records;
   if (!isPlainObj(r)) problems.push('records 不是对象');
   else {
@@ -208,6 +211,7 @@ export function hydrate(g, d) {
   g.dojo = sanitizeDojo(d.dojo, DOJO_LEVELS.map((l) => l.id));
   g.tower = sanitizeTowerStats(d.tower);
   g.towerRun = null; // 进行中的塔挑战不跨会话（读档总是回到主线）
+  g.realms = sanitizeRealms(d.realms);
   g.records = sanitizeRecords(d.records);
   return g;
 }

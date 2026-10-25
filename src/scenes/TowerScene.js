@@ -307,7 +307,7 @@ export class TowerScene extends WorldScene {
   }
 
   // ---------- 守层者 ----------
-  bossShielded() {
+  isBossShielded() {
     return !!(this.run && this.run.floorState && this.run.floorState.shielded);
   }
 

@@ -27,7 +27,7 @@ export class BossSlime extends Slime {
     this.chaseSpeed = 320;
     this.wanderSpeed = 160;
 
-    if (scene.bossShielded()) this.setTint(0x9fb8ff);
+    if (scene.isBossShielded()) this.setTint(0x9fb8ff);
     this.shadow.setDisplaySize(220, 110);
 
     // 头顶金色王徽（代码碎片贴图，缓慢浮动）
@@ -64,7 +64,7 @@ export class BossSlime extends Slime {
 
   hurt(dmg, fromX, fromY) {
     if (this.dead) return;
-    if (this.scene.bossShielded()) {
+    if (this.scene.isBossShielded()) {
       const now = this.scene.time.now;
       if (now < this.hurtCdUntil) return;
       this.hurtCdUntil = now + 400;

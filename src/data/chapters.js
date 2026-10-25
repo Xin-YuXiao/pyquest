@@ -33,10 +33,19 @@ export const CHAPTERS = [
     pools: { shard: 'w1field', heal: 'w1lair', lair: 'w1lair', boss: 'w1boss' },
     // 引导台词：按章内阶段查表（core/phase.js）；跨章问候走 extraGreets
     extraGreets: (G) => {
+      // 第一部通关后，村庄东南角的「Project 秘境」之门开启（data/realms.js）
+      const realmLine = '对了——村子东南角那扇缀满星光的「秘境之门」亮起来了。门后是课程的 Project 秘境：带上学到的本事，按选题 → 文献 → 数据 → 分析 → 验证 → 报告，完整走一遍真正的课题吧！';
       if (G.progress[11] && G.progress[11].done) {
         return [
           '从变量到毕业试炼……第一部与第二部的旅程你已全部走完！',
           '这片大陆的每一块符文石都记得你的名字，勇者。',
+          realmLine,
+        ];
+      }
+      if (G.progress[8] && G.progress[8].done) {
+        return [
+          'NFW 幻龙被你封印了——第一部的旅程，圆满了！',
+          realmLine,
         ];
       }
       if (G.progress[2].done) {

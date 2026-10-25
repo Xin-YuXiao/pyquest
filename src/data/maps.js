@@ -14,17 +14,19 @@
 //   field → prevField spawn 'fromNext'（常开）
 // ============================================================
 
+import { REALM_HALL, realmsUnlocked } from './realms.js';
+
 export const T = { GRASS: 0, GRASS2: 1, PATH: 2, WATER: 3, WATER2: 4, FLOWER: 5, DFLOOR: 6, DWALL: 7, VOID: 8, WATER3: 9, GRASS3: 10, GRASS4: 11 };
 
 // 确定性伪随机（保证每次进入地图布局一致）
-function lcg(seed) {
+export function lcg(seed) {
   let s = seed % 2147483647;
   if (s <= 0) s += 2147483646;
   return () => (s = (s * 16807) % 2147483647) / 2147483647;
 }
 
-const px = (t) => t * 128;      // 瓦片 → 像素（tile 64px ×2 = 128px）
-const pc = (t) => t * 128 + 64; // 瓦片 → 像素（格子中心）
+export const px = (t) => t * 128;      // 瓦片 → 像素（tile 64px ×2 = 128px）
+export const pc = (t) => t * 128 + 64; // 瓦片 → 像素（格子中心）
 
 // ------------------------------------------------------------
 // 第1章野外 · 诺瓦村庄（36 × 24）
@@ -91,6 +93,7 @@ export function buildVillage(ch) {
       start: { x: pc(13.5), y: px(20.5) },
       fromLair: { x: pc(13), y: px(2.8) },
       fromNext: { x: px(31.5), y: pc(10) },
+      fromRealm: { x: pc(30), y: pc(17.6) }, // 从秘境大厅回村：落在秘境之门北侧的大路上
     },
     props: [
       { type: 'house', x: house.x, y: house.y },
@@ -104,6 +107,10 @@ export function buildVillage(ch) {
       ...(ch.nextKey ? [{ type: 'doorlink', x: pc(33), y: pc(10), to: ch.nextKey, spawn: 'fromPrev',
         label: ch.nextDoorLabel || '前方传送门', requires: { ch: ch.id, flag: 'done' },
         lockLines: ch.nextLockLines || ['传送门上凝着一层薄薄的迷雾。', '（似乎要先完成本章试炼，迷雾才会散去）'] }] : []),
+      // Project 秘境之门（东南角大路旁）：第一部（第八章）通关后开启，通往秘境大厅（data/realms.js）
+      { type: 'doorlink', x: pc(30), y: pc(20.2), to: REALM_HALL.key, spawn: 'fromVillage', label: '秘境之门',
+        requires: realmsUnlocked,
+        lockLines: ['一道缀满星光的门，门楣刻着：「Project 秘境」。', '（门上的星图还缺最后一颗星——听说打通第一部、封印 NFW 幻龙之后，它就会亮起）'] },
       ...trees.map((t) => ({ type: 'tree', x: pc(t.tx), y: pc(t.ty) })),
     ],
     slimes: [
@@ -115,6 +122,8 @@ export function buildVillage(ch) {
       { rect: { x: px(12), y: 0, w: 256, h: 160 }, to: ch.lairKey, spawn: 'fromField', label: ch.lairName },
       ...(ch.nextKey ? [{ rect: { x: px(34.2), y: px(9.2), w: 208, h: 320 }, to: ch.nextKey, spawn: 'fromPrev',
         label: ch.nextDoorLabel || '前方传送门', requires: { ch: ch.id, flag: 'done' }, lockHint: ch.nextLockHint || '迷雾封锁着传送门……' }] : []),
+      { rect: { x: pc(30) - 110, y: pc(20.2) - 150, w: 220, h: 150 }, to: REALM_HALL.key, spawn: 'fromVillage',
+        label: '秘境之门', requires: realmsUnlocked, lockHint: '秘境之门被星光封印着……（第一部通关后开启）' },
     ],
   };
 }
@@ -344,7 +353,7 @@ export function buildCave(ch) {
 // keepOut（可选）：{ tx, ty, r } 列表 —— 候选点必须离这些位置超过 r 格
 // （史莱姆散布用：出生即接敌的史莱姆会把玩家一路物理推挤进传送门，
 //   W9 seed 20260901 实测 2 秒内被推进「回上一章」门，场景被切走）
-function scatterSlots(rand, w, h, count, margin, forbidden, keepOut = []) {
+export function scatterSlots(rand, w, h, count, margin, forbidden, keepOut = []) {
   const spots = [];
   let guard = 0;
   while (spots.length < count && guard < 4000) {

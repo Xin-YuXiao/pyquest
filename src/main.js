@@ -8,6 +8,7 @@ import DojoScene from './scenes/DojoScene.js';
 import { makeFieldScene, makeLairScene } from './scenes/ChapterScene.js';
 import { TowerScene } from './scenes/TowerScene.js';
 import { TOWER_KEY } from './core/tower.js';
+import { makeRealmScenes, REALM_SCENE_KEYS } from './scenes/RealmScene.js';
 import { CHAPTERS } from './data/chapters.js';
 import { initAutosave } from './core/save.js';
 
@@ -27,6 +28,9 @@ scenes.push(DojoScene);
 // 试炼塔（章节之外的爬塔关卡，第三章通关后从世界地图进入；一个场景反复重启呈现每一层）
 scenes.push(TowerScene);
 sceneKeys.push(TOWER_KEY);
+// Project 秘境（独立注册表 data/realms.js，不计入章节数）：大厅 + 每个秘境的外庭与圣所
+scenes.push(...makeRealmScenes());
+sceneKeys.push(...REALM_SCENE_KEYS);
 
 const config = {
   type: Phaser.AUTO,

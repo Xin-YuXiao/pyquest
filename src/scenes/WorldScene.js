@@ -60,7 +60,12 @@ const INTERACT_DOJO_RADIUS = 280;
  * spawnProp 生成的可交互对象（存入 this.interactables，由 tryInteract / updateInteractHint 消费）。
  *
  * @typedef {Object} Interactable
- * @property {'rune'|'doorlink'|'observatory'|'secret'|'dojo'} kind 交互种类（secret 的行为见 scenes/secrets.js；dojo 进入代码训练场）
+ * @property {'rune'|'doorlink'|'observatory'|'secret'|'dojo'|string} kind 交互种类（secret 的行为见 scenes/secrets.js；dojo 进入代码训练场）
+ * @property {boolean} [custom] 自带交互逻辑的可交互物（如秘境课题符文）：半径 radius 内按 E 调 onInteract(it)，
+ *   交互提示取 hint(press)（返回 null 表示不提示）；由各玩法模块自行生成，WorldScene 只负责分发
+ * @property {number} [radius] custom：交互 / 提示半径（px）
+ * @property {(it: Interactable) => void} [onInteract] custom：按 E 时调用
+ * @property {(press: string) => (string|null)} [hint] custom：交互提示文案
  * @property {string} [obs] kind='observatory'：观测台 id
  * @property {number} x 交互判定锚点 x
  * @property {number} y 交互判定锚点 y
@@ -84,11 +89,7 @@ export class WorldScene extends Phaser.Scene {
 
     const def = this.mapDef;
     this.def = def;
-    // 虚拟章节（试炼塔等不在章节注册表里的场景）不登记章节进度、不改「当前所在章」
-    if (!this.ch.virtual) {
-      cp(this.ch.id);           // 确保本章进度已初始化（cp 惰性创建）
-      G.current = this.ch.id;   // 跟踪玩家所在章节（HUD / 碎片计数用）
-    }
+    this.enterRegion();       // 记下玩家所在区域（章节场景更新当前章；秘境 / 试炼塔不碰章节进度）
 
     // ---------- 地面（TS tileset 拼接画布，1:1 像素完美） + 碰撞体 ----------
     const groundKey = makeGroundTexture(this, def);
@@ -252,8 +253,7 @@ export class WorldScene extends Phaser.Scene {
       this.tweens.add({ targets: p, y: p.y - 128, x: p.x + Phaser.Math.Between(-32, 32), alpha: 0, duration: 950, onComplete: () => p.destroy() });
       return;
     }
-    // 村庄：花粉漂浮 + 水面波光
-    // 没有水面的地图（如试炼塔草原层）跳过水波光：GetRandom([]) 会返回 null
+    // 村庄：花粉漂浮 + 水面波光（没有水面的草地图——试炼塔草原层、秘境——只飘花粉：空数组 GetRandom 会返回 null）
     if (this.waterTiles && this.waterTiles.length && Math.random() < 0.35) {
       const w = Phaser.Utils.Array.GetRandom(this.waterTiles);
       const p = this.add.image(w.x * 128 + Phaser.Math.Between(16, 112), w.y * 128 + Phaser.Math.Between(16, 112), 'particle')
@@ -461,6 +461,10 @@ export class WorldScene extends Phaser.Scene {
       return;
     }
     for (const it of this.interactables) {
+      if (it.custom && dist(it.x, it.y) < it.radius) {
+        it.onInteract(it);
+        return;
+      }
       if (it.kind === 'rune' && dist(it.x, it.y) < INTERACT_RUNE_RADIUS) {
         if (it.onInteract) { it.onInteract(it); return; } // 机制布置的特殊符文石（如 W10 幻觉符文）
         if (!it.alive) { this.floatText(it.x, it.y - 300, '咒语已领悟 ✓', '#3ddad7'); return; }
@@ -711,6 +715,10 @@ export class WorldScene extends Phaser.Scene {
       hint = this.npc.id === 'elder' ? `${press} 与长老对话` : `${press} 阅读石碑`;
     } else {
       for (const it of this.interactables) {
+        if (it.custom && dist(it.x, it.y) < it.radius) {
+          hint = it.hint(press);
+          break;
+        }
         if (it.kind === 'rune' && dist(it.x, it.y) < INTERACT_RUNE_RADIUS) {
           hint = it.alive ? `${press} 解读符文石` : null;
           break;
@@ -744,8 +752,16 @@ export class WorldScene extends Phaser.Scene {
   }
 
   // ---------- 子类可覆写的钩子 ----------
-  /** BOSS 是否处于护盾状态（BOSS 原型读这里；试炼塔守层者按楼层状态覆写） */
-  bossShielded() { return cp(this.ch.id).bossShielded; }
+  /** 进入场景时记下玩家所在区域：章节场景 = 当前章（HUD / 碎片计数用），离开秘境；
+   *  虚拟章节（试炼塔等不在章节注册表里的场景）不登记章节进度、不改「当前所在章」；秘境场景整体覆写 */
+  enterRegion() {
+    G.realm = null;
+    if (this.ch.virtual) return;
+    cp(this.ch.id);           // 确保本章进度已初始化（cp 惰性创建）
+    G.current = this.ch.id;   // 跟踪玩家所在章节（HUD / 碎片计数用）
+  }
+  /** 本场景 BOSS 是否处于护盾状态（BOSS 原型经此读取；试炼塔守层者按楼层状态、秘境圣所按课题进度覆写） */
+  isBossShielded() { return cp(this.ch.id).bossShielded; }
   talkToElder() {}
   breakBossShield() {}
   onBossDefeated() {}

@@ -1,0 +1,54 @@
+/* ============================================================
+   世界地图 · Project 秘境区块（地图东南角，节点层 1000×600 设计坐标）
+   不是章节地标（不用 .map-node），E2E 的章节节点计数不受影响
+   ============================================================ */
+.map-realms {
+  position: absolute;
+  left: 836px; top: 288px;
+  width: 154px;
+  padding: 7px 7px 6px;
+  border-radius: 12px;
+  background: linear-gradient(170deg, rgba(48, 36, 66, .94) 0%, rgba(34, 26, 48, .94) 100%);
+  border: 2px solid #8a6534;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, .22);
+  pointer-events: auto;
+  font-family: var(--font-kai);
+  color: #f6ecd8;
+}
+.map-realms .mr-head {
+  display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline;
+  gap: 0 6px;
+  font-size: 13px; letter-spacing: 1px; margin: 0 2px 5px;
+  color: #f0d79c;
+}
+.map-realms .mr-head span, .map-realms .mr-head b { white-space: nowrap; }
+.map-realms .mr-head b { color: #ffd257; font-weight: normal; }
+.map-realms .mr-item {
+  display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto;
+  column-gap: 6px; width: 100%;
+  margin: 0 0 4px; padding: 3px 6px;
+  border: 1px solid rgba(255, 210, 87, .35); border-radius: 8px;
+  background: rgba(255, 255, 255, .06);
+  color: inherit; font: inherit; text-align: left; cursor: pointer;
+}
+.map-realms .mr-item:last-of-type { margin-bottom: 0; }
+.map-realms .mr-item:hover:not(:disabled) { background: rgba(255, 210, 87, .16); }
+.map-realms .mr-item:disabled { cursor: not-allowed; opacity: .55; }
+.map-realms .mr-proj { grid-row: 1 / 3; align-self: center; font-size: 11px; color: #c9b38c; }
+.map-realms .mr-name { font-size: 13px; line-height: 1.2; }
+.map-realms .mr-status { font-size: 11px; color: #c9b38c; line-height: 1.2; }
+.map-realms .mr-done { border-color: #ffd257; }
+.map-realms .mr-done .mr-status { color: #ffd257; }
+.map-realms .mr-progress .mr-status { color: #9fd8c8; }
+.map-realms .mr-item.here { box-shadow: inset 0 0 0 2px #3ddad7; }
+.map-realms .mr-tip { margin-top: 5px; font-size: 11px; line-height: 1.35; color: #c9b38c; }
+
+/* 竖屏：地图改为纵向列表时，秘境区块排在章节列表之后 */
+.portrait #map-path .map-realms {
+  position: static; width: auto;
+  padding: 12px 16px;
+}
+.portrait .map-realms .mr-head { font-size: 22px; }
+.portrait .map-realms .mr-item { padding: 8px 12px; }
+.portrait .map-realms .mr-proj, .portrait .map-realms .mr-status, .portrait .map-realms .mr-tip { font-size: 16px; }
+.portrait .map-realms .mr-name { font-size: 20px; }

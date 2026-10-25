@@ -13,6 +13,7 @@
 //     （参考解在全部布局上通关由 verify-dojo 用 CPython 实跑校验）
 // 12) 验证试炼塔：解锁与题源、选题优先级（错题 → 久未见 → 随机）、楼层规划与推进、
 //     楼层布局合法、塔内作答入学习记录、战绩累计与存档（主线爱心隔离）
+// 13) 验证 Project 秘境：注册表（六步 / 题目都在题库 / 槽位不撞主线）、地图合法、按序解锁规则、存档往返、章节数不变
 import { readFileSync } from 'node:fs';
 import { generateAllTextures } from '../src/textures/pixelArt.js';
 import { makeGroundTexture } from '../src/textures/ground.js';
@@ -47,6 +48,12 @@ import {
   sanitizeTowerStats, statsOnStart, statsOnFloor, statsOnAnswer, runSummary, towerHud,
 } from '../src/core/tower.js';
 import { buildTowerFloor, TOWER_INTERACT_GAP, T } from '../src/data/maps.js';
+import { REALMS, REALM_STEPS, REALM_HALL, realmSlot, hallSpawnKey, realmsUnlocked } from '../src/data/realms.js';
+import { buildRealmHall, buildRealmField, buildRealmSanctum } from '../src/data/realmMaps.js';
+import {
+  realmState, stepState, solveRealmStep, sealRealm, badgeCount, realmBossShielded, sanitizeRealms, realmHud,
+} from '../src/core/realms.js';
+import { buildVillage } from '../src/data/maps.js';
 
 let errors = 0;
 const fail = (msg) => { errors++; console.error('  ✗', msg); };
@@ -932,6 +939,117 @@ try {
   if (G.tower.best !== 0 || G.tower.runs !== 0) fail('旧档缺省塔战绩应为空');
   ok('战绩：清洗 / 累计 / 结算摘要；挑战中写档只写主线爱心，读档不残留挑战，旧档缺省为空');
 } catch (e) { fail(`试炼塔校验异常: ${e.message}`); }
+// ---- 13. Project 秘境（注册表 / 地图 / 进度规则 / 存档） ----
+console.log('[13] Project 秘境');
+try {
+  // 13a. 注册表：独立于章节注册表；每个秘境六步、题目都在题库里、槽位不撞主线
+  if (CHAPTERS.length !== 11) fail(`章节数应仍为 11（秘境不进章节注册表），实际 ${CHAPTERS.length}`);
+  const keys = new Set([REALM_HALL.key]);
+  const chapterKeys = new Set(CHAPTERS.flatMap((c) => [c.fieldKey, c.lairKey]));
+  for (const r of REALMS) {
+    for (const k of [r.fieldKey, r.lairKey]) {
+      if (keys.has(k) || chapterKeys.has(k)) fail(`秘境 ${r.id} 场景 key ${k} 重复`);
+      keys.add(k);
+    }
+    if (r.steps.length !== REALM_STEPS.length) fail(`秘境 ${r.id} 应有 ${REALM_STEPS.length} 步，实际 ${r.steps.length}`);
+    const qids = r.steps.map((s) => s.qid);
+    qids.forEach((q) => { if (!QUESTIONS[q]) fail(`秘境 ${r.id} 引用了题库里没有的题 ${q}`); });
+    if (new Set(qids).size !== qids.length) fail(`秘境 ${r.id} 课题链里有重复的题`);
+    r.steps.forEach((s, i) => {
+      if (!s.task) fail(`秘境 ${r.id} 第 ${i + 1} 步缺少任务说明`);
+      if (SLOT_POOL[realmSlot(r, i)]) fail(`课题符文槽位 ${realmSlot(r, i)} 与主线符文槽撞名`);
+    });
+    const kind = MECHANIC_KINDS[r.bossMechanic.kind];
+    if (!kind) fail(`秘境 ${r.id} 的 BOSS 机制 ${r.bossMechanic.kind} 未登记`);
+    else if (!kind.archetypes.includes(r.boss)) fail(`秘境 ${r.id}：机制 ${r.bossMechanic.kind} 不能挂在 ${r.boss} 原型上`);
+    if (!TRACKS[r.music]) fail(`秘境 ${r.id} 的音乐 ${r.music} 不存在`);
+    if (r.observatory && !OBSERVATORIES[r.observatory]) fail(`秘境 ${r.id} 的观测台 ${r.observatory} 未登记`);
+  }
+  ok(`注册表：${REALMS.length} 个秘境 × ${REALM_STEPS.length} 步，题目全部来自题库，槽位 / 场景 key 不撞主线，章节数仍为 ${CHAPTERS.length}`);
+
+  // 13b. 地图：尺寸 / 越界、出生点不在传送门里、课题符文与可交互物彼此不抢 E 键、不站在障碍上
+  const inRect = (p, rc) => p.x >= rc.x && p.x <= rc.x + rc.w && p.y >= rc.y && p.y <= rc.y + rc.h;
+  const checkRealmMap = (m, label) => {
+    checkMap(m, label);
+    for (const [k, s] of Object.entries(m.spawns)) {
+      for (const p of m.portals) if (inRect(s, p.rect)) fail(`${label} 出生点 ${k} 落在通往 ${p.to} 的传送门里`);
+    }
+    const inter = m.props.filter((p) => ['trial', 'observatory', 'npc', 'doorlink'].includes(p.type));
+    for (let i = 0; i < inter.length; i++) {
+      for (let j = i + 1; j < inter.length; j++) {
+        if (Math.hypot(inter[i].x - inter[j].x, inter[i].y - inter[j].y) < 560) fail(`${label} 的 ${inter[i].type} 与 ${inter[j].type} 太近（会抢 E 键）`);
+      }
+    }
+    for (const p of m.props.filter((q) => q.type === 'trial' || q.type === 'observatory')) {
+      const tile = m.grid[Math.floor(p.y / 128)][Math.floor(p.x / 128)];
+      if (m.colliding.includes(tile)) fail(`${label} 的 ${p.type} 落在障碍瓦片上`);
+    }
+  };
+  const hall = buildRealmHall();
+  checkRealmMap(hall, REALM_HALL.name);
+  REALMS.forEach((r) => {
+    if (!hall.spawns[hallSpawnKey(r)]) fail(`大厅缺少从 ${r.id} 回来的出生点`);
+    if (!hall.portals.some((p) => p.to === r.fieldKey)) fail(`大厅缺少通往 ${r.id} 的门`);
+  });
+  for (const r of REALMS) {
+    const f = buildRealmField(r);
+    const s = buildRealmSanctum(r);
+    checkRealmMap(f, `${r.project} 外庭`);
+    checkRealmMap(s, `${r.project} 圣所`);
+    const steps = f.props.filter((p) => p.type === 'trial').map((p) => p.step);
+    if (steps.join() !== '0,1,2,3,4') fail(`${r.project} 外庭的课题符文应依次为第 1-5 步，实际 ${steps.join()}`);
+    if (f.props.filter((p) => p.type === 'trial').some((p, i, a) => i && p.x <= a[i - 1].x)) fail(`${r.project} 外庭课题符文应自西向东排开`);
+    const boss = s.props.filter((p) => p.type === 'trial');
+    if (boss.length !== 1 || boss[0].step !== 5 || !boss[0].bossRune) fail(`${r.project} 圣所应只有第 6 步「报告」的 BOSS 符文`);
+    if (!f.portals.some((p) => p.to === r.lairKey && typeof p.requires === 'function')) fail(`${r.project} 外庭通往圣所的门应带解锁条件`);
+    if (!!r.observatory !== f.props.some((p) => p.type === 'observatory')) fail(`${r.project} 外庭观测台与登记不符`);
+    if (s.boss.type !== r.boss) fail(`${r.project} 圣所 BOSS 原型应为 ${r.boss}`);
+  }
+  const village = buildVillage(CHAPTERS[0]);
+  const realmDoor = village.portals.find((p) => p.to === REALM_HALL.key);
+  if (!realmDoor || realmDoor.requires !== realmsUnlocked) fail('诺瓦村庄缺少秘境之门（或解锁条件不是「第一部通关」）');
+  if (!village.spawns.fromRealm || inRect(village.spawns.fromRealm, realmDoor.rect)) fail('村庄从秘境回来的出生点缺失或落在秘境之门里');
+  ok(`地图：大厅 + ${REALMS.length} × (外庭 + 圣所) 尺寸合法、出生点不落进传送门、可交互物互不抢 E 键；村庄秘境之门就位`);
+
+  // 13c. 进度规则：按序解锁、越级拒绝、第 6 步破盾、封印需六步全解、徽章计数
+  const g = { progress: { 8: { done: false } }, realms: {} };
+  if (realmsUnlocked(g)) fail('第八章未通关时秘境不应开启');
+  g.progress[8].done = true;
+  if (!realmsUnlocked(g)) fail('第八章通关后秘境应开启');
+  if (stepState(g, 'p4', 0) !== 'next' || stepState(g, 'p4', 1) !== 'locked') fail('初始应只有第 1 步可解');
+  if (solveRealmStep(g, 'p4', 2)) fail('越级解第 3 步应被拒绝');
+  for (let i = 0; i < 5; i++) if (!solveRealmStep(g, 'p4', i)) fail(`按序解第 ${i + 1} 步失败`);
+  if (solveRealmStep(g, 'p4', 1)) fail('已解的步骤不应重复计入');
+  if (!realmBossShielded(g, 'p4')) fail('第 6 步「报告」答对前 BOSS 应有护盾');
+  if (sealRealm(g, 'p4')) fail('六步未全解时不应封印');
+  solveRealmStep(g, 'p4', 5);
+  if (realmBossShielded(g, 'p4')) fail('第 6 步答对后护盾应破');
+  if (!sealRealm(g, 'p4', 123) || !realmState(g, 'p4').done || realmState(g, 'p4').doneAt !== 123) fail('六步全解后应可封印并记时间');
+  if (badgeCount(g) !== 1) fail(`徽章数应为 1，实际 ${badgeCount(g)}`);
+  if (realmState(g, 'p1').steps !== 0) fail('其他秘境进度应不受影响');
+  const hud = realmHud(g, 'p1');
+  if (!hud || !hud.pill.includes('0 / 6') || !hud.objective.includes('选题')) fail(`秘境 HUD 文案不对：${JSON.stringify(hud)}`);
+  if (realmHud(g, null) !== null) fail('不在秘境时 realmHud 应返回 null');
+  ok('进度规则：按序解锁 / 越级拒绝 / 第 6 步破盾 / 六步全解才能封印 / 徽章计数 / HUD 文案');
+
+  // 13d. 存档：realms 可选字段往返；坏数据清洗（未知秘境丢弃、steps 夹紧、未满六步不算封印）；旧档缺字段为空
+  const clean = sanitizeRealms({ p4: { steps: 9, done: true, doneAt: 5 }, p1: { steps: 3, done: true }, zz: { steps: 2 }, p2: 'x', p5: { steps: -2 } });
+  if (JSON.stringify(clean) !== JSON.stringify({ p4: { steps: 6, done: true, doneAt: 5 }, p1: { steps: 3, done: false, doneAt: null } })) fail(`秘境存档清洗不对：${JSON.stringify(clean)}`);
+  if (JSON.stringify(sanitizeRealms(undefined)) !== '{}' || JSON.stringify(sanitizeRealms([1])) !== '{}') fail('缺字段 / 非对象应清洗为空');
+  resetState();
+  G.realms = { p4: { steps: 6, done: true, doneAt: 77 }, p2: { steps: 2, done: false, doneAt: null } };
+  const saved = serialize(G, 1);
+  if (validate(saved).length) fail(`带秘境进度的存档校验不通过：${validate(saved).join('；')}`);
+  resetState();
+  hydrate(G, migrate(JSON.parse(JSON.stringify(saved))));
+  if (JSON.stringify(G.realms) !== JSON.stringify({ p4: { steps: 6, done: true, doneAt: 77 }, p2: { steps: 2, done: false, doneAt: null } })) fail('秘境进度存档往返不一致');
+  if (G.realm !== null) fail('所在秘境（G.realm）是瞬态，读档后应为 null');
+  resetState();
+  hydrate(G, migrate({ v: 2, progress: {} }));
+  if (JSON.stringify(G.realms) !== '{}') fail('v2 旧档迁移后秘境进度应为空');
+  if (Object.keys(SLOT_POOL).some((s) => /^rp\d+s\d+$/.test(s))) fail('课题符文槽位不应进入主线 SLOT_POOL');
+  ok('存档：realms 字段往返、坏数据清洗、旧档缺字段为空；不碰主线槽位映射');
+} catch (e) { fail(`Project 秘境校验异常: ${e.message}`); }
 resetState();
 
 console.log(errors === 0 ? '\n全部通过 ✔' : `\n${errors} 个错误 ✘`);
