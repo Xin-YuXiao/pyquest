@@ -7,10 +7,12 @@ import { createMonteCarlo } from './montecarlo.js';
 import { createScheduler } from './scheduler.js';
 import { createGravity } from './gravity.js';
 import { createBayes } from './bayes.js';
+import { createGalaxy } from './galaxy.js';
 
 export const STATIONS = {
   montecarlo: createMonteCarlo,
   scheduler: createScheduler,
   gravity: createGravity,
   bayes: createBayes,
+  galaxy: createGalaxy,
 };

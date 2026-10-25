@@ -740,6 +740,29 @@ try {
     }
   }
   ok(`贝叶斯硬币：st18 的 Beta(4,3) 众数 0.6；95% 区间口径正确；6 枚硬币两种先验下结论都与真值一致（均匀先验各抛 ${tosses.join(' / ')} 次）`);
+
+  // 11e. 星系分类台：混淆矩阵 行=真实 列=预测（sg18）；类别比例（稀有类 6%，pj16）；训练 / 测试不重叠（pj7）；
+  //      「只用颜色、k=15」准确率高但稀有类召回 0（陷阱存在），「颜色 + 集中度、k=5」过关（有解）
+  const cm = ST.confusionMatrix(['spiral', 'spiral', 'irregular'], ['spiral', 'irregular', 'spiral']);
+  if (cm[0][0] !== 1 || cm[0][2] !== 1 || cm[2][0] !== 1) fail('星系分类台：混淆矩阵应为 行 = 真实、列 = 预测（sg18）');
+  const dumb = ST.classMetrics(ST.confusionMatrix([...Array(99).fill('spiral'), 'irregular'], Array(100).fill('spiral')));
+  if (dumb.acc !== 0.99 || dumb.recall.irregular !== 0) fail('星系分类台：pj16 的哑模型应为准确率 99%、稀有类召回 0');
+  const trap = [], solve = [];
+  for (let a = 0; a < 4; a++) {
+    const d = ST.makeGalaxyData(a);
+    const count = (set, cls) => set.filter((g) => g.cls === cls).length;
+    if (d.label.length !== ST.GALAXY.nLabel || count(d.test, 'irregular') !== Math.round(ST.GALAXY.nTest * ST.GALAXY.mix.irregular)) fail(`星系分类台第 ${a} 次：数据量或类别比例不对`);
+    if (d.train.some((g) => d.test.includes(g))) fail(`星系分类台第 ${a} 次：训练集与测试集重叠`);
+    if (JSON.stringify(ST.makeGalaxyData(a)) !== JSON.stringify(d)) fail(`星系分类台第 ${a} 次：数据不确定`);
+    const t = ST.evaluateClassifier(d, ['color'], 15);
+    const s = ST.evaluateClassifier(d, ['color', 'conc'], 5);
+    if (!(t.acc >= ST.GALAXY.pass.acc && t.rareRecall < ST.GALAXY.pass.rareRecall && !t.pass)) fail(`星系分类台第 ${a} 次：「颜色、k=15」应准确率高但稀有类认不出（${t.acc} / ${t.rareRecall}）`);
+    if (!s.pass) fail(`星系分类台第 ${a} 次：「颜色 + 集中度、k=5」应能过关（${s.acc} / ${s.rareRecall}）`);
+    trap.push(`${Math.round(t.acc * 100)}%/${Math.round(t.rareRecall * 100)}%`);
+    solve.push(`${Math.round(s.acc * 100)}%/${Math.round(s.rareRecall * 100)}%`);
+  }
+  ok(`星系分类台：混淆矩阵行 = 真实；训练 / 测试不重叠；陷阱「颜色、k=15」准确率/稀有召回 ${trap.join(' ')}，`
+    + `「颜色 + 集中度、k=5」${solve.join(' ')}`);
 } catch (e) { fail(`第二批观测站校验异常: ${e.message}`); }
 
 console.log(errors === 0 ? '\n全部通过 ✔' : `\n${errors} 个错误 ✘`);

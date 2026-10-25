@@ -8,12 +8,21 @@
 //                中心星 + 卫星的两体问题（两两位置差 nm6、成对求和 nm19 的最小情形）
 //   - bayes      第九章「贝叶斯硬币」：后验 ∝ 先验 × 似然（st8），Beta 先验 + 计数 → Beta 后验，
 //                众数 (a−1)/(a+b−2)（st18），先验选择与数据量（st11）
+//   - galaxy     第十一章「星系分类台」：fit 在训练集、predict 在测试集（sg5 / pj7），
+//                混淆矩阵 行=真实 列=预测（sg18），类别不平衡下准确率会撒谎（pj16）
 // 题库没覆盖、但小游戏必须用到的知识（不出题、只在面板上做演示，需助教确认讲解口径）：
 //   最长任务优先（LPT）贪心调度、leapfrog 积分器、softening 力律对应的势能、
-//   Beta 分布分位数的数值积分。
+//   Beta 分布分位数的数值积分、k 近邻分类器。
 // 小游戏不发碎片、不碰封印门，完成奖励由场景层发放（回满爱心 + 观测日志）。
 // ============================================================
 import { seeded } from './observatory.js';
+
+/** 标准正态随机数（Box–Muller） */
+function gauss(rand) {
+  const u = Math.max(rand(), 1e-12);
+  const v = rand();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
 
 /** Fisher–Yates 洗牌（确定性：用传入的伪随机数） */
 function shuffle(arr, rand) {
@@ -23,6 +32,8 @@ function shuffle(arr, rand) {
   }
   return arr;
 }
+
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
 // ============================================================
 // 第三章 · 蒙特卡洛估 π
@@ -316,3 +327,136 @@ export function betaInterval(a, b, level = COIN.level) {
 
 /** 由可信区间下结论：0.5 不在区间里 → 偏心；在区间里 → 与公平相容 */
 export const coinVerdict = ([lo, hi]) => (lo > 0.5 || hi < 0.5 ? 'biased' : 'fair');
+
+// ============================================================
+// 第十一章 · 星系分类台（程序生成的「卡通星系」+ k 近邻）
+// ============================================================
+
+export const GALAXY = {
+  seed: 20261111,
+  classes: [
+    { id: 'spiral', name: '旋涡', key: '1' },
+    { id: 'elliptical', name: '椭圆', key: '2' },
+    { id: 'irregular', name: '不规则', key: '3' },
+  ],
+  features: [
+    { id: 'color', name: '颜色 g−r' },
+    { id: 'conc', name: '集中度' },
+    { id: 'ell', name: '椭率' },
+  ],
+  // 巡天样本里的类别比例：不规则星系是稀有类（pj16 的类别不平衡）
+  mix: { spiral: 0.6, elliptical: 0.34, irregular: 0.06 },
+  // 各类特征的高斯分布（均值, 标准差）：颜色上旋涡 ≈ 不规则（都偏蓝），集中度把不规则分出来
+  dist: {
+    spiral: { color: [0.55, 0.07], conc: [0.48, 0.07], ell: [0.45, 0.2] },
+    elliptical: { color: [0.86, 0.06], conc: [0.76, 0.06], ell: [0.3, 0.15] },
+    irregular: { color: [0.5, 0.08], conc: [0.22, 0.06], ell: [0.5, 0.2] },
+  },
+  nLabel: 12,          // 第一关：亲手分类 12 个
+  labelMix: { spiral: 5, elliptical: 5, irregular: 2 },
+  nTrain: 150,
+  nTest: 100,
+  ks: [1, 5, 15],
+  maxFeatures: 2,
+  pass: { acc: 0.85, rareRecall: 0.5 },
+};
+
+export const CLASS_IDS = GALAXY.classes.map((c) => c.id);
+const RARE = 'irregular';
+
+/** 生成一个星系（特征按类别高斯抽样，外观参数由特征决定，渲染层只读这些数） */
+function makeGalaxy(rand, cls) {
+  const d = GALAXY.dist[cls];
+  const f = (k, lo, hi) => clamp(d[k][0] + d[k][1] * gauss(rand), lo, hi);
+  return {
+    cls,
+    color: +f('color', 0.2, 1.1).toFixed(3),
+    conc: +f('conc', 0.05, 0.95).toFixed(3),
+    ell: +f('ell', 0, 0.8).toFixed(3),
+    angle: +(rand() * 180).toFixed(1),
+    arms: 2 + Math.floor(rand() * 2),
+    look: Math.floor(rand() * 1e9),   // 渲染用的私有种子（旋臂相位 / 团块位置）
+  };
+}
+
+/** 按精确的类别数生成并洗牌（确定性） */
+function makeSet(rand, counts) {
+  const list = [];
+  for (const cls of CLASS_IDS) for (let i = 0; i < counts[cls]; i++) list.push(makeGalaxy(rand, cls));
+  return shuffle(list, rand);
+}
+
+const countsFor = (n) => {
+  const rare = Math.round(n * GALAXY.mix.irregular);
+  const ell = Math.round(n * GALAXY.mix.elliptical);
+  return { spiral: n - rare - ell, elliptical: ell, irregular: rare };
+};
+
+/** 第 attempt 次的数据：第一关 12 个 + 训练集 150 + 测试集 100（训练 / 测试互不重叠，pj7） */
+export function makeGalaxyData(attempt = 0) {
+  const rand = seeded(GALAXY.seed + attempt * 31337);
+  return {
+    label: makeSet(rand, GALAXY.labelMix),
+    train: makeSet(rand, countsFor(GALAXY.nTrain)),
+    test: makeSet(rand, countsFor(GALAXY.nTest)),
+  };
+}
+
+/** 标准化参数只从训练集算（fit 只看训练集，测试集不能参与任何决定——pj7） */
+function fitScaler(train, feats) {
+  return feats.map((k) => {
+    const vals = train.map((g) => g[k]);
+    const mean = vals.reduce((s, v) => s + v, 0) / vals.length;
+    const sd = Math.sqrt(vals.reduce((s, v) => s + (v - mean) ** 2, 0) / vals.length) || 1;
+    return { k, mean, sd };
+  });
+}
+
+/** k 近邻：fit = 记住标准化后的训练集；predict = 测试点找最近的 k 个邻居投票（题库未覆盖的分类器） */
+export function knnPredict(train, test, feats, k) {
+  const scaler = fitScaler(train, feats);
+  const vec = (g) => scaler.map(({ k: key, mean, sd }) => (g[key] - mean) / sd);
+  const tv = train.map((g) => ({ v: vec(g), cls: g.cls }));
+  return test.map((g) => {
+    const q = vec(g);
+    const near = tv.map((t) => ({ cls: t.cls, d: t.v.reduce((s, x, i) => s + (x - q[i]) ** 2, 0) }))
+      .sort((a, b) => a.d - b.d).slice(0, k);
+    const votes = {};
+    near.forEach((n) => { votes[n.cls] = (votes[n.cls] || 0) + 1; });
+    const best = Math.max(...Object.values(votes));
+    // 平票：取平票类别里离得最近的那个邻居的类别
+    return near.find((n) => votes[n.cls] === best).cls;
+  });
+}
+
+/** 混淆矩阵：行 = 真实类别、列 = 预测类别，对角线 = 分对的个数（sg18） */
+export function confusionMatrix(truth, pred) {
+  const m = CLASS_IDS.map(() => CLASS_IDS.map(() => 0));
+  truth.forEach((t, i) => { m[CLASS_IDS.indexOf(t)][CLASS_IDS.indexOf(pred[i])]++; });
+  return m;
+}
+
+/** 准确率 + 每类召回率（召回 = 该类里被认出来的比例；pj16 的 per-class 指标） */
+export function classMetrics(m) {
+  const total = m.flat().reduce((s, v) => s + v, 0);
+  const diag = m.reduce((s, row, i) => s + row[i], 0);
+  const recall = {};
+  CLASS_IDS.forEach((id, i) => {
+    const n = m[i].reduce((s, v) => s + v, 0);
+    recall[id] = n ? m[i][i] / n : null;
+  });
+  return { acc: total ? diag / total : 0, recall };
+}
+
+/** 在测试集上评估一组特征 + k：返回混淆矩阵、准确率、各类召回、「全猜多数类」的哑模型准确率 */
+export function evaluateClassifier(data, feats, k) {
+  const pred = knnPredict(data.train, data.test, feats, k);
+  const truth = data.test.map((g) => g.cls);
+  const matrix = confusionMatrix(truth, pred);
+  const { acc, recall } = classMetrics(matrix);
+  const majority = Math.max(...CLASS_IDS.map((id) => truth.filter((t) => t === id).length)) / truth.length;
+  return { matrix, acc, recall, rareRecall: recall[RARE], majorityAcc: majority, pass: passesGalaxy(acc, recall[RARE]) };
+}
+
+/** 过关判据：准确率 ≥ 0.85 且稀有类（不规则）召回 ≥ 0.5——光看准确率不算数（pj16） */
+export const passesGalaxy = (acc, rareRecall) => acc >= GALAXY.pass.acc && (rareRecall ?? 0) >= GALAXY.pass.rareRecall;

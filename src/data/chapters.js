@@ -511,6 +511,7 @@ export const CHAPTERS = [
     },
     npcKind: 'tablet', npcName: '试炼石碑',
     pools: { shard: 'w11shard', heal: 'w11lair', lair: 'w11lair', boss: 'w11boss' },
+    observatory: 'galaxy',     // 野外观测台：星系分类台（core/stations.js）
     final: true,
     theme: {
       palette: 'dungeon', seed: 20261101, w: 32, h: 24,

@@ -5,6 +5,7 @@
 .st-row { display: flex; gap: 8px; align-items: stretch; }
 .st-row > * { min-width: 0; }
 .st-actions { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 2px; }
+.st-actions[hidden] { display: none; }   /* display:flex 会盖过 hidden 属性 */
 .st-actions .btn { font-size: var(--fs-body); padding: 5px 12px; white-space: nowrap; }
 .st-actions .btn.on, .st-actions .btn[aria-pressed="true"] { background: #fff3c4; border-color: #d99a28; }
 .st-actions .btn:disabled { opacity: .45; cursor: not-allowed; }
@@ -67,6 +68,23 @@
 .st-legend i.lg-post { border-color: #d9a400; }
 .st-legend i.lg-band { height: 10px; border: 0; background: rgba(217,164,0,.3); }
 .st-legend i.lg-fair { border-color: #8a7f99; border-top-style: dashed; width: 10px; }
+
+/* ---------- 星系分类台 ---------- */
+.st-gx-big { width: 220px; height: 220px; border-radius: 10px; flex: none; }
+.st-gx-side { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.st-gx-progress { font-weight: bold; font-size: var(--fs-body-lg); }
+.st-gx-side .btn.primary { align-self: flex-start; margin-top: 6px; }
+.st-gx-shelf { display: flex; gap: 6px; margin-bottom: 4px; }
+.st-gx-shelf figure { margin: 0; text-align: center; font-size: var(--fs-caption); color: #6b5a4a; }
+.st-gx-shelf canvas { width: 64px; height: 64px; border-radius: 8px; display: block; }
+.st-gx-res { gap: 14px; align-items: flex-start; margin-top: 4px; }
+.st-gx-recall { flex: 1; font-size: var(--fs-body); }
+.st-gx-recall-title { font-weight: bold; margin-bottom: 4px; }
+.st-gx-recall ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.st-gx-recall li { display: grid; grid-template-columns: 52px 1fr 44px; align-items: center; gap: 6px; }
+.st-gx-recall li i { display: block; height: 10px; border-radius: 5px; background: var(--teal); min-width: 2px; }
+.st-gx-recall li b { font-family: "JetBrains Mono", Consolas, monospace; text-align: right; }
+.st-gx-base { margin-top: 6px; font-size: var(--fs-caption); color: #6b5a4a; }
 
 /* ---------- 混淆矩阵（星系分类台） ---------- */
 .st-matrix { border-collapse: collapse; font-size: var(--fs-body); }

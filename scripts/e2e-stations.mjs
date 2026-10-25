@@ -17,6 +17,7 @@ import {
   SCHED, makeTasks, roundRobin, greedyLPT, makespan,
   GRAV, PLUNGE, simulateOrbit,
   COIN, coinTruth, makeCoin, posterior, betaInterval, coinVerdict,
+  GALAXY, CLASS_IDS, makeGalaxyData, evaluateClassifier,
 } from '../src/core/stations.js';
 
 const BASE = process.env.BASE_URL || 'http://localhost:5173/';
@@ -300,6 +301,59 @@ try {
     st = await station();
     check(st.truth === coinTruth(0), `判定正确后揭晓真值 p = ${st.truth}（${verdict === 'biased' ? '偏心' : '公平'}）`);
     await afterSolved(ch, 'st-07-bayes-solved');
+  }
+
+  // ============================================================
+  // 第十一章 · 星系分类台
+  // ============================================================
+  {
+    const ch = await gotoChapter(11);
+    await setHearts(2);
+    await openStation(ch);
+    const data = makeGalaxyData(0);
+    let st = await station();
+    check(st.stage === 1 && st.index === 0, '第一关：亲手分类 12 个星系');
+    // 前 11 个分对、最后 1 个故意分错（用独立生成的真实类别）
+    for (let i = 0; i < data.label.length; i++) {
+      const truth = CLASS_IDS.indexOf(data.label[i].cls);
+      const pick = i === data.label.length - 1 ? (truth + 1) % 3 : truth;
+      await page.keyboard.press(`Digit${pick + 1}`);
+    }
+    await page.waitForTimeout(150);
+    st = await station();
+    const diag = st.labelMatrix ? st.labelMatrix.reduce((sum, row, i) => sum + row[i], 0) : -1;
+    check(st.index === GALAXY.nLabel && diag === GALAXY.nLabel - 1, `分完 12 个：混淆矩阵对角线 = 分对的 ${diag} 个（sg18）`);
+    check(Math.abs(st.labelAcc - (GALAXY.nLabel - 1) / GALAXY.nLabel) < 1e-9, '第一关准确率 = 11 / 12');
+    check(await page.locator('#st-gx-s1-result table.st-matrix').count() === 1, '面板展示你自己的混淆矩阵');
+    await shot('st-08-galaxy-stage1');
+    await page.keyboard.press('Space');
+    await page.waitForTimeout(150);
+    st = await station();
+    check(st.stage === 2 && st.feats.join() === 'color' && st.k === 15, '第二关：默认只用「颜色」、k = 15');
+    // 陷阱：只用颜色 → 准确率高、稀有类认不出
+    await page.keyboard.press('Space');
+    await page.waitForTimeout(250);
+    st = await station();
+    const trap = evaluateClassifier(data, ['color'], 15);
+    check(Math.abs(st.result.acc - trap.acc) < 1e-12 && st.result.rareRecall === trap.rareRecall, `fit + predict 结果与独立计算一致（准确率 ${Math.round(trap.acc * 100)}%）`);
+    check(st.result.acc >= GALAXY.pass.acc && st.result.rareRecall < GALAXY.pass.rareRecall && !(await obs()).solved,
+      `陷阱：准确率 ${Math.round(st.result.acc * 100)}% 很高，但不规则星系召回 ${Math.round(st.result.rareRecall * 100)}%，不判过关（pj16）`);
+    check((await page.locator('#obs-status').textContent()).includes('pj16'), '状态行指出类别不平衡');
+    await shot('st-09-galaxy-trap');
+    // 加上「集中度」、k 调到 5 → 过关
+    await page.keyboard.press('Digit2');
+    await page.keyboard.press('KeyK');
+    await page.keyboard.press('KeyK');
+    await page.waitForTimeout(120);
+    st = await station();
+    check(st.feats.join() === 'color,conc' && st.k === 5, '选「颜色 + 集中度」、k = 5');
+    await page.keyboard.press('Space');
+    await page.waitForTimeout(250);
+    st = await station();
+    const good = evaluateClassifier(data, ['color', 'conc'], 5);
+    check(st.result.pass && good.pass && st.result.rareRecall === good.rareRecall,
+      `过关：准确率 ${Math.round(st.result.acc * 100)}%，不规则星系召回 ${Math.round(st.result.rareRecall * 100)}%`);
+    await afterSolved(ch, 'st-10-galaxy-solved');
   }
 } catch (err) {
   failed = true;
