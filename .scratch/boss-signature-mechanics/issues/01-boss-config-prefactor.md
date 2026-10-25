@@ -1,6 +1,6 @@
 # 01: BOSS 配置对象化 + 浮字改用本章 BOSS 名（prefactor，零玩法变化）
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: None (can start immediately)
 
@@ -27,3 +27,4 @@ Blocked by: None (can start immediately)
 ## Comments
 
 - 2026-10-25：配置对象化已在 feat/boss-mechanics 完成（bossMechanic 配置 + 机制表）；「浮字改用本章 BOSS 名」见集成分支后续提交。
+- 2026-10-25：浮字改用本章 BOSS 名已在 dev 修复（「修复：BOSS 浮字写死第一、二章的名字」）。

@@ -149,7 +149,7 @@ story-and-companions/01 · vibe-coding-dialogue/01 · world-secrets/01。
 | 70% 的正确答案在第 1 个选项 | 学生可以蒙 | quiz-bank-lint/06、07 |
 | 答错最多扣到 1 心、同一符文题目不变 | 四个选项挨个试几乎没有代价 | difficulty-economy、challenge-modes、achievements-codex |
 | 只记录答对，答错不留痕 | 没有错题本、没有学习报告 | **已修**（`feat/mistake-book`：作答记录 + 错题本；学习报告待做） |
-| 第三章起的 BOSS 浮字仍写死第一、二章的名字 | 贝叶斯祭司会喊「循环之王召唤了帮手」 | boss-signature-mechanics/01 |
+| 第三章起的 BOSS 浮字仍写死第一、二章的名字 | 贝叶斯祭司会喊「循环之王召唤了帮手」 | **已修**（dev） |
 | 胜利页「冒险用时」包含关掉游戏的时间 | 隔天续玩用时虚高 | learning-records/03 |
 | Google Fonts / jsdelivr 外链字体 | 国内网络常加载不到；画布飘字可能永久用回退字体 | self-hosted-fonts |
 | Tab 被世界地图全局拦截、地图只能按 Tab 关 | 键盘焦点无法移动；触屏关不掉地图 | accessibility/01、mobile-touch-controls/05 |
