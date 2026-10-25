@@ -3,7 +3,7 @@
 //
 // 只暴露两类入口，不再直接暴露可写的全局状态 G：
 //   只读查询 —— scene(key) / active() / state() / audio() / observatory() / secrets() / bossMech(key) /
-//     mistakes() / quizInfo()
+//     mistakes() / quizInfo() / input()
 //     · state() 返回纯数据快照（Set → 数组、progress / 学习记录深拷贝），
 //       可安全跨 Playwright evaluate 序列化
 //     · secrets() 返回秘藏快照（已发现 / 总数 / 本场景石碑位置 / 特效状态）
@@ -22,6 +22,7 @@ import { music } from '../audio/music.js';
 import { SECRET_TOTAL } from '../data/secrets.js';
 import { QUESTIONS } from '../data/quizBank.js';
 import { buildMistakeEntries, pendingCount } from './mistakes.js';
+import { isTouchMode, getStick, moveDir } from './input.js';
 
 export function buildSeam(game, sceneKeys) {
   // ---------- 只读查询 ----------
@@ -92,6 +93,16 @@ export function buildSeam(game, sceneKeys) {
       attempts: q.attempts,
       answerAt: q.order.indexOf(q.q.answer),
       optionCount: q.order.length,
+    };
+  }
+
+  /** 输入快照：是否触控模式、摇杆模拟量、合并键盘后的当前 8 向方向 */
+  function input() {
+    const s = active();
+    return {
+      touch: isTouchMode(),
+      stick: getStick(),
+      dir: moveDir(s && s.keys),
     };
   }
 
@@ -236,7 +247,7 @@ export function buildSeam(game, sceneKeys) {
   }
 
   return {
-    scene, active, state, audio, observatory, secrets, bossMech, mistakes, quizInfo,
+    scene, active, state, audio, observatory, secrets, bossMech, mistakes, quizInfo, input,
     teleport, godmode, clearMinions, pinBoss, hitBoss, breakBossShield, slayBoss,
     gotoChapter, gotoLair, setShards, setHearts, applyTestState,
   };

@@ -6,6 +6,7 @@ import Phaser from 'phaser';
 import { G, updateHud } from '../core/state.js';
 import { sfx } from '../audio/sfx.js';
 import { wipeTransition } from '../ui/wipe.js';
+import { moveDir } from '../core/input.js';
 
 const SCALE = 2;      // 角色图标放大一倍（192×192 帧 → 384×384 显示）
 const FOOT_Y = 136; // 角色脚底在帧内的 y 坐标
@@ -45,11 +46,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     if (now < this.knockUntil) return;
     const speed = this.speed * this.speedMul();
 
-    let vx = 0, vy = 0;
-    if (keys.left.isDown || keys.a.isDown) vx = -speed;
-    else if (keys.right.isDown || keys.d.isDown) vx = speed;
-    if (keys.up.isDown || keys.w.isDown) vy = -speed;
-    else if (keys.down.isDown || keys.s.isDown) vy = speed;
+    // 方向 = 键盘 + 触控摇杆合并后的离散 8 向（core/input.js）
+    const { dx, dy } = moveDir(keys);
+    const vx = dx * speed;
+    const vy = dy * speed;
     this.setVelocity(vx, vy);
 
     const moving = vx !== 0 || vy !== 0;
