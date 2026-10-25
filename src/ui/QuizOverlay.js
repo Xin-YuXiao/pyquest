@@ -46,8 +46,12 @@ export class QuizOverlay {
     this.confirmBtn = document.getElementById('quiz-confirm');
     this.cancelBtn = document.getElementById('quiz-cancel');
 
-    this.confirmBtn.addEventListener('click', () => this.confirm());
-    this.cancelBtn.addEventListener('click', () => this.close(true));
+    // 按钮是全局 DOM：每个场景各建一个面板实例，监听必须在 destroy 时移除，
+    // 否则旧场景的实例也会响应点击（见 close 的守卫）
+    this._onConfirm = () => this.confirm();
+    this._onCancel = () => this.close(true);
+    this.confirmBtn.addEventListener('click', this._onConfirm);
+    this.cancelBtn.addEventListener('click', this._onCancel);
 
     this._keyHandler = (e) => {
       if (!this.isOpen) return;
@@ -299,6 +303,9 @@ export class QuizOverlay {
   }
 
   close(cancelled) {
+    // 只有打开着的面板才能关闭：否则对已关停的场景调 resume() 会把它重新跑起来，
+    // 其 update 访问已销毁的玩家 → 整个游戏循环崩溃（野外进巢穴后点「取消」即复现）
+    if (!this.isOpen) return;
     this.isOpen = false;
     this.backdrop.classList.remove('show');
     this.scene.scene.resume();
@@ -308,5 +315,7 @@ export class QuizOverlay {
 
   destroy() {
     document.removeEventListener('keydown', this._keyHandler);
+    this.confirmBtn.removeEventListener('click', this._onConfirm);
+    this.cancelBtn.removeEventListener('click', this._onCancel);
   }
 }

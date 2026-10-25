@@ -10,6 +10,7 @@ import { CHAPTERS, getChapter } from '../data/chapters.js';
 import { withSecret } from '../data/secrets.js';
 import { WorldScene } from './WorldScene.js';
 import { showVictory } from '../ui/modal.js';
+import { showBossBanner, hideBossBanner } from '../ui/BossBanner.js';
 import { sfx } from '../audio/sfx.js';
 import { cueFor } from '../audio/tracks.js';
 
@@ -73,6 +74,26 @@ export class LairScene extends WorldScene {
     if (cp(this.ch.id).done) def.boss = null;
     this.mapDef = def;
     super.create();
+
+    // BOSS 招牌机制：先让护盾期机制布置（W10 幻觉符文）；
+    // 若带着破盾进度重进巢穴，则直接开战并重播玩法提示
+    this.events.once('shutdown', hideBossBanner);
+    const mech = this.boss && this.boss.mech;
+    if (!mech) return;
+    const shielded = cp(this.ch.id).bossShielded;
+    mech.onLairReady(shielded);
+    if (!shielded) {
+      mech.activate('reenter');
+      this.announceMechanic();
+    } else if (mech.preShield) {
+      this.announceMechanic(); // 护盾期就生效的机制（如 W10 幻觉符文）：进巢穴即提示
+    }
+  }
+
+  /** 开场横幅：一句话交代本章 BOSS 的招牌玩法 */
+  announceMechanic() {
+    const m = this.ch.bossMechanic;
+    if (m) showBossBanner({ bossName: this.ch.bossName, name: m.name, tip: m.tip });
   }
 
   /** 背景音乐：BOSS 未封印 = 紧张的 BOSS 战（部终章更凶）；已通关重访 = 安静版 */
@@ -90,6 +111,10 @@ export class LairScene extends WorldScene {
     this.cameras.main.flash(300);
     this.cameras.main.shake(300, 0.006);
     this.floatText(this.boss.x, this.boss.y - 32, '护盾破碎了！', '#ff9db3');
+    if (this.boss.mech) {
+      this.boss.mech.activate('shieldBroken');
+      this.announceMechanic();
+    }
   }
 
   onBossDefeated() {

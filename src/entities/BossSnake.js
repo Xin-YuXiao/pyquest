@@ -9,6 +9,7 @@ import Phaser from 'phaser';
 import { G } from '../core/state.js';
 import { sfx } from '../audio/sfx.js';
 import { Slime } from './Slime.js';
+import { attachMechanic } from './bossMechanics.js';
 
 const SEG_GAP = 184;      // 体节间距（头部轨迹采样间隔；角色 ×2 后等比）
 const MAX_TRAIL = 4800;  // 头部轨迹记录长度
@@ -50,11 +51,15 @@ export class BossSnake extends Slime {
     this.nextDartAt = scene.time.now + 3000;
     this.teleUntil = 0;
     this.dartUntil = 0;
+
+    // 本章招牌机制（chapters.js 的 bossMechanic，见 entities/bossMechanics.js）
+    this.mech = attachMechanic(this, scene.ch.bossMechanic);
   }
 
   update() {
     if (this.dead) return;
     const now = this.scene.time.now;
+    if (this.mech) this.mech.tick(now); // 机制独立于击退/眩晕计时运转
     if (now < this.knockUntil) return;
 
     const p = this.scene.player;
@@ -88,7 +93,9 @@ export class BossSnake extends Slime {
         const dash = Phaser.Math.Angle.Between(this.x, this.y, p.x, p.y);
         this.scene.time.delayedCall(420, () => {
           if (this.dead) return;
-          this.setVelocity(Math.cos(dash) * 1280, Math.sin(dash) * 1280);
+          // 冲刺速度可由招牌机制改写（如 W6 梯度冲锋按学习率衰减）
+          const v = this.mech ? this.mech.dartSpeed(1280) : 1280;
+          this.setVelocity(Math.cos(dash) * v, Math.sin(dash) * v);
         });
         sfx.swing();
       }
@@ -134,6 +141,7 @@ export class BossSnake extends Slime {
     }
     super.hurt(dmg, fromX, fromY);
     if (this.dead) return;
+    if (this.mech) this.mech.hurtHook();
     // 每损失 2 HP 断一节尾巴，并变得更快
     if (this.hp % 2 === 0) this.popSegment();
   }
@@ -155,6 +163,7 @@ export class BossSnake extends Slime {
     }
     s.destroy();
     this.scene.floatText(this.x, this.y - 120, '巨蟒的尾巴断了一节！', '#9dff9d');
+    if (this.mech) this.mech.segmentHook(this.segs.length);
   }
 
   die() {
@@ -179,6 +188,7 @@ export class BossSnake extends Slime {
         s.destroy();
       });
     });
+    if (this.mech) this.mech.destroy();
     if (this.shadow) this.shadow.destroy();
     this.destroy();
     scene.onBossDefeated();

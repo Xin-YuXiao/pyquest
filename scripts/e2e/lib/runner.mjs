@@ -342,6 +342,13 @@ export async function runChapterE2E(spec) {
       }
       await answerCorrect(`BOSS 符文（${L.topic}综合随机题）`);
       check((await state()).progress[CH.id].bossShielded === false, L.shieldBroken);
+      // 破盾 = 开战：本章招牌机制激活 + 开场横幅交代玩法（机制细节见 e2e-boss-mechanics.mjs）
+      if (CH.bossMechanic) {
+        const mech = await evalRetry((k) => window.__PYQUEST__.bossMech(k), CH.lairKey);
+        check(!!mech && mech.active, `${CH.bossName}的招牌机制「${CH.bossMechanic.name}」随破盾激活`);
+        const banner = (await page.locator('#boss-banner').textContent().catch(() => '')) || '';
+        check(banner.includes(CH.bossMechanic.name), `开场横幅提示招牌玩法（${banner.slice(0, 20)}…）`);
+      }
     },
 
     /** 攻击 BOSS：蛇（两击 → hp 11/10、断尾 6→5 节）；史莱姆（一击 → hp 9） */

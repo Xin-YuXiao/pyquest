@@ -118,6 +118,8 @@ export class WorldScene extends Phaser.Scene {
     def.props.forEach((p) => this.spawnProp(p));
 
     // ---------- 史莱姆 ----------
+    // BOSS 招牌机制生成的可攻击衍生物（如 W7 频谱分身）：无物理体，只参与挥剑命中判定
+    this.extraTargets = [];
     this.slimeGroup = this.physics.add.group();
     (def.slimes || []).forEach((s) => this.slimeGroup.add(new Slime(this, s.x, s.y, s.variant)));
     this.physics.add.collider(this.slimeGroup, this.tileBodies);
@@ -436,6 +438,7 @@ export class WorldScene extends Phaser.Scene {
     }
     for (const it of this.interactables) {
       if (it.kind === 'rune' && dist(it.x, it.y) < INTERACT_RUNE_RADIUS) {
+        if (it.onInteract) { it.onInteract(it); return; } // 机制布置的特殊符文石（如 W10 幻觉符文）
         if (!it.alive) { this.floatText(it.x, it.y - 300, '咒语已领悟 ✓', '#3ddad7'); return; }
         this.openRuneQuiz(it);
         return;
@@ -595,14 +598,16 @@ export class WorldScene extends Phaser.Scene {
     this.slimeGroup.add(new Slime(this, x, y));
   }
 
-  /** 挥剑命中判定：攻击矩形与所有史莱姆包围盒相交即造成伤害 */
+  /** 挥剑命中判定：攻击矩形与所有史莱姆（及机制衍生物）包围盒相交即造成伤害 */
   applyAttack(rect) {
-    this.slimeGroup.children.iterate((s) => {
+    const hit = (s) => {
       if (!s || !s.active || s.dead) return;
       if (Phaser.Geom.Intersects.RectangleToRectangle(rect, s.getBounds())) {
         s.hurt(1, this.player.x, this.player.y);
       }
-    });
+    };
+    this.slimeGroup.children.iterate(hit);
+    [...this.extraTargets].forEach(hit);
   }
 
   // ---------- 每帧 ----------

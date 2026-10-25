@@ -6,6 +6,7 @@ import Phaser from 'phaser';
 import { G } from '../core/state.js';
 import { sfx } from '../audio/sfx.js';
 import { Slime } from './Slime.js';
+import { attachMechanic } from './bossMechanics.js';
 
 const BOSS_SCALE = 3.2; // 基础角色 ×2 后再 ×1.6
 
@@ -33,11 +34,15 @@ export class BossSlime extends Slime {
     // 头顶金色王徽（代码碎片贴图，缓慢浮动）
     this.crown = scene.add.image(x, y - 300, 'shard')
       .setDisplaySize(88, 88).setDepth(this.y + 1);
+
+    // 本章招牌机制（chapters.js 的 bossMechanic，见 entities/bossMechanics.js）
+    this.mech = attachMechanic(this, scene.ch.bossMechanic);
   }
 
   update() {
     if (this.dead) return;
     const now = this.scene.time.now;
+    if (this.mech) this.mech.tick(now); // 机制独立于击退/眩晕计时运转
     if (now < this.knockUntil) return;
 
     const p = this.scene.player;
@@ -73,6 +78,8 @@ export class BossSlime extends Slime {
     }
     super.hurt(dmg, fromX, fromY);
     if (this.dead) return;
+    if (this.mech) this.mech.hurtHook();
+    if (this.mech && this.mech.overridesSummons) return; // 招牌机制接管召唤（如 W1 列表召唤）
 
     if (this.hp <= 6 && !this.spawnedWave1) {
       this.spawnedWave1 = true;
@@ -93,6 +100,7 @@ export class BossSlime extends Slime {
     sfx.bossDie();
     this.burst([0xb57ae0, 0xffd257, 0xffffff, 0x9355c7], 30);
     scene.cameras.main.flash(400);
+    if (this.mech) this.mech.destroy();
     if (this.crown) this.crown.destroy();
     if (this.shadow) this.shadow.destroy();
     this.destroy();

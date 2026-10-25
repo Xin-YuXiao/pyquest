@@ -6,6 +6,7 @@
 // 5) 验证背景音乐曲目数据（记谱合法、可编译）与章节曲目映射
 // 6) 验证观测站小游戏：NFW / 频谱数学对齐题库（dm8 / dm9 / sg6 / st7）、观测台选址、观测日志
 // 7) 验证秘藏彩蛋：数据完整、每章野外选址合法且确定（不与符文/出生点/传送门/障碍冲突）
+// 8) 验证 BOSS 招牌机制配置（种类登记 / 原型匹配 / 开场文案）与机制公式（正弦 / NFW / 后验权重）
 import { generateAllTextures } from '../src/textures/pixelArt.js';
 import { makeGroundTexture } from '../src/textures/ground.js';
 import { CHAPTERS } from '../src/data/chapters.js';
@@ -17,6 +18,8 @@ import {
   makeTuner, findPeaks, readoutMagnitude, amplitudeOf, recordObservation, sanitizeObservationLog,
 } from '../src/core/observatory.js';
 import { SECRETS, SECRET_RULES, placeSecret, withSecret, secretForChapter } from '../src/data/secrets.js';
+import { MECHANIC_KINDS, mechanicParams } from '../src/data/bossMechanics.js';
+import { sineOffset, nfwPullSpeed, aimWeight, decayLr } from '../src/core/bossMath.js';
 
 let errors = 0;
 const fail = (msg) => { errors++; console.error('  ✗', msg); };
@@ -422,6 +425,51 @@ try {
   }
   ok('每章秘藏选址合法（不贴边 / 周边可走 / 远离符文·石碑·门·出生点·史莱姆·传送门）且确定可复现');
 } catch (e) { fail(`秘藏校验异常: ${e.message}`); }
+// ---- 8. BOSS 招牌机制 ----
+console.log('[8] BOSS 招牌机制');
+try {
+  const kindsUsed = new Set();
+  for (const ch of CHAPTERS) {
+    const m = ch.bossMechanic;
+    if (!m) { fail(`第 ${ch.id} 章 ${ch.bossName} 没有配置招牌机制`); continue; }
+    const kind = MECHANIC_KINDS[m.kind];
+    if (!kind) { fail(`第 ${ch.id} 章机制种类未登记：${m.kind}`); continue; }
+    if (!kind.archetypes.includes(ch.boss)) fail(`第 ${ch.id} 章机制 ${m.kind} 不能挂在 ${ch.boss} 原型上`);
+    if (!m.name || !m.tip) fail(`第 ${ch.id} 章机制缺少开场文案（name/tip）`);
+    const full = mechanicParams(m);
+    if (m.kind === 'threePaths') {
+      full.phases.forEach((ph) => {
+        if (!MECHANIC_KINDS[ph.kind]) fail(`三途子机制种类未登记：${ph.kind}`);
+        else if (!MECHANIC_KINDS[ph.kind].archetypes.includes(ch.boss)) fail(`三途子机制 ${ph.kind} 不能挂在 ${ch.boss} 原型上`);
+      });
+      const aboves = full.phases.map((ph) => ph.above);
+      if (aboves.some((a, i) => i && a >= aboves[i - 1]) || aboves[aboves.length - 1] !== 0) {
+        fail(`三途阶段血线须严格递减且以 0 收尾（实际 ${aboves.join('/')}）`);
+      }
+    }
+    if (m.kind === 'fourierEchoes' && new Set(full.freqs).size !== full.freqs.length) fail('频谱分身频率必须互不相同');
+    kindsUsed.add(m.kind);
+  }
+  const unused = Object.keys(MECHANIC_KINDS).filter((k) => !kindsUsed.has(k));
+  if (unused.length) fail(`登记了但没有章节使用的机制：${unused.join(', ')}`);
+  ok(`${CHAPTERS.length} 个 BOSS 各有招牌机制（${kindsUsed.size} 种，原型匹配、文案齐全）`);
+
+  // 机制公式：正弦弹道
+  const near = (a, b, eps = 1e-9) => Math.abs(a - b) < eps;
+  if (!near(sineOffset(0, 150, 4), 0) || !near(sineOffset(Math.PI / 8, 150, 4), 150)) fail('正弦弹道 y = A·sin(ωt) 计算错误');
+  // NFW 引力：核心取上限、向外单调衰减、远处趋零
+  const g = [0, 50, 200, 380, 800, 1500, 4000].map((r) => nfwPullSpeed(r, 380, 420));
+  if (!near(g[0], 420, 1)) fail(`NFW 引力在核心应取上限 420（实际 ${g[0].toFixed(1)}）`);
+  if (g.some((v, i) => i && v >= g[i - 1])) fail(`NFW 引力须随半径单调衰减（${g.map((v) => v.toFixed(0)).join(' → ')}）`);
+  if (g[g.length - 1] > 60) fail('NFW 引力在远处应趋于很小');
+  // 后验权重：从 0 起步、每次 +step、封顶 1
+  if (aimWeight(0, 0.2) !== 0 || aimWeight(2, 0.2) !== 0.4 || aimWeight(9, 0.2) !== 1) fail('后验瞄准权重计算错误');
+  // 学习率衰减：逐次 ×decay，不低于下限
+  let lr = 1;
+  for (let i = 0; i < 10; i++) lr = decayLr(lr, 0.8, 0.45);
+  if (lr !== 0.45 || decayLr(1, 0.8, 0.45) !== 0.8) fail(`学习率衰减错误（10 次后 ${lr}）`);
+  ok('机制公式：正弦弹道 / NFW 引力单调衰减 / 后验权重封顶 / 学习率衰减下限');
+} catch (e) { fail(`BOSS 招牌机制校验异常: ${e.message}`); }
 
 console.log(errors === 0 ? '\n全部通过 ✔' : `\n${errors} 个错误 ✘`);
 process.exit(errors === 0 ? 0 : 1);

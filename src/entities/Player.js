@@ -22,6 +22,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.setCollideWorldBounds(true);
 
     this.speed = 1120;
+    this.speedMods = {}; // 外部速度修正（BOSS 招牌机制：迟缓光环 / 单位符印 / 向量化加速）：来源 → 倍率
     this.facing = 'right';
     this.invulUntil = 0;
     this.attackCdUntil = 0;
@@ -42,7 +43,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     const now = this.scene.time.now;
     // 击退期间跳过输入驱动，保留 takeDamage 设置的击退速度（无敌闪烁由 tween 驱动，不受影响）
     if (now < this.knockUntil) return;
-    const speed = this.speed;
+    const speed = this.speed * this.speedMul();
 
     let vx = 0, vy = 0;
     if (keys.left.isDown || keys.a.isDown) vx = -speed;
@@ -72,6 +73,17 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       d.play('ts_dust');
       d.once('animationcomplete', () => d.destroy());
     }
+  }
+
+  /** 设置/撤销某一来源的速度倍率（mul = 1 即撤销） */
+  setSpeedMod(source, mul) {
+    if (mul === 1) delete this.speedMods[source];
+    else this.speedMods[source] = mul;
+  }
+
+  /** 当前生效的速度倍率（各来源连乘） */
+  speedMul() {
+    return Object.values(this.speedMods).reduce((acc, m) => acc * m, 1);
   }
 
   tryAttack() {
