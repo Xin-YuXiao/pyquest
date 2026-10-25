@@ -1,0 +1,7 @@
+# verify-quiz.mjs 实跑题目所需的 Python 包（CI 安装用）
+# 版本对齐课程环境（anaconda：numpy 1.26 系列，见 verify-quiz.mjs 头注释）：
+# 题目期望输出按 numpy 1.x 的打印格式写死，numpy 2 的标量 repr 不同，先锁 <2
+numpy>=1.26,<2
+scipy
+astropy
+scikit-learn
