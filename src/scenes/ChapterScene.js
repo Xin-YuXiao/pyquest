@@ -7,6 +7,7 @@
 import { G, updateHud, cp } from '../core/state.js';
 import { npcLinesFor } from '../core/phase.js';
 import { CHAPTERS, getChapter } from '../data/chapters.js';
+import { withSecret } from '../data/secrets.js';
 import { WorldScene } from './WorldScene.js';
 import { showVictory } from '../ui/modal.js';
 import { sfx } from '../audio/sfx.js';
@@ -19,7 +20,8 @@ export class FieldScene extends WorldScene {
   }
 
   create() {
-    this.mapDef = this.ch.buildField(this.ch);
+    // 野外地图 + 本章秘藏石碑（Python 彩蛋，选址见 data/secrets.js）
+    this.mapDef = withSecret(this.ch, this.ch.buildField(this.ch));
     super.create();
   }
 

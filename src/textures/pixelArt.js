@@ -228,6 +228,32 @@ function drawTorch(ctx) {
 }
 
 // ============================================================
+// 秘藏石碑：圆顶石板 + 终端屏（>>> 提示符），显示时 ×5
+// ============================================================
+function drawSecretStone(ctx) {
+  const w = 20, h = 28;
+  // 圆顶石板
+  rect(ctx, 3, 4, 14, 21, P.stone);
+  hline(ctx, 5, 14, 3, P.stone);
+  hline(ctx, 7, 12, 2, P.stone);
+  rect(ctx, 3, 4, 2, 21, P.stoneL);
+  hline(ctx, 7, 12, 2, P.stoneL);
+  rect(ctx, 15, 5, 2, 20, P.stoneD);
+  // 底座
+  rect(ctx, 1, 24, 18, 3, P.stoneD);
+  hline(ctx, 1, 18, 24, P.stone);
+  hline(ctx, 2, 17, 26, P.stoneDD);
+  // 终端屏：深色底 + 绿色 >>> 提示符 + 光标
+  rect(ctx, 6, 8, 8, 9, '#2f2a3d');
+  const g = '#7cf29a';
+  for (const ox of [7, 10]) { px(ctx, ox, 10, g); px(ctx, ox + 1, 11, g); px(ctx, ox, 12, g); }
+  rect(ctx, 7, 14, 3, 1, P.gold);
+  // 苔藓点缀
+  px(ctx, 4, 21, '#6aaa5a'); px(ctx, 5, 22, '#6fbf5e'); px(ctx, 14, 23, '#6aaa5a');
+  outline(ctx, w, h);
+}
+
+// ============================================================
 // 入口：生成全部程序化贴图
 // ============================================================
 export function generateAllTextures(scene) {
@@ -239,6 +265,7 @@ export function generateAllTextures(scene) {
   makePx(scene, 'gate_closed', 64, 64, (ctx) => drawGate(ctx, false));
   makePx(scene, 'gate_open', 64, 64, (ctx) => drawGate(ctx, true));
   makePx(scene, 'torch_0', 16, 32, drawTorch);
+  makePx(scene, 'secret_stone', 20, 28, drawSecretStone);
 
   makeSlash(scene);
   makeParticle(scene);

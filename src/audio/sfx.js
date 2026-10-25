@@ -65,5 +65,7 @@ export const sfx = {
   openGate: () => { tone(130, 0.4, { type: 'sawtooth', vol: 0.12, slide: 60 }); noise(0.35, 0.08, 300); },
   shieldBreak: () => { noise(0.3, 0.16, 500); tone(880, 0.3, { type: 'triangle', vol: 0.14, slide: -400 }); },
   bossDie: () => { [440, 330, 262, 175].forEach((f, i) => tone(f, 0.3, { type: 'sawtooth', vol: 0.13, delay: i * 0.18 })); },
+  // 秘藏发现：上行琶音 + 高八度回响（区别于答对的三连音）
+  secret: () => { [587, 740, 880, 1175].forEach((f, i) => tone(f, 0.12, { type: 'triangle', vol: 0.12, delay: i * 0.07 })); tone(1760, 0.3, { type: 'sine', vol: 0.06, delay: 0.3 }); },
   toggleMute: () => { muted = !muted; return muted; },
 };

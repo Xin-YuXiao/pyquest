@@ -30,6 +30,7 @@ export const G = {
   answered: new Set(),   // 已答对的符文槽 id（符文石已破解）
   qAnswered: new Set(),  // 已答对的题目 id（随机抽题时避开）
   runeRolls: {},         // 符文槽 → 已抽中尚未答对的题目 id（重开同符文不变题）
+  secrets: new Set(),    // 已发现的秘藏彩蛋 id（data/secrets.js；不计入通关进度）
   current: 1,            // 玩家当前所在章节 id
   progress: buildAllProgress(),
   startTime: Date.now(),
@@ -41,6 +42,7 @@ export function resetState() {
   G.answered = new Set();
   G.qAnswered = new Set();
   G.runeRolls = {};
+  G.secrets = new Set();
   G.current = 1;
   G.progress = buildAllProgress();
   G.startTime = Date.now();
@@ -69,6 +71,14 @@ export function markRuneSolved(slotId, questionId) {
   G.qAnswered.add(questionId);
   delete G.runeRolls[slotId];
   updateHud();
+}
+
+/** 登记一个秘藏彩蛋：首次发现返回 true（并触发写档），重复触碰返回 false */
+export function discoverSecret(id) {
+  if (G.secrets.has(id)) return false;
+  G.secrets.add(id);
+  updateHud();
+  return true;
 }
 
 export function damageHearts(n = 1) {

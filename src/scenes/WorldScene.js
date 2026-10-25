@@ -19,6 +19,7 @@ import { sfx } from '../audio/sfx.js';
 import { wipeTransition } from '../ui/wipe.js';
 import { T } from '../data/maps.js';
 import { makeGroundTexture } from '../textures/ground.js';
+import { spawnSecretProp, interactSecret, secretHint, SECRET_RADIUS } from './secrets.js';
 
 // ---------- 交互判定半径（玩法冻结：数值即原字面量，勿改） ----------
 /** 符文石可交互/提示半径（px，世界坐标距离） */
@@ -31,7 +32,7 @@ const INTERACT_GATE_RADIUS = 340;
  * 由 WorldScene.spawnProp 消费；交互类道具会进一步转化为 Interactable 供 tryInteract 使用。
  *
  * @typedef {Object} PropDef
- * @property {string} type 道具种类：'tree'|'house'|'npc'|'rune'|'gate'|'torch'|'bush'|'crystal'|'shroom'|'door'|'doorlink'
+ * @property {string} type 道具种类：'tree'|'house'|'npc'|'rune'|'gate'|'torch'|'bush'|'crystal'|'shroom'|'door'|'doorlink'|'secret'
  * @property {number} x 世界坐标 x（px）
  * @property {number} y 世界坐标 y（px，多数贴图以此为锚/基准深度）
  * @property {string} [id] 仅 type='npc'：'tablet'（引导石碑）|'elder'（长老）等
@@ -41,13 +42,14 @@ const INTERACT_GATE_RADIUS = 340;
  * @property {string[]} [requires] 仅 type='doorlink'：解锁前置（meetsRequires 判定，缺省视为已锁）
  * @property {string} [label] 仅 type='doorlink'：提示/对话中的门名称（缺省 '封印之门'）
  * @property {string[]} [lockLines] 仅 type='doorlink'： locked 时被检查的对话行（缺省内置文案）
+ * @property {string} [secretId] 仅 type='secret'：秘藏彩蛋 id（data/secrets.js，由 withSecret 挂到野外）
  */
 
 /**
  * spawnProp 生成的可交互对象（存入 this.interactables，由 tryInteract / updateInteractHint 消费）。
  *
  * @typedef {Object} Interactable
- * @property {'rune'|'doorlink'} kind 交互种类
+ * @property {'rune'|'doorlink'|'secret'} kind 交互种类（secret 的行为见 scenes/secrets.js）
  * @property {number} x 交互判定锚点 x
  * @property {number} y 交互判定锚点 y
  * @property {boolean} alive 是否仍可交互（符文已领悟 / 门已解锁后置 false 或改 locked）
@@ -87,6 +89,7 @@ export class WorldScene extends Phaser.Scene {
         if (!def.colliding.includes(def.grid[y][x])) continue;
         const r = this.add.rectangle(x * 128 + 64, y * 128 + 64, 128, 128).setVisible(false);
         this.physics.add.existing(r, true);
+        r.isWater = def.grid[y][x] === T.WATER || def.grid[y][x] === T.WATER2; // 反重力浮空时可飞越
         this.tileBodies.push(r);
       }
     }
@@ -96,7 +99,8 @@ export class WorldScene extends Phaser.Scene {
     // ---------- 玩家 ----------
     const spawn = def.spawns[this.spawnKey] || Object.values(def.spawns)[0];
     this.player = new Player(this, spawn.x, spawn.y);
-    this.physics.add.collider(this.player, this.tileBodies);
+    // 浮空（秘藏 import antigravity）时跳过水面碰撞；墙体 / 封印门照常阻挡
+    this.physics.add.collider(this.player, this.tileBodies, null, (pl, tb) => !(pl.floating && tb.isWater));
     this.physics.add.collider(this.player, this.solids);
 
     // ---------- 道具 ----------
@@ -112,7 +116,7 @@ export class WorldScene extends Phaser.Scene {
     this.physics.add.collider(this.slimeGroup, this.solids);
     this.physics.add.collider(this.slimeGroup, this.slimeGroup);
     this.physics.add.overlap(this.player, this.slimeGroup, (pl, s) => {
-      if (!s.dead) pl.takeDamage(1, s.x, s.y);
+      if (!s.dead && !pl.floating) pl.takeDamage(1, s.x, s.y); // 浮空时从史莱姆头顶飞过
     });
     if (def.boss) {
       this.boss = def.boss.type === 'snake'
@@ -356,6 +360,11 @@ export class WorldScene extends Phaser.Scene {
         this.tweens.add({ targets: aura, alpha: 0.28, scale: 42, duration: 900, yoyo: true, repeat: -1, ease: 'sine.inout' });
         break;
       }
+      case 'secret': {
+        // 秘藏石碑（Python 彩蛋）：生成 / 触碰 / 特效全部在 scenes/secrets.js
+        spawnSecretProp(this, p);
+        break;
+      }
       case 'doorlink': {
         // 带封印状态的传送门：locked 时有实体阻挡 + 可按 E 检查（子类可覆写 onDoorLocked 解锁）
         const locked = !meetsRequires(p.requires);
@@ -382,7 +391,8 @@ export class WorldScene extends Phaser.Scene {
 
   // ---------- 交互 ----------
   tryInteract() {
-    if (this.quiz.isOpen || this.dialogue.isOpen || this.player.dying) return;
+    if (this.quiz.isOpen || this.dialogue.isOpen || this.player.dying || this.player.scripted) return;
+    if (this.secretScroll && this.secretScroll.isOpen) return;
     const px = this.player.x, py = this.player.y;
     const dist = (x, y) => Phaser.Math.Distance.Between(px, py, x, y);
 
@@ -398,6 +408,10 @@ export class WorldScene extends Phaser.Scene {
       }
       if (it.kind === 'doorlink' && it.locked && dist(it.x, it.y) < 280) {
         this.onDoorLocked(it);
+        return;
+      }
+      if (it.kind === 'secret' && dist(it.x, it.y) < SECRET_RADIUS) {
+        interactSecret(this, it);
         return;
       }
     }
@@ -530,9 +544,11 @@ export class WorldScene extends Phaser.Scene {
 
   // ---------- 每帧 ----------
   update() {
-    this.player.update(this.keys);
+    // 秘藏「无限回廊」期间玩家由脚本驱动：跳过键盘移动，提示条显示脱身方法
+    if (!this.player.scripted) this.player.update(this.keys);
     this.slimeGroup.children.iterate((s) => { if (s && s.update && s.active) s.update(); });
-    this.updateInteractHint();
+    if (this.player.scripted) this.hud.hint(this.player.scriptedHint || null);
+    else this.updateInteractHint();
   }
 
   updateInteractHint() {
@@ -550,6 +566,10 @@ export class WorldScene extends Phaser.Scene {
         }
         if (it.kind === 'doorlink' && it.locked && dist(it.x, it.y) < 280) {
           hint = `按 <kbd>E</kbd> 检查${it.prop.label || '封印之门'}`;
+          break;
+        }
+        if (it.kind === 'secret' && dist(it.x, it.y) < SECRET_RADIUS) {
+          hint = secretHint(it);
           break;
         }
       }

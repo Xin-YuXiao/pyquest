@@ -2,9 +2,10 @@
 // 测试接缝（test seam）：window.__PYQUEST__ 的语义化实现
 //
 // 只暴露两类入口，不再直接暴露可写的全局状态 G：
-//   只读查询 —— scene(key) / active() / state()
+//   只读查询 —— scene(key) / active() / state() / secrets()
 //     · state() 返回纯数据快照（Set → 数组、progress 深拷贝），
 //       可安全跨 Playwright evaluate 序列化
+//     · secrets() 返回秘藏快照（已发现 / 总数 / 本场景石碑位置 / 特效状态）
 //   语义动作 —— teleport / godmode / clearMinions / pinBoss /
 //     slayBoss / gotoChapter / setShards / applyTestState
 //     每个动作一个明确语义，脚本侧无法绕过它们直接改写进度。
@@ -14,6 +15,7 @@
 // ============================================================
 import { G, updateHud } from './state.js';
 import { CHAPTERS, getChapter } from '../data/chapters.js';
+import { SECRET_TOTAL } from '../data/secrets.js';
 
 export function buildSeam(game, sceneKeys) {
   // ---------- 只读查询 ----------
@@ -31,7 +33,26 @@ export function buildSeam(game, sceneKeys) {
       answered: [...G.answered],
       qAnswered: [...G.qAnswered],
       runeRolls: { ...G.runeRolls },
+      secrets: [...G.secrets],
       progress: JSON.parse(JSON.stringify(G.progress)),
+    };
+  }
+
+  /** 秘藏快照：已发现 id、总数、本场景石碑（无则 null）、玩家秘藏特效状态
+   *  （floatDue：浮空时长已到——按游戏时钟判断，负载高时游戏时钟会慢于墙钟） */
+  function secrets() {
+    const s = active();
+    const it = s && s.interactables && s.interactables.find((i) => i.kind === 'secret');
+    const p = s && s.player;
+    return {
+      found: [...G.secrets],
+      total: SECRET_TOTAL,
+      here: it ? { id: it.secretId, x: it.x, y: it.y } : null,
+      fx: p ? {
+        floating: !!p.floating,
+        floatDue: !!p.floating && s.time.now >= (p.floatUntil || 0),
+        scripted: !!p.scripted,
+      } : null,
     };
   }
 
@@ -118,7 +139,7 @@ export function buildSeam(game, sceneKeys) {
   }
 
   return {
-    scene, active, state,
+    scene, active, state, secrets,
     teleport, godmode, clearMinions, pinBoss, slayBoss,
     gotoChapter, setShards, applyTestState,
   };
