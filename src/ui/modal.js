@@ -7,6 +7,8 @@ import { G } from '../core/state.js';
 import { CHAPTERS } from '../data/chapters.js';
 import { hasSave, clearSave, saveChapter } from '../core/save.js';
 import { ICON } from './icons.js';
+import { music } from '../audio/music.js';
+import { mountMusicToggle } from './musicToggle.js';
 
 // 标题里的 emoji 前缀（chapters.js 的 victory.title 仍写着 🎉👑⚡…）
 // 在此剥掉，胜利封印页（#13）标题为纯文字 + 独立大金印
@@ -17,6 +19,9 @@ export function initTitle({ onNew, onContinue }) {
   const el = document.getElementById('title');
   const btnStart = document.getElementById('btn-start');
   const btnNew = document.getElementById('btn-new');
+  // 标题主题曲 + 右上角音乐开关（首次点击 / 按键后才真正发声，见 audio/music.js）
+  mountMusicToggle(el);
+  music.play('title');
 
   if (hasSave()) {
     // 有存档：主按钮变「继续冒险」，副按钮「新的冒险」
@@ -79,4 +84,5 @@ export function showVictory(ch, { onNext } = {}) {
     location.reload();
   };
   el.classList.remove('hidden');
+  music.play('victory'); // 一次性凯旋号角
 }

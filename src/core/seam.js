@@ -2,7 +2,7 @@
 // 测试接缝（test seam）：window.__PYQUEST__ 的语义化实现
 //
 // 只暴露两类入口，不再直接暴露可写的全局状态 G：
-//   只读查询 —— scene(key) / active() / state()
+//   只读查询 —— scene(key) / active() / state() / audio()
 //     · state() 返回纯数据快照（Set → 数组、progress 深拷贝），
 //       可安全跨 Playwright evaluate 序列化
 //   语义动作 —— teleport / godmode / clearMinions / pinBoss /
@@ -14,6 +14,7 @@
 // ============================================================
 import { G, updateHud } from './state.js';
 import { CHAPTERS, getChapter } from '../data/chapters.js';
+import { music } from '../audio/music.js';
 
 export function buildSeam(game, sceneKeys) {
   // ---------- 只读查询 ----------
@@ -34,6 +35,10 @@ export function buildSeam(game, sceneKeys) {
       progress: JSON.parse(JSON.stringify(G.progress)),
     };
   }
+
+  /** 背景音乐状态快照：{ track, ducked, musicOn, muted, started, playing, layers }
+   *  （只读逻辑状态，不涉及声音本身；无 WebAudio 的环境 started=false） */
+  const audio = () => music.state();
 
   // ---------- 语义动作（测试专用作弊指令） ----------
 
@@ -118,7 +123,7 @@ export function buildSeam(game, sceneKeys) {
   }
 
   return {
-    scene, active, state,
+    scene, active, state, audio,
     teleport, godmode, clearMinions, pinBoss, slayBoss,
     gotoChapter, setShards, applyTestState,
   };

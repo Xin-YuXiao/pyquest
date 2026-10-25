@@ -10,6 +10,7 @@ import { CHAPTERS, getChapter } from '../data/chapters.js';
 import { WorldScene } from './WorldScene.js';
 import { showVictory } from '../ui/modal.js';
 import { sfx } from '../audio/sfx.js';
+import { cueFor } from '../audio/tracks.js';
 
 export class FieldScene extends WorldScene {
   constructor(key, ch) { super(key); this.ch = ch; }
@@ -21,6 +22,11 @@ export class FieldScene extends WorldScene {
   create() {
     this.mapDef = this.ch.buildField(this.ch);
     super.create();
+  }
+
+  /** 背景音乐：本章野外主题（audio/tracks.js 的章节映射） */
+  musicCue() {
+    return cueFor('field', this.ch);
   }
 
   /** 引导 NPC（长老/石碑）：跨章问候优先，台词按章内阶段查表（core/phase.js） */
@@ -65,6 +71,11 @@ export class LairScene extends WorldScene {
     if (cp(this.ch.id).done) def.boss = null;
     this.mapDef = def;
     super.create();
+  }
+
+  /** 背景音乐：BOSS 未封印 = 紧张的 BOSS 战（部终章更凶）；已通关重访 = 安静版 */
+  musicCue() {
+    return cueFor(cp(this.ch.id).done ? 'lair-calm' : 'lair', this.ch);
   }
 
   breakBossShield() {

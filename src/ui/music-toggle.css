@@ -1,0 +1,19 @@
+/* ============================================================
+   标题画面右上角：背景音乐开关（ui/musicToggle.js 动态挂载）
+   视觉沿用标题星空模板的 ghost 按钮语言（半透明白边、浅紫字）
+   ============================================================ */
+.music-toggle {
+  position: absolute; top: 14px; right: 16px; z-index: 1;
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(255, 255, 255, .08);
+  border: 1px solid rgba(255, 255, 255, .28); border-radius: 10px;
+  padding: 4px 10px;
+  color: #d8d2ea; font: inherit; font-size: var(--fs-caption); letter-spacing: 1px;
+  cursor: pointer;
+}
+.music-toggle:hover { background: rgba(255, 255, 255, .16); }
+.music-toggle:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.music-toggle .mt-note { color: var(--gold); font-size: var(--fs-body); }
+.music-toggle[aria-pressed="false"] { opacity: .7; }
+.music-toggle[aria-pressed="false"] .mt-note { color: #8f88a8; text-decoration: line-through; }
+.music-toggle kbd { margin: 0 0 0 2px; }

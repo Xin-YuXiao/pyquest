@@ -4,6 +4,7 @@
 import { highlight } from '../data/quizData.js';
 import { damageHearts, chapterShards } from '../core/state.js';
 import { sfx } from '../audio/sfx.js';
+import { music } from '../audio/music.js';
 import { SVG_SHARD } from './HUD.js';
 
 // 「碎片入袋」兑付时刻时间轴（ms；t=0 = 点击「领取奖励」）。
@@ -76,6 +77,7 @@ export class QuizOverlay {
     this.backdrop.style.pointerEvents = ''; // 复位飞行期间的透传设置
 
     this.scene.scene.pause();
+    music.duck(true); // 答题时压低背景音乐
 
     this.chapterEl.textContent = q.chapter;
     this.chapterEl.classList.toggle('boss', !!q.chapterBoss);
@@ -185,6 +187,7 @@ export class QuizOverlay {
   _collect() {
     this.isOpen = false;
     this.scene.scene.resume();
+    music.duck(false);
     const cb = this.onCorrect;
     this.onCorrect = null;
     const before = chapterShards().shards;
@@ -299,6 +302,7 @@ export class QuizOverlay {
     this.isOpen = false;
     this.backdrop.classList.remove('show');
     this.scene.scene.resume();
+    music.duck(false);
     if (cancelled && this.onCancel) { const cb = this.onCancel; this.onCancel = null; cb(); }
   }
 

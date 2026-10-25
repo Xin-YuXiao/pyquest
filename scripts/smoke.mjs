@@ -3,11 +3,13 @@
 // 2) 验证全部章节地图构建器输出（尺寸、越界、必需要素、传送门链）
 // 3) 验证题库引用完整、题池同难度、槽位映射完整、随机抽题行为
 // 4) 验证 W4-W11 三池式结构（24 个通用池齐备 / tier 对齐 / 旧池不残留 / 章节映射）
+// 5) 验证背景音乐曲目数据（记谱合法、可编译）与章节曲目映射
 import { generateAllTextures } from '../src/textures/pixelArt.js';
 import { makeGroundTexture } from '../src/textures/ground.js';
 import { CHAPTERS } from '../src/data/chapters.js';
 import { QUESTIONS, pickQuestion, highlight, POOLS, SLOT_POOL } from '../src/data/quizData.js';
 import { G } from '../src/core/state.js';
+import { TRACKS, trackErrors, compileTrack, cueFor } from '../src/audio/tracks.js';
 
 let errors = 0;
 const fail = (msg) => { errors++; console.error('  ✗', msg); };
@@ -253,6 +255,28 @@ try {
   if (qLast.id !== pool[pool.length - 1]) fail(`已答过的题仍被抽到（期望 ${pool[pool.length - 1]}，实际 ${qLast.id}）`);
   ok('随机抽题：同池同难度、重开不变题、已答不重复、同池不撞题');
 } catch (e) { fail(`随机抽题异常: ${e.message}`); }
+
+// ---- 5. 背景音乐 ----
+console.log('[5] 背景音乐曲目');
+try {
+  trackErrors().forEach(fail);
+  const ids = Object.keys(TRACKS);
+  ids.forEach((id) => {
+    const c = compileTrack(id);
+    if (!c.length || !c.voices.length) fail(`曲目 ${id} 编译后为空`);
+  });
+  ok(`曲目 ${ids.length} 首：记谱合法（每小节 16 格）、全部可编译、音高在可听范围`);
+  // 每章野外 / 巢穴都映射到存在的曲目；野外主题章章不同（每章有自己的声音身份）
+  const fieldCues = CHAPTERS.map((ch) => cueFor('field', ch));
+  CHAPTERS.forEach((ch, i) => {
+    if (!TRACKS[fieldCues[i]]) fail(`第 ${ch.id} 章野外曲目 ${fieldCues[i]} 不存在`);
+    if (!TRACKS[cueFor('lair', ch)]) fail(`第 ${ch.id} 章巢穴曲目 ${cueFor('lair', ch)} 不存在`);
+  });
+  if (new Set(fieldCues).size !== CHAPTERS.length) fail(`野外主题有重复：${fieldCues.join(' / ')}`);
+  ['title', 'victory', 'lair-calm'].forEach((id) => { if (!TRACKS[id]) fail(`缺少曲目 ${id}`); });
+  if (compileTrack('victory').loop) fail('胜利号角应为一次性（loop: false）');
+  ok(`章节曲目映射：${CHAPTERS.length} 章野外主题各不相同，巢穴 / 标题 / 胜利 / 通关后巢穴齐备`);
+} catch (e) { fail(`背景音乐曲目异常: ${e.message}`); }
 
 console.log(errors === 0 ? '\n全部通过 ✔' : `\n${errors} 个错误 ✘`);
 process.exit(errors === 0 ? 0 : 1);
