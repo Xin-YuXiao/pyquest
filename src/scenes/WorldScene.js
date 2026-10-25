@@ -19,6 +19,7 @@ import { sfx } from '../audio/sfx.js';
 import { wipeTransition } from '../ui/wipe.js';
 import { T } from '../data/maps.js';
 import { makeGroundTexture } from '../textures/ground.js';
+import { ACTION_EVENT, isTouchMode, pressLabel } from '../core/input.js';
 
 // ---------- 交互判定半径（玩法冻结：数值即原字面量，勿改） ----------
 /** 符文石可交互/提示半径（px，世界坐标距离） */
@@ -158,14 +159,16 @@ export class WorldScene extends Phaser.Scene {
       up: 'UP', down: 'DOWN', left: 'LEFT', right: 'RIGHT',
       w: 'W', a: 'A', s: 'S', d: 'D', e: 'E', j: 'J', m: 'M',
     });
-    this.input.keyboard.on('keydown-E', () => this.tryInteract());
-    this.input.keyboard.on('keydown-J', () => this.player.tryAttack());
-    this.input.keyboard.on('keydown-SPACE', () => this.player.tryAttack());
-    this.input.keyboard.on('keydown-M', () => {
-      const muted = sfx.toggleMute();
-      this.hud.hint(muted ? '🔇 已静音（按 M 恢复）' : '🔊 声音已开启');
-      this.time.delayedCall(1400, () => this.hud.hint(null));
-    });
+    // 键盘与触控按钮共用同一组语义动作（core/input.js）：键盘直接调 act，
+    // 触控层经 'pyquest:action' 事件转发到当前场景
+    this.input.keyboard.on('keydown-E', () => this.act('interact'));
+    this.input.keyboard.on('keydown-J', () => this.act('attack'));
+    this.input.keyboard.on('keydown-SPACE', () => this.act('attack'));
+    this.input.keyboard.on('keydown-M', () => this.act('mute'));
+    this._onAction = (e) => this.act(e.detail.name);
+    document.addEventListener(ACTION_EVENT, this._onAction);
+    this.events.once('shutdown', () => document.removeEventListener(ACTION_EVENT, this._onAction));
+    this.interactReady = false; // 附近有可交互物（供触控层高亮交互按钮）
 
     updateHud();
     this.startAmbient();
@@ -528,6 +531,26 @@ export class WorldScene extends Phaser.Scene {
     });
   }
 
+  /**
+   * 语义动作入口：interact 交互 / attack 挥剑 / map 世界地图 / mute 静音。
+   * 场景暂停（答题 / 对话 / 地图打开）时只放行 map（关地图）与 mute；
+   * 键盘的 Phaser 键位事件在暂停时本就不触发，这条守卫只约束触控事件。
+   */
+  act(name) {
+    const paused = !this.scene.isActive();
+    if (name === 'map') { this.worldmap.toggle(); return; }
+    if (name === 'mute') {
+      const muted = sfx.toggleMute();
+      const how = isTouchMode() ? '再点喇叭' : '按 M';
+      this.hud.hint(muted ? `🔇 已静音（${how}恢复）` : '🔊 声音已开启');
+      this.time.delayedCall(1400, () => this.hud.hint(null));
+      return;
+    }
+    if (paused) return;
+    if (name === 'interact') this.tryInteract();
+    else if (name === 'attack') this.player.tryAttack();
+  }
+
   // ---------- 每帧 ----------
   update() {
     this.player.update(this.keys);
@@ -538,25 +561,27 @@ export class WorldScene extends Phaser.Scene {
   updateInteractHint() {
     const px = this.player.x, py = this.player.y;
     const dist = (x, y) => Phaser.Math.Distance.Between(px, py, x, y);
+    const press = pressLabel(); // 键盘「按 E」/ 触控「点 交互」
     let hint = null;
 
     if (this.npc && dist(this.npc.x, this.npc.y) < 300) {
-      hint = this.npc.id === 'elder' ? '按 <kbd>E</kbd> 与长老对话' : '按 <kbd>E</kbd> 阅读石碑';
+      hint = this.npc.id === 'elder' ? `${press} 与长老对话` : `${press} 阅读石碑`;
     } else {
       for (const it of this.interactables) {
         if (it.kind === 'rune' && dist(it.x, it.y) < INTERACT_RUNE_RADIUS) {
-          hint = it.alive ? '按 <kbd>E</kbd> 解读符文石' : null;
+          hint = it.alive ? `${press} 解读符文石` : null;
           break;
         }
         if (it.kind === 'doorlink' && it.locked && dist(it.x, it.y) < 280) {
-          hint = `按 <kbd>E</kbd> 检查${it.prop.label || '封印之门'}`;
+          hint = `${press} 检查${it.prop.label || '封印之门'}`;
           break;
         }
       }
     }
     if (!hint && this.gate && !cp(this.ch.id).gateOpen && dist(this.gate.x, this.gate.y + 140) < INTERACT_GATE_RADIUS) {
-      hint = '按 <kbd>E</kbd> 检查石门';
+      hint = `${press} 检查石门`;
     }
+    this.interactReady = !!hint;
     this.hud.hint(hint);
   }
 

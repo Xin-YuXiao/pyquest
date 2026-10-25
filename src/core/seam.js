@@ -2,7 +2,7 @@
 // 测试接缝（test seam）：window.__PYQUEST__ 的语义化实现
 //
 // 只暴露两类入口，不再直接暴露可写的全局状态 G：
-//   只读查询 —— scene(key) / active() / state()
+//   只读查询 —— scene(key) / active() / state() / input()
 //     · state() 返回纯数据快照（Set → 数组、progress 深拷贝），
 //       可安全跨 Playwright evaluate 序列化
 //   语义动作 —— teleport / godmode / clearMinions / pinBoss /
@@ -14,6 +14,7 @@
 // ============================================================
 import { G, updateHud } from './state.js';
 import { CHAPTERS, getChapter } from '../data/chapters.js';
+import { isTouchMode, getStick, moveDir } from './input.js';
 
 export function buildSeam(game, sceneKeys) {
   // ---------- 只读查询 ----------
@@ -32,6 +33,16 @@ export function buildSeam(game, sceneKeys) {
       qAnswered: [...G.qAnswered],
       runeRolls: { ...G.runeRolls },
       progress: JSON.parse(JSON.stringify(G.progress)),
+    };
+  }
+
+  /** 输入快照：是否触控模式、摇杆模拟量、合并键盘后的当前 8 向方向 */
+  function input() {
+    const s = active();
+    return {
+      touch: isTouchMode(),
+      stick: getStick(),
+      dir: moveDir(s && s.keys),
     };
   }
 
@@ -118,7 +129,7 @@ export function buildSeam(game, sceneKeys) {
   }
 
   return {
-    scene, active, state,
+    scene, active, state, input,
     teleport, godmode, clearMinions, pinBoss, slayBoss,
     gotoChapter, setShards, applyTestState,
   };
