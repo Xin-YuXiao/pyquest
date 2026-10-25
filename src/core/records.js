@@ -112,7 +112,7 @@ function notify() {
   }
 }
 
-/** 记一次提交作答（答题面板「确认」时调用）。kind: shard / heal / boss / review */
+/** 记一次提交作答（答题面板「确认」时调用）。kind: shard / heal / boss / trial（秘境课题符文）/ review */
 export function recordAttempt({ qid, slot = '', kind, pick, ok, ms }) {
   const e = {
     t: Date.now(), q: qid, s: slot || '', k: kind, ...snapshotOf(qid, slot),

@@ -6,7 +6,7 @@
 // 全部是纯函数（输入汇总 + 题库，输出列表），供错题本界面、测试接缝与 smoke 共用。
 // ============================================================
 
-export const KIND_LABEL = { shard: '碎片', heal: '祝福', boss: 'BOSS' };
+export const KIND_LABEL = { shard: '碎片', heal: '祝福', boss: 'BOSS', trial: '秘境' };
 
 /** 题面摘要：压成一行、截到 limit 个字 */
 function oneLine(s, limit) {

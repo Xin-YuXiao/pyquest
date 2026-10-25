@@ -1,8 +1,9 @@
 // ============================================================
-// HUD：生命值（爱心）、代码碎片计数、当前目标提示
+// HUD：生命值（爱心）、代码碎片计数、当前目标提示（Project 秘境里改显示课题进度 / 徽章与课题链下一步）
 // ============================================================
 import { G, chapterShards, cp } from '../core/state.js';
 import { phaseOf, PHASE } from '../core/phase.js';
+import { realmHud } from '../core/realms.js';
 import { CHAPTERS, getChapter } from '../data/chapters.js';
 import { ICON } from './icons.js';
 
@@ -80,6 +81,15 @@ export class HUD {
       this.heartsEl.classList.add('hurt-flash');
       clearTimeout(this._hurtT);
       this._hurtT = setTimeout(() => this.heartsEl.classList.remove('hurt-flash'), 200);
+    }
+
+    // Project 秘境里：胶囊显示课题进度 / 徽章数，目标行显示课题链的下一步（core/realms.js）
+    const realm = realmHud(G, G.realm);
+    if (realm) {
+      this._lastShards = null;
+      this.shardEl.innerHTML = `${SVG_SHARD} <span>${realm.pill}</span>`;
+      this.objectiveEl.innerHTML = realm.objective;
+      return;
     }
 
     const cur = chapterShards();

@@ -5,6 +5,7 @@
 import Phaser from 'phaser';
 import BootScene from './scenes/BootScene.js';
 import { makeFieldScene, makeLairScene } from './scenes/ChapterScene.js';
+import { makeRealmScenes, REALM_SCENE_KEYS } from './scenes/RealmScene.js';
 import { CHAPTERS } from './data/chapters.js';
 import { initAutosave } from './core/save.js';
 
@@ -19,6 +20,9 @@ for (const ch of CHAPTERS) {
   scenes.push(makeLairScene(ch));
   sceneKeys.push(ch.fieldKey, ch.lairKey);
 }
+// Project 秘境（独立注册表 data/realms.js，不计入章节数）：大厅 + 每个秘境的外庭与圣所
+scenes.push(...makeRealmScenes());
+sceneKeys.push(...REALM_SCENE_KEYS);
 
 const config = {
   type: Phaser.AUTO,

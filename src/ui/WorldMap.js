@@ -7,10 +7,15 @@
 //   到该章野外（塞尔达式圆形转场）
 // - 头部显示秘藏（Python 彩蛋）发现数；已发现秘藏的章节地标带 ✦
 // - 头部「错题本（N）」入口：N = 曾错且未掌握的题数（错题本见 MistakeBook.js）
+// - 东南角「Project 秘境」区块：四个秘境的进度 / 徽章，开启后点击直达该秘境外庭
+//   （独立区块，不是章节地标——章节节点数仍 = 11）
 // ============================================================
 import { G, cp } from '../core/state.js';
 import { phaseOf, PHASE } from '../core/phase.js';
 import { CHAPTERS } from '../data/chapters.js';
+import { REALMS, getRealm, realmsUnlocked } from '../data/realms.js';
+import { realmState, badgeCount, STEP_COUNT } from '../core/realms.js';
+import './realms.css';
 import { SECRET_TOTAL, countFound, secretForChapter } from '../data/secrets.js';
 import { pendingCount } from '../core/mistakes.js';
 import { MistakeBook, mistakeEntries } from './MistakeBook.js';
@@ -463,7 +468,7 @@ export class WorldMap {
     CHAPTERS.forEach((ch) => {
       const p = cp(ch.id);
       const unlocked = this.unlocked(ch.id);
-      const here = G.current === ch.id;
+      const here = !G.realm && G.current === ch.id; // 身在秘境时不在任何章节地标上
       const done = phaseOf(ch.id) === PHASE.DONE;
       const classes = ['map-node'];
       if (!unlocked) classes.push('locked');
@@ -505,11 +510,49 @@ export class WorldMap {
       else btn.disabled = true; // 未解锁：不可点击、不进键盘焦点，也不再显示可点击手势
       layer.appendChild(btn);
     });
+
+    layer.appendChild(this._realmBox());
+  }
+
+  /** 东南角「Project 秘境」区块：每个秘境一行（课题进度 / 徽章），开启后可点击直达外庭 */
+  _realmBox() {
+    const open = realmsUnlocked(G);
+    const box = document.createElement('div');
+    box.className = 'map-realms';
+    const items = REALMS.map((r) => {
+      const s = realmState(G, r.id);
+      const state = !open ? 'locked' : s.done ? 'done' : s.steps ? 'progress' : 'open';
+      const status = !open ? '未开启' : s.done ? `✦ ${r.badge}` : `课题 ${s.steps} / ${STEP_COUNT}`;
+      const here = G.realm === r.id ? ' here' : '';
+      return `<button class="mr-item mr-${state}${here}" data-realm="${r.id}"${open ? '' : ' disabled'}
+          aria-label="${r.project} ${r.title}，${status}">
+          <span class="mr-proj">${r.project.replace('Project-', 'P')}</span>
+          <span class="mr-name">${r.title}</span>
+          <span class="mr-status">${status}</span>
+        </button>`;
+    }).join('');
+    box.innerHTML = `<div class="mr-head"><span>Project 秘境</span><b>徽章 ${badgeCount(G)} / ${REALMS.length}</b></div>${items}`
+      + (open ? '' : '<div class="mr-tip">第一部通关后，诺瓦村庄东南角的秘境之门开启</div>');
+    box.querySelectorAll('button[data-realm]').forEach((b) => {
+      b.addEventListener('click', () => this.travelRealm(getRealm(b.dataset.realm)));
+    });
+    return box;
+  }
+
+  /** 快速传送到秘境外庭（与章节传送同一套转场） */
+  travelRealm(realm) {
+    if (!this.isOpen || !realm || !realmsUnlocked(G)) return;
+    this._warp(() => this.scene.scene.start(realm.fieldKey, { spawn: 'fromHall' }));
   }
 
   /** 快速传送到章节野外（圆形转场 + 传送期间免伤） */
   travel(ch) {
     if (!this.isOpen) return;
+    this._warp(() => this.scene.scene.start(ch.fieldKey, { spawn: ch.id === 1 ? 'start' : 'fromPrev' }));
+  }
+
+  /** 关地图 → 圆形转场 → go()（传送期间免伤，防与死亡竞态） */
+  _warp(go) {
     const s = this.scene;
     this.close();
     if (s.transitioning || s.player.dying) return;
@@ -517,7 +560,7 @@ export class WorldMap {
     s.player.setVelocity(0, 0);
     s.player.invulUntil = Number.MAX_SAFE_INTEGER;
     sfx.openGate();
-    wipeTransition(() => s.scene.start(ch.fieldKey, { spawn: ch.id === 1 ? 'start' : 'fromPrev' }));
+    wipeTransition(go);
   }
 
   destroy() {

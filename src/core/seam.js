@@ -3,14 +3,16 @@
 //
 // 只暴露两类入口，不再直接暴露可写的全局状态 G：
 //   只读查询 —— scene(key) / active() / state() / audio() / observatory() / secrets() / bossMech(key) /
-//     mistakes() / quizInfo() / input()
+//     mistakes() / quizInfo() / input() / realms()
 //     · state() 返回纯数据快照（Set → 数组、progress / 学习记录深拷贝），
 //       可安全跨 Playwright evaluate 序列化
 //     · secrets() 返回秘藏快照（已发现 / 总数 / 本场景石碑位置 / 特效状态）
 //     · bossMech() 返回 BOSS 招牌机制的 JSON 快照（entities/bossMechanics.js）
 //     · mistakes() 错题本视图；quizInfo() 答题面板模式与正确项展示下标
+//     · realms() Project 秘境快照（是否开启 / 各秘境进度 / 所在秘境 / 本场景课题符文状态）
 //   语义动作 —— teleport / godmode / clearMinions / pinBoss / hitBoss /
-//     breakBossShield / slayBoss / gotoChapter / gotoLair / setShards / setHearts / applyTestState
+//     breakBossShield / slayBoss / gotoChapter / gotoLair / setShards / setHearts / applyTestState /
+//     unlockRealms / gotoRealm
 //     每个动作一个明确语义，脚本侧无法绕过它们直接改写进度。
 //
 // 正常游戏路径完全不经过本模块（仅 main.js 启动时挂载一次）；
@@ -23,6 +25,8 @@ import { SECRET_TOTAL } from '../data/secrets.js';
 import { QUESTIONS } from '../data/quizBank.js';
 import { buildMistakeEntries, pendingCount } from './mistakes.js';
 import { isTouchMode, getStick, moveDir } from './input.js';
+import { REALMS, REALM_HALL, REALM_UNLOCK_CHAPTER, getRealm, realmsUnlocked } from '../data/realms.js';
+import { realmState, badgeCount } from './realms.js';
 
 export function buildSeam(game, sceneKeys) {
   // ---------- 只读查询 ----------
@@ -103,6 +107,18 @@ export function buildSeam(game, sceneKeys) {
       touch: isTouchMode(),
       stick: getStick(),
       dir: moveDir(s && s.keys),
+    };
+  }
+
+  /** Project 秘境快照：开启状态、徽章数、各秘境进度、所在秘境，以及当前场景课题符文（坐标 + 状态） */
+  function realms() {
+    const s = active();
+    return {
+      unlocked: realmsUnlocked(G),
+      badges: badgeCount(G),
+      list: REALMS.map((r) => ({ id: r.id, ...realmState(G, r.id) })),
+      here: G.realm,
+      trials: s && s.trials ? s.trials.map((t) => ({ step: t.step, state: t.state, x: t.x, y: t.y, bossRune: t.bossRune })) : [],
     };
   }
 
@@ -220,6 +236,21 @@ export function buildSeam(game, sceneKeys) {
     active().scene.start(target.lairKey, { spawn: 'fromField' });
   }
 
+  /** 开启 Project 秘境：把第一部（第 1..8 章）标记为完整通关（不切场景；村庄的门在下次进场时按新状态生成） */
+  function unlockRealms() {
+    completeChaptersBefore(getChapter(REALM_UNLOCK_CHAPTER + 1));
+    updateHud();
+  }
+
+  /** 直达秘境：where = 'field' 外庭 / 'sanctum' 圣所；id 为 'hall' 时去秘境大厅（不改任何进度） */
+  function gotoRealm(id, { where = 'field' } = {}) {
+    if (id === 'hall') { active().scene.start(REALM_HALL.key, { spawn: 'fromVillage' }); return; }
+    const realm = getRealm(id);
+    if (!realm) throw new Error(`未知秘境: ${id}`);
+    if (where === 'sanctum') active().scene.start(realm.lairKey, { spawn: 'fromField' });
+    else active().scene.start(realm.fieldKey, { spawn: 'fromHall' });
+  }
+
   /** 授予/扣减某章碎片计数（封印门测试用：不足 → 集齐两个状态） */
   function setShards(chapterId, n) {
     G.progress[chapterId].shards = n;
@@ -247,8 +278,8 @@ export function buildSeam(game, sceneKeys) {
   }
 
   return {
-    scene, active, state, audio, observatory, secrets, bossMech, mistakes, quizInfo, input,
+    scene, active, state, audio, observatory, secrets, bossMech, mistakes, quizInfo, input, realms,
     teleport, godmode, clearMinions, pinBoss, hitBoss, breakBossShield, slayBoss,
-    gotoChapter, gotoLair, setShards, setHearts, applyTestState,
+    gotoChapter, gotoLair, setShards, setHearts, applyTestState, unlockRealms, gotoRealm,
   };
 }

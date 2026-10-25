@@ -5,12 +5,14 @@
 // - 迁移链 v1 → v2 → v3 逐级纯函数升级；首次成功写入 v3 后才删除旧键
 // - 分层：序列化（G → 存档对象）/ 迁移（旧版本 → v3）/ 校验（问题列表）/
 //   水合（存档对象 → G）四个纯函数 + 一层薄的 localStorage 读写
-// - 可选字段 secrets（已发现的秘藏）/ observatory（观测日志）：旧档缺省为空，读档时清洗
+// - 可选字段 secrets（已发现的秘藏）/ observatory（观测日志）/ realms（Project 秘境进度）：
+//   旧档缺省为空，读档时清洗
 // - saveGame()：HUD / 学习记录变化、关页、切后台时自动写档
 // ============================================================
 import { G, resetState, freshRecords } from './state.js';
 import { CHAPTERS } from '../data/chapters.js';
 import { sanitizeObservationLog } from './observatory.js';
+import { sanitizeRealms } from './realms.js';
 
 export const SAVE_VERSION = 3;
 export const SAVE_KEY = 'pyquest:save:v3';
@@ -53,6 +55,7 @@ export function serialize(g, now = Date.now()) {
     progress,
     secrets: [...(g.secrets || [])],                                // 可选：已发现的秘藏 id
     observatory: JSON.parse(JSON.stringify(g.observatory || {})),  // 可选：观测日志
+    realms: JSON.parse(JSON.stringify(g.realms || {})),            // 可选：Project 秘境进度
     records: {
       stats: JSON.parse(JSON.stringify(r.stats)),
       log: r.log.slice(),
@@ -151,6 +154,7 @@ export function validate(d) {
   if (typeof d.playMs !== 'number' || d.playMs < 0) problems.push('playMs 不是非负数');
   if (d.secrets !== undefined && !isStrArr(d.secrets)) problems.push('secrets 不是字符串数组');
   if (d.observatory !== undefined && !isPlainObj(d.observatory)) problems.push('observatory 不是对象');
+  if (d.realms !== undefined && !isPlainObj(d.realms)) problems.push('realms 不是对象');
   const r = d.records;
   if (!isPlainObj(r)) problems.push('records 不是对象');
   else {
@@ -196,6 +200,7 @@ export function hydrate(g, d) {
   }
   g.secrets = new Set(isStrArr(d.secrets) ? d.secrets : []);
   g.observatory = sanitizeObservationLog(d.observatory);
+  g.realms = sanitizeRealms(d.realms);
   g.records = sanitizeRecords(d.records);
   return g;
 }

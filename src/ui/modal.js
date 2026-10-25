@@ -45,7 +45,11 @@ export function initTitle({ onNew, onContinue }) {
   }
 }
 
-export function showVictory(ch, { onNext } = {}) {
+/**
+ * 胜利封印页。stats 可覆盖三枚统计印（[{ icon, num, label }]，秘境课题封印页用）；
+ * 缺省为章节结算：用时 / 解开谜题 / 章节进度
+ */
+export function showVictory(ch, { onNext, stats } = {}) {
   const el = document.getElementById('victory');
   const cfg = (ch && ch.victory) || {
     title: '冒险成功！', text: '你完成了试炼！', next: '继续冒险',
@@ -63,7 +67,8 @@ export function showVictory(ch, { onNext } = {}) {
   const ss = String(elapsed % 60).padStart(2, '0');
   const solved = G.answered.size;
   const doneCount = CHAPTERS.filter((c) => G.progress[c.id].done).length;
-  document.getElementById('victory-stats').innerHTML =
+  const seal = (s) => `<div class="stat-seal">${s.icon}<b class="stat-num">${s.num}</b><span class="stat-lbl">${s.label}</span></div>`;
+  document.getElementById('victory-stats').innerHTML = stats ? stats.map(seal).join('') :
     `<div class="stat-seal">${ICON.hourglass}<b class="stat-num">${mm}:${ss}</b><span class="stat-lbl">冒险用时</span></div>` +
     `<div class="stat-seal">${ICON.key}<b class="stat-num">${solved}</b><span class="stat-lbl">解开谜题</span></div>` +
     `<div class="stat-seal">${ICON.flag}<b class="stat-num">${doneCount} / ${CHAPTERS.length}</b><span class="stat-lbl">章节进度</span></div>`;
