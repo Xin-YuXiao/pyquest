@@ -111,6 +111,16 @@ export async function runChapterE2E(spec) {
     const s = window.__PYQUEST__ && window.__PYQUEST__.scene(k);
     return !!(s && s.player);
   }, key, { timeout: 6000 });
+  /** 等标题画面就绪：BootScene.create 跑完（按钮文案与点击处理都已挂好）才算。
+   *  代替刷新后的固定等待——机器负载高时启动远超 1.4s，固定等待会读到 index.html
+   *  里的默认文案「开始冒险」、点击也落在尚未挂处理函数的按钮上 */
+  const waitForTitle = async () => {
+    await page.waitForFunction(() => {
+      const s = window.__PYQUEST__ && window.__PYQUEST__.scene('Boot');
+      return !!(s && s.sys.isActive());
+    }, null, { timeout: 30000 });
+    await page.waitForTimeout(200);
+  };
 
   /** 为符文选一个安全的靠近点：距目标符文 < 260，且避开其他符文/封印门（282）、
    *  引导石碑（302）、水晶实体（180）与地图边界——防止 E 被邻近交互抢占 */
@@ -226,9 +236,10 @@ export async function runChapterE2E(spec) {
       await page.goto(BASE, { waitUntil: 'networkidle' });
       await page.evaluate(() => localStorage.clear());
       await page.reload({ waitUntil: 'networkidle' });
-      await page.waitForTimeout(1400);
+      await waitForTitle();
       await click('#btn-start');
-      await page.waitForTimeout(1200);
+      await waitForScene(CHAPTERS[0].fieldKey);
+      await page.waitForTimeout(700);
       check(await activeKey() === CHAPTERS[0].fieldKey, '新游戏从村庄开始');
     },
 
@@ -491,7 +502,7 @@ export async function runChapterE2E(spec) {
     /** 刷新 → 继续冒险：标题按钮落点、读档进度与场景还原 */
     async resume(step) {
       await page.reload({ waitUntil: 'networkidle' });
-      await page.waitForTimeout(1400);
+      await waitForTitle();
       const btnText = (await page.locator('#btn-start').textContent()).trim();
       check(btnText.includes(L.resumeBtn), `标题画面显示「${btnText}」`);
       if (step.newGameBtn) {
@@ -499,7 +510,8 @@ export async function runChapterE2E(spec) {
         check(btnNewVisible, '「新的冒险」按钮出现');
       }
       await click('#btn-start'); // 继续冒险 → 读档
-      await page.waitForTimeout(1200);
+      await waitForScene(L.resumeScene).catch(() => {}); // 落点不对时交给下面的断言报告
+      await page.waitForTimeout(700);
       if (L.resumeDone) {
         const gResume = await state();
         check(L.resumeDone.ids.every((id) => gResume.progress[id].done === true), L.resumeDone.label);
