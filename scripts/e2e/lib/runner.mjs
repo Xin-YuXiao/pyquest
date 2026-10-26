@@ -22,6 +22,7 @@
 import { chromium } from 'playwright';
 import { mkdirSync, readFileSync } from 'node:fs';
 import { CHAPTERS } from '../../../src/data/chapters.js';
+import { GAMES } from '../../../src/games/registry.js';
 
 /** 老存档样本（scripts/fixtures/save-v{1,2}.json，v2 为旧版本真实玩出） */
 const fixture = (v) => JSON.parse(readFileSync(new URL(`../../fixtures/save-v${v}.json`, import.meta.url), 'utf8'));
@@ -114,6 +115,9 @@ export async function runChapterE2E(spec) {
   const state = () => page.evaluate(() => window.__PYQUEST__.state());
   const tele = (x, y) => evalRetry(([tx, ty]) => window.__PYQUEST__.teleport(tx, ty), [x, y]);
   const godmode = () => evalRetry(() => window.__PYQUEST__.godmode());
+  const games = () => evalRetry(() => window.__PYQUEST__.games());
+  const winLevel = (gid, lid) => evalRetry(([g, l]) => window.__PYQUEST__.winGameLevel(g, l), [gid, lid]);
+  const coreLevels = (gid) => GAMES[gid].levels.filter((l) => !l.challenge);
   const waitForScene = (key) => page.waitForFunction((k) => {
     const s = window.__PYQUEST__ && window.__PYQUEST__.scene(k);
     return !!(s && s.player);
@@ -321,6 +325,65 @@ export async function runChapterE2E(spec) {
       }
       const g1 = await state();
       check(g1.progress[CH.id].shards === CH.shardsNeeded, `集齐 ${CH.shardsNeeded} 枚${L.shard}（实际 ${g1.progress[CH.id].shards}）`);
+    },
+
+    /** 试炼场章节（第三章）：野外没有碎片符文，碎片全部来自试炼场石台。
+     *  先真按一次 E 打开第一座面板玩法的石台、Esc 关闭；再把每座试炼场的核心关逐一判定通过
+     *  （winGameLevel 走与真实通关同一套结算），断言越级不算数、每座完成时碎片 +1。
+     *  各小游戏的真实玩法由 scripts/e2e-game-*.mjs 覆盖 */
+    async collectGames() {
+      const sites = FIELD.props.filter((p) => p.type === 'game');
+      const shardRunes = FIELD.props.filter((p) => p.type === 'rune' && !p.healRune && !p.bossRune);
+      check(sites.length === CH.games.length && CH.games.every((id) => sites.some((s) => s.game === id)),
+        `${L.place}有 ${CH.games.length} 座试炼场石台（${CH.games.map((id) => GAMES[id].title).join(' / ')}）`);
+      check(shardRunes.length === 0, `${L.place}没有碎片符文（实际 ${shardRunes.length}）`);
+      const panelGame = CH.games.find((id) => GAMES[id].kind === 'panel');
+      const site = sites.find((s) => s.game === panelGame);
+      let opened = false;
+      for (const [x, y] of [[site.x, site.y + 170], [site.x + 170, site.y], [site.x - 170, site.y]]) {
+        await tele(x, y);
+        await page.waitForTimeout(320);
+        await page.keyboard.press('KeyE');
+        await page.waitForTimeout(450);
+        const pn = (await games()).panel;
+        if (pn && pn.isOpen) { opened = true; break; }
+      }
+      check(opened, `在「${GAMES[panelGame].title}」石台旁按 E 打开小游戏面板`);
+      await page.keyboard.press('Escape');
+      await page.waitForTimeout(350);
+      check(!(await games()).panel.isOpen, 'Esc 关闭小游戏面板');
+      const first = CH.games[0];
+      const skip = coreLevels(first)[1];
+      if (skip) {
+        await winLevel(first, skip.id);
+        check(!(await games()).state[first].done.includes(skip.id), `越级通关不算数（${GAMES[first].title}第 2 关未解锁）`);
+      }
+      for (const [i, id] of CH.games.entries()) {
+        for (const lv of coreLevels(id)) await winLevel(id, lv.id);
+        const g = await state();
+        const gs = (await games()).state[id];
+        check(gs.complete && g.progress[CH.id].shards === i + 1,
+          `「${GAMES[id].title}」${coreLevels(id).length} 关全部通过 → ${L.shard} ${g.progress[CH.id].shards} / ${CH.shardsNeeded}`);
+      }
+      const g1 = await state();
+      check(g1.progress[CH.id].shards === CH.shardsNeeded, `集齐 ${CH.shardsNeeded} 枚${L.shard}（实际 ${g1.progress[CH.id].shards}）`);
+    },
+
+    /** BOSS 玩法石台（第三章：曲线对消）：核心关全部通过 → 破盾开战（真实玩法见 e2e-game-curve.mjs） */
+    async bossGame() {
+      const id = CH.bossGame;
+      const site = LAIR.props.filter((p) => p.type === 'game' && p.game === id);
+      check(site.length === 1 && !LAIR.props.some((p) => p.type === 'rune' && p.bossRune), `${L.lairPlace}的 BOSS 符文换成了「${GAMES[id].title}」石台`);
+      const levels = coreLevels(id);
+      for (const [i, lv] of levels.entries()) {
+        await winLevel(id, lv.id);
+        if (i < levels.length - 1) check((await state()).progress[CH.id].bossShielded, `第 ${i + 1} 层对消后护盾仍在`);
+      }
+      check((await state()).progress[CH.id].bossShielded === false, L.shieldBroken);
+      if (CH.bossMechanic) {
+        const mech = await evalRetry((k) => window.__PYQUEST__.bossMech(k), CH.lairKey);
+        check(!!mech && mech.active, `${CH.bossName}的招牌机制「${CH.bossMechanic.name}」随破盾激活`);
+      }
     },
 
     /** 封印门：碎片不足时拒绝开启，集齐后按 E 解开 */

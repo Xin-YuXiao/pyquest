@@ -11,6 +11,8 @@
   z-index: 40;
 }
 .gp-backdrop.show { display: flex; }
+/* 面板里带 display 的元素（浮层 / 快捷键条 / 按钮）也要服从 hidden 属性 */
+.gp-backdrop [hidden] { display: none !important; }
 
 .gp-panel {
   position: relative;

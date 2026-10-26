@@ -1,9 +1,9 @@
 // 端到端测试（第三章 · 科学计算高原）：样板章全流程 + 世界地图 + 下一章抽题
-// NumPy 符文 ×5 → 解开封印 → 混沌巢穴 → 破盾 → 击败魔君 → 进入第四章
+// 四座 NumPy 试炼场 → 4 枚数值碎片 → 解开封印 → 混沌巢穴 → 曲线对消破盾 → 击败魔君 → 进入第四章
 // 用法: node scripts/e2e-ch3.mjs（需要先 npm run dev）
 // 流程与断言由 scripts/e2e/lib/runner.mjs 统一执行，本文件只声明章节差异：
-// 碎片符文有题池徽标断言、答 1 块祝福符文 + 数量断言、无 BOSS 徽标断言、
-// 第四章抽题检查、世界地图全套检查。
+// 碎片来自试炼场（collectGames）、BOSS 护盾是曲线对消（bossGame）、答 1 块祝福符文 + 数量断言、
+// 第四章抽题检查、世界地图全套检查。各试炼场的真实玩法见 scripts/e2e-game-*.mjs。
 import { runChapterE2E } from './e2e/lib/runner.mjs';
 
 runChapterE2E({
@@ -18,7 +18,7 @@ runChapterE2E({
     bossShort: '魔君',
     badge: '第三章',              // 题池徽标断言的章名
     gateOpen: '集齐数值碎片后封印解开',
-    shieldBroken: '答对 NumPy 谜题，魔君护盾破碎',
+    shieldBroken: '曲线对消四层全部通过，魔君护盾破碎',
     done: '击败混沌曲线魔君，第三章通关',
     victoryTitle: '第三章',
     stats: '3 / 11',
@@ -31,12 +31,12 @@ runChapterE2E({
   steps: [
     { type: 'newGame' },
     { type: 'gotoChapter', shot: '30-scifield' },
-    { type: 'collectShards', badge: true },
+    { type: 'collectGames' },
     { type: 'sealedGate' },
     { type: 'enterLair', shot: '31-scilair' },
     { type: 'bossShielded' },
     { type: 'healRunes', count: 1, checkCount: true },
-    { type: 'bossRune' },                    // 无 BOSS 徽标断言（原脚本如此）
+    { type: 'bossGame' },
     { type: 'bossFight' },                   // 史莱姆 BOSS：一击 hp 9（原脚本此处无截图）
     { type: 'victory', shot: '32-victory3' },
     { type: 'saveCheck' },
