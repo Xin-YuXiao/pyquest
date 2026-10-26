@@ -122,7 +122,11 @@ export class HUD {
     let objective;
     if (allDone) objective = `${ICON.star}全部通关！自由探索吧`;
     else if (phase === PHASE.DONE) objective = next ? `本章通关！前往${next.fieldName}` : '本章通关！';
-    else if (phase === PHASE.OPEN) objective = `进入${ch.lairName}，击败${ch.bossName}！`;
+    else if (phase === PHASE.OPEN) {
+      objective = ch.bossGame && cp(ch.id).bossShielded
+        ? `进入${ch.lairName}，用「曲线对消」打碎${ch.bossName}的护盾！`
+        : `进入${ch.lairName}，击败${ch.bossName}！`;
+    } else if (ch.games) objective = `通过阵列石台的试炼，收集${ch.shardLabel}`;
     else objective = `收集${ch.shardLabel}，解开巢穴封印`;
     this.objectiveEl.innerHTML = objective;
   }
