@@ -1,0 +1,193 @@
+/* ============================================================
+   向量风暴（src/games/arena/ArenaUI.js）：战斗 HUD / 备咒台 / 结算浮层
+   挂在 #ui-scale（960×640 设计坐标），沿用羊皮纸 token 与 games.css 的咒语输入行
+   ============================================================ */
+.ar-root { position: absolute; inset: 0; pointer-events: none; z-index: 30; }
+/* 带 display 的浮层（备咒台 / 结算 / 按钮）也要服从 hidden 属性 */
+.ar-root [hidden] { display: none !important; }
+.ar-root button, .ar-prep, .ar-result { pointer-events: auto; }
+.ar-root code { font-family: "JetBrains Mono", Consolas, monospace; }
+
+/* ---------- 战斗 HUD ---------- */
+.ar-tl {
+  position: absolute; left: 12px; top: 10px;
+  background: rgba(30, 22, 44, .78); border: 2px solid #5b4d78; border-radius: 12px;
+  padding: 6px 12px 8px; color: #f4efff; min-width: 240px;
+}
+.ar-title { font-family: "ZCOOL KuaiLe", "PingFang SC", sans-serif; font-size: 18px; color: var(--gold); letter-spacing: 1px; }
+.ar-hp { display: flex; align-items: center; gap: 8px; margin-top: 4px; font-size: 12px; }
+.ar-hp-bar { flex: 1; height: 10px; background: #3b2f4f; border-radius: 6px; overflow: hidden; border: 1px solid #6c5d88; }
+.ar-hp-bar i { display: block; height: 100%; background: linear-gradient(90deg, #ff6b8a, #ff9db3); transition: width .15s; }
+.ar-live { margin-top: 5px; max-width: 300px; font: 11px/1.4 "JetBrains Mono", Consolas, monospace; color: #e8e3f5; }
+.ar-live:empty { display: none; }
+.ar-live div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ar-live b { color: #7cf29a; }
+.ar-live span { color: #ffe8a3; }
+.ar-live .ar-live-n { color: #9d92b8; font-size: 10px; }
+.ar-tr {
+  position: absolute; right: 12px; top: 10px; display: flex; gap: 8px;
+  font: bold 14px "JetBrains Mono", Consolas, monospace; color: #f4efff;
+}
+.ar-tr span { background: rgba(30, 22, 44, .78); border: 2px solid #5b4d78; border-radius: 10px; padding: 4px 10px; }
+
+.ar-bottom {
+  position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%);
+  display: flex; flex-direction: column; gap: 6px; align-items: stretch; width: 720px;
+}
+.ar-mana { display: flex; align-items: center; gap: 10px; }
+.ar-mana span { font: bold 13px "JetBrains Mono", Consolas, monospace; color: #bfe9ff; text-shadow: 0 1px 0 #1c1430; white-space: nowrap; }
+.ar-mana-bar {
+  position: relative; flex: 1; height: 14px; background: #241c38; border: 2px solid #4b6ea8; border-radius: 8px; overflow: hidden;
+}
+.ar-mana-bar i { display: block; height: 100%; background: linear-gradient(90deg, #3d7bff, #63d4ff); transition: width .08s linear; }
+.ar-mana-bar em { position: absolute; top: -2px; bottom: -2px; width: 3px; background: #ffd257; box-shadow: 0 0 6px #ffd257; opacity: 0; transition: left .2s, opacity .2s; }
+
+.ar-slots { display: flex; gap: 8px; }
+.ar-slot {
+  position: relative; flex: 1 1 0; min-width: 0; display: flex; align-items: center; gap: 8px;
+  background: rgba(30, 22, 44, .88); border: 2px solid #7a68a3; border-radius: 12px; padding: 6px 10px;
+  color: #f4efff; cursor: pointer; overflow: hidden; text-align: left;
+}
+.ar-slot.ar-prepbtn { flex: 0 0 auto; color: var(--gold); font-family: var(--font-kai); font-size: 15px; }
+.ar-slot.empty .ar-code { color: #8d82a8; }
+.ar-slot.poor { border-color: #a35a6a; }
+.ar-slot.poor .ar-est { color: #ff9db3; }
+.ar-slot.fire { animation: arFire .35s ease-out; }
+@keyframes arFire { 0% { box-shadow: 0 0 0 0 rgba(99, 212, 255, .9); } 100% { box-shadow: 0 0 0 14px rgba(99, 212, 255, 0); } }
+.ar-key {
+  flex: 0 0 auto; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center;
+  background: var(--gold); color: #5a3d07; border-radius: 6px; font: bold 14px "JetBrains Mono", Consolas, monospace;
+  box-shadow: inset 0 -2px 0 rgba(0,0,0,.2);
+}
+.ar-code { flex: 1 1 0; min-width: 0; font-size: 14px; color: #ffe8a3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ar-est { flex: 0 1 auto; max-width: 48%; overflow: hidden; text-overflow: ellipsis; font-size: 12px; color: #9fe7ff; white-space: nowrap; }
+.ar-cd {
+  position: absolute; inset: 0; pointer-events: none; opacity: 0;
+  background: conic-gradient(rgba(10, 6, 20, .55) var(--cd, 0deg), transparent 0);
+}
+
+.ar-toast {
+  position: absolute; left: 50%; bottom: 112px; transform: translateX(-50%) translateY(8px);
+  background: rgba(30, 22, 44, .9); color: #f4efff; border: 2px solid #7a68a3; border-radius: 10px;
+  padding: 5px 14px; font-family: var(--font-kai); font-size: 15px; white-space: nowrap; max-width: 760px;
+  opacity: 0; transition: opacity .15s, transform .15s; overflow: hidden; text-overflow: ellipsis;
+}
+.ar-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.ar-toast.bad { border-color: #c75c74; color: #ffd0da; }
+.ar-toast.ok { border-color: #63d4ff; color: #d8f6ff; }
+.ar-banner {
+  position: absolute; left: 0; right: 0; top: 200px; text-align: center;
+  font-family: "ZCOOL KuaiLe", "PingFang SC", sans-serif; font-size: 46px; color: var(--gold);
+  text-shadow: 0 4px 0 #3f2631, 0 0 18px rgba(255, 210, 87, .6); opacity: 0; pointer-events: none;
+}
+.ar-banner.show { animation: arBanner 1.6s ease-out forwards; }
+@keyframes arBanner { 0% { opacity: 0; transform: scale(1.3); } 15% { opacity: 1; transform: scale(1); } 80% { opacity: 1; } 100% { opacity: 0; } }
+
+/* ---------- 备咒台 ---------- */
+.ar-prep {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  background: rgba(20, 14, 30, .62); z-index: 2;
+}
+.ar-prep-panel {
+  width: 920px; max-height: 616px; overflow-y: auto; display: flex; flex-direction: column;
+  background: var(--panel); border: 3px solid var(--panel-border); border-radius: 16px;
+  box-shadow: 0 8px 0 rgba(0,0,0,.3); padding: 8px 14px 8px; color: var(--ink);
+  animation: gpPop .18s ease-out;
+}
+.ar-prep-head { display: flex; align-items: center; gap: 10px; }
+.ar-badge {
+  width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center;
+  background: var(--gold); font-size: 22px; box-shadow: inset 0 -3px 0 rgba(0,0,0,.15);
+}
+.ar-prep-titles { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.ar-prep-titles h2 { margin: 0; font-size: var(--fs-display); letter-spacing: 1px; }
+.ar-concept { font-size: var(--fs-caption); color: #2a6f6d; background: #dff6f4; border-radius: 6px; padding: 1px 8px; }
+.ar-prep-mode { margin-left: auto; font-size: var(--fs-caption); color: #7a6656; }
+.ar-story { margin: 2px 2px 4px; font-family: var(--font-kai); font-size: var(--fs-body); line-height: 1.45; }
+.ar-story code, .ar-hints code, .ar-rules code {
+  background: #2f2a3d; color: #ffe8a3; border-radius: 4px; padding: 0 4px; font-size: .92em;
+}
+.ar-prep-main { display: grid; grid-template-columns: 276px 1fr; gap: 12px; min-height: 0; }
+.ar-field { display: flex; flex-direction: column; gap: 4px; }
+.ar-field-head { font-size: var(--fs-caption); color: #6b5a4a; }
+.ar-radar { width: 260px; height: 260px; align-self: center; background: #2f2a3d; border-radius: 50%; }
+.ar-ring { fill: none; stroke: rgba(232, 227, 245, .16); stroke-dasharray: 3 4; }
+.ar-ring.near { stroke: rgba(99, 212, 255, .35); }
+.ar-ring.three { stroke: rgba(99, 212, 255, .6); stroke-dasharray: none; }
+.ar-ring-label { fill: rgba(232, 227, 245, .55); font: 9px "JetBrains Mono", Consolas, monospace; }
+.ar-me { fill: #63d4ff; stroke: #fff; stroke-width: 2; }
+.ar-foe circle { fill: #e8503f; stroke: #3f2631; stroke-width: 1.5; }
+.ar-foe.elite circle { fill: #4a4458; stroke: #ffd257; stroke-width: 2.5; }
+.ar-foe text { fill: #fff; font: bold 10px "JetBrains Mono", Consolas, monospace; }
+.ar-foe .ar-idx { fill: rgba(232, 227, 245, .5); font-size: 8px; font-weight: normal; }
+.ar-foe.hit circle { stroke: #63d4ff; stroke-width: 3; filter: drop-shadow(0 0 4px #63d4ff); }
+.ar-foe.killed circle { fill: #5d5970; stroke: #63d4ff; }
+.ar-radar-note { font-size: 11px; color: #7a6656; text-align: center; line-height: 1.35; }
+.ar-arrays { display: flex; flex-direction: column; gap: 2px; background: #fffaf0; border: 1px solid #e3d2ae; border-radius: 10px; padding: 5px 8px; }
+.ar-arr { display: flex; gap: 6px; align-items: flex-start; }
+.ar-arr-name {
+  flex: 0 0 44px; font: bold 12px "JetBrains Mono", Consolas, monospace; background: #2f2a3d; color: #7cf29a;
+  border-radius: 4px; padding: 1px 4px; text-align: center;
+}
+.ar-arr-val { margin: 0; font: 12px/1.35 "JetBrains Mono", Consolas, monospace; white-space: pre; overflow-x: auto; color: var(--ink); min-width: 0; }
+
+.ar-spells { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.ar-spell { background: #fffaf0; border: 1px solid #e3d2ae; border-radius: 10px; padding: 6px 8px; }
+.ar-spell-head { display: flex; align-items: center; gap: 6px; font-weight: bold; margin-bottom: 4px; }
+.ar-spell .sp-out { max-height: 60px; min-height: 34px; }
+.ar-effect { margin-top: 3px; font-family: var(--font-kai); font-size: 14px; color: #7a6656; min-height: 20px; }
+.ar-effect.ok { color: #1f6fb2; font-weight: bold; }
+.ar-effect.bad { color: #c62828; }
+.ar-rules { font-size: 12px; color: #6b5a4a; line-height: 1.5; background: #fff3c4; border-radius: 8px; padding: 4px 8px; }
+.ar-hints { padding: 4px 10px; border-radius: 8px; background: #fff3c4; border: 1px dashed #d99a28; font-family: var(--font-kai); font-size: 14px; }
+.ar-hints p { margin: 2px 0; }
+.ar-prep-foot { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.ar-grow { flex: 1; }
+.ar-prep-foot .btn { font-size: var(--fs-body); padding: 6px 16px; }
+
+/* ---------- 结算 ---------- */
+.ar-result {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  background: rgba(20, 14, 30, .55); z-index: 3; animation: gpFade .2s ease-out;
+}
+.ar-result-card {
+  min-width: 420px; text-align: center; background: #fffaf0; border: 3px solid var(--gold);
+  border-radius: 16px; padding: 16px 26px; box-shadow: 0 8px 0 rgba(0,0,0,.25); color: var(--ink);
+}
+.ar-result.lost .ar-result-card { border-color: #c75c74; }
+.ar-result-title { font-family: "ZCOOL KuaiLe", "PingFang SC", sans-serif; font-size: 34px; color: #b8860b; }
+.ar-result.lost .ar-result-title { color: #b03a52; }
+.ar-medal { font-size: 20px; font-weight: bold; margin: 2px 0 6px; }
+.ar-medal.gold { color: #c99400; }
+.ar-medal.silver { color: #7f8c9a; }
+.ar-medal.bronze { color: #b06b33; }
+.ar-stats { margin: 0 auto 6px; border-collapse: collapse; font-size: var(--fs-body); }
+.ar-stats th { text-align: right; padding: 2px 10px; color: #7a6656; font-weight: normal; }
+.ar-stats td { text-align: left; padding: 2px 10px; font: bold 15px "JetBrains Mono", Consolas, monospace; }
+.ar-rewards { list-style: none; padding: 0; margin: 4px 0 12px; }
+.ar-rewards li { color: #2a6f6d; font-weight: bold; margin: 2px 0; }
+.ar-result-actions { display: flex; gap: 10px; justify-content: center; }
+.ar-result-actions .btn { font-size: var(--fs-body); padding: 6px 16px; }
+
+/* ---------- 触屏法术按钮（挂在 body 上，真实 CSS 像素；只在触屏模式 + 战斗中显示） ---------- */
+#ar-touch { display: none; position: fixed; inset: 0; pointer-events: none; z-index: 31; }
+body.touch #ar-touch[data-on="1"] { display: block; }
+.ar-tbtn {
+  position: absolute; width: 64px; height: 64px; border-radius: 50%;
+  border: 3px solid #63d4ff; background: rgba(30, 22, 44, .82); color: #f4efff;
+  font: bold 22px "JetBrains Mono", Consolas, monospace; pointer-events: auto; overflow: hidden;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, .35); touch-action: none; -webkit-user-select: none; user-select: none;
+}
+.ar-tbtn b { position: relative; z-index: 1; }
+.ar-tbtn i {
+  position: absolute; inset: 0; border-radius: 50%;
+  background: conic-gradient(rgba(10, 6, 20, .6) var(--cd, 0deg), transparent 0);
+}
+.ar-tbtn.empty { opacity: .45; }
+.ar-tbtn:active { transform: scale(.94); }
+.ar-tbtn[data-tslot="0"] { right: calc(22px + env(safe-area-inset-right)); bottom: calc(118px + env(safe-area-inset-bottom)); }
+.ar-tbtn[data-tslot="1"] { right: calc(100px + env(safe-area-inset-right)); bottom: calc(126px + env(safe-area-inset-bottom)); }
+.ar-tbtn.ar-tprep {
+  width: 52px; height: 52px; font: bold 14px var(--font-kai); border-color: var(--gold); color: var(--gold);
+  right: calc(184px + env(safe-area-inset-right)); bottom: calc(40px + env(safe-area-inset-bottom));
+}
