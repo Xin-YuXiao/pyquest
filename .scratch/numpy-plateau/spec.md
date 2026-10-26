@@ -1,6 +1,6 @@
 # 第三章样板：让 NumPy 本身成为玩法（科学计算高原 · 四座试炼场 + 曲线对消 BOSS）
 
-Status: in-progress
+Status: implemented（待助教试玩与拍板「待决策」各条）
 Priority: P1
 Source: 助教试玩反馈（2026-10-26）——「很多东西雷同且无聊」：11 章的核心循环都是「走到符文石 → 四选一 → 碎片 → 开门 → 答题破盾 → 砍 BOSS」，
 251 题全是四选一，Python 会不会完全不影响怎么玩。要求：第三章先做样板，NumPy 本身变成玩法、少用选择题、关卡多、玩法多、参考市面已有游戏做新花样。
@@ -68,3 +68,16 @@ Source: 助教试玩反馈（2026-10-26）——「很多东西雷同且无聊�
 
 - 不接入真 Pyodide + NumPy（离线 / 国内网络 / 首屏体积）；子集解释器 + 真 NumPy 对拍代替。
 - 不做排行榜；评分只和关卡参考解比较。
+
+## 实现记录（2026-10-26，分支 `feat/ch3-numpy-games`）
+
+| 小游戏 | 关卡 | 规则模块 | 纯逻辑校验 | E2E |
+| --- | --- | --- | --- | --- |
+| 阵列牌局 | 史莱姆一排 / 末尾的刺客 / 切片之墙 / 步长伏兵 / 筛子 / 方阵 / 混沌先锋 + ★不死军团 | `games/cards/battle.js`（`autoplay.js` 用贪心打法校验每关首次尝试在 par 内可赢、12 个种子胜率） | `verify-game-cards.mjs` | `e2e-game-cards.mjs` |
+| 星图拼绘 | 北极星 / 流星雨 / 土星 / 导星框 / 校准网格板 / 玻璃底片 / 射电望远镜 + ★空间站 | `games/picross/logic.js`（线索求解器验证唯一解） | `verify-game-picross.mjs` | `e2e-game-picross.mjs` |
+| 外星信号 | 第一声 / 倒着来的信号 / 镜中的字 / 噪声里的行星 / 一次性密钥 / 四色星系 / 迷你阿雷西博 + ★一列一列的信号 | `games/signal/logic.js`（比特数只有一种行列分解） | `verify-game-signal.mjs` | `e2e-game-signal.mjs` |
+| 向量风暴 | 史莱姆潮 / 近身防卫 / 斩杀线 / 精英混编 + ★无尽潮 | `games/arena/rules.js`（构造数组 → 执行 → 按 hp 下降结算伤害与法力） | `verify-game-arena.mjs` | `e2e-game-arena.mjs` |
+| 曲线对消 | 纯正弦 / 振幅 / 频率 / 混沌之心 + ★混沌本体 | `games/curve/rules.js`（残差 ≤ 0.05） | `verify-game-curve.mjs` | `e2e-game-curve.mjs` |
+
+- 第三章章节 E2E 改走 `collectGames` / `bossGame` 两个 runner 步骤；野外布局改为手工的「阵列广场」（`data/maps.js` 的 `gameRing`）。
+- 实现与规格的偏差：向量风暴为 4 核心关（规格写 4 波，一致）；外星信号的 `.T` 只在挑战关；星图拼绘的 `sky.sum(axis=…)` 读数只在提示里开放。

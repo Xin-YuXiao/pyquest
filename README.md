@@ -62,7 +62,8 @@ npm run check      # 全部验证（lint / 冒烟 / 题库实跑 / 构建 / 全�
 | 第十章 · 灵思之塔 | Part II · W10 | 灵思之塔底层 + 验证回廊 / 幻言魔像 | vibe coding 流程、prompt 分解、幻觉识别、测试先行、小步迭代、回归检查 |
 | 第十一章 · 毕业试炼 | Part II · W11 | 毕业试炼场 + 三途之门 / 三途守门人 | 选题与文献、拟合/模拟/机器学习三类 project workflow、不确定度、泛化、科学报告 |
 
-> 第一、二章为手工地图（内容已按周次重对齐题池）；第三章为**通用生成器样板章**（完整可玩）；
+> 第一、二章为手工地图（内容已按周次重对齐题池）；第三章是 **NumPy 玩法样板章**（野外是「阵列广场」+ 四座试炼场，
+> 巢穴的 BOSS 护盾是曲线对消，见下一节）；
 > 第四至八章为通用生成器关卡，题库已充实至**每章 20 题**（shard/lair/boss 三池式）。
 > 第二部第九至十一章同为通用生成器关卡、三池式题库（第九章 21 题，第十、十一章各 20 题），
 > 规划见 `docs/part2-plan.md`，出题提纲见 `docs/quiz-outline-w9.md` ~ `w11.md`。
@@ -74,6 +75,30 @@ npm run check      # 全部验证（lint / 冒烟 / 题库实跑 / 构建 / 全�
 3. **封印门**：集齐碎片解锁（按 E 当场解开），进入本章巢穴。
 4. **巢穴**：祝福符文（答对回心）+ **BOSS 符文**（答对破除护盾，才能造成伤害）。
 5. **击败 BOSS** → 本章结算（用时/谜题数/章节进度）→ 前方传送门通往下一章。
+
+## 🔢 第三章样板：NumPy 本身就是玩法
+
+十一章原来的核心循环都一样：「走到符文石 → 四选一 → 碎片 → 开门 → 答题破盾 → 砍 BOSS」，Python 会不会完全不影响怎么玩。
+第三章先改成样板：**必经路径上没有选择题**，学生在每座试炼场里写的都是一行（或几句）**真 NumPy 语法**，
+输入时实时预览结果，报错给 Python 原文 + 中文解释。每种玩法借鉴一款成熟的游戏：
+
+| 试炼场 | 借鉴 | 怎么玩 | NumPy 概念 | 关卡 |
+| --- | --- | --- | --- | --- |
+| 🃏 **阵列牌局** | 《杀戮尖塔》卡牌构筑 | 敌人排成数组 `hp`（后期是二维阵型），「选择器卡」拼「操作卡」打出 `hp[1:4] -= 3`；只打操作卡 = 整个数组一起算。敌人有攻击意图，敌人的回合也写成 NumPy 记进战斗日志；「自由咒语」卡的方括号自己写；战后三选一奖励卡进牌组，按回合数给奖牌 | 下标、负下标、切片、步长、二维逗号索引、布尔掩膜、原地运算、广播 | 史莱姆一排 → 末尾的刺客 → 切片之墙 → 步长伏兵 → 筛子 → 方阵 → 混沌先锋，★ 不死军团 |
+| ✦ **星图拼绘** | Picross 数织 + Zachtronics 式按步数评分 | 按行列游程线索推理出星座，只能用切片赋值作画（`sky[1:3, 2] = 1`），输入时金色 / 红色幽灵格预览；画对后上色揭晓 + 一句天文知识；施法句数对照参考解给金银铜 | 二维切片赋值、整行整列、负下标、步长、`sky = 1 - sky` 向量化取反 | 北极星 → 流星雨 → 土星 → 导星框 → 校准网格板 → 玻璃底片 → 射电望远镜，★ 空间站（线索均验证唯一解） |
+| 📡 **外星信号** | 1974 年阿雷西博信息（1679 = 23 × 73 比特） | 射电望远镜收到一维 0/1 比特流，`reshape` 成正确的形状才显出图案（形状错了是斜条纹——行优先顺序一目了然），再配合翻转、阈值、异或密钥、双路合成 | `reshape` 与 shape、`[::-1]` / `[:, ::-1]`、比较掩膜、`(a + b) % 2`、`hi * 2 + lo`、`.T`（挑战关） | 第一声 → 倒着来的信号 → 镜中的字 → 噪声里的行星 → 一次性密钥 → 四色星系 → 迷你阿雷西博，★ 一列一列的信号 |
+| ⚡ **向量风暴** | 《吸血鬼幸存者》割草 + Noita 自编法术 | 独立的实时竞技场：成群史莱姆冲过来，战前在备咒台写两句法术（`hp`、`dist`、`elite` 三个数组），战斗中按 Q / R 释放；法力 = 造成的总伤害，掩膜写得越准越划算；挥剑一次只打一只——体会向量化一次打一片 | 布尔掩膜 + 原地运算作用于整群敌人、`~` 取反 | 史莱姆潮 → 近身防卫 → 斩杀线 → 精英混编，★ 无尽潮（坚持 90 秒） |
+| 〰 **曲线对消**（BOSS 护盾） | Graphwar / Sine Rider 函数作图 | 示波器上是混沌曲线魔君的护盾波形（表达式隐藏），从图上读出中线、振幅、起伏次数，写出 `A * np.sin(w * x) + b` 逐点抵消；四层全部对消才破盾，接着打原有的「正弦混沌弹」 | `np.linspace`、`np.sin` 向量化、振幅 / 频率 / 平移、两条波叠加 | 纯正弦 → 振幅 → 频率 → 混沌之心，★ 混沌本体 |
+
+- **入口与进度**：野外中央是手工布局的「阵列广场」——方形路面与十字路口把高原分成 2×2 的格子，四座石台站在四个角（标着
+  `高原[0, 0]` … `高原[1, 1]`）。一座试炼场的核心关全部通过 = 1 枚数值碎片，**4 枚**打开巢穴（第三章碎片数由 5 改为 4）；
+  挑战关 ★ 首次通过回满爱心。野外 2 块祝福符文与蒙特卡洛观测台保留为可选内容。
+- **咒语解释器** `src/core/npmini.js`：NumPy 子集（int / float / bool 任意维数组、视图与副本语义、广播、dtype 提升、各种下标、
+  常用函数与方法），打印完整复刻 numpy 1.26 的格式；`scripts/verify-npmini.mjs` 用 400 多条用例（含每个小游戏每关的参考解）
+  与真 NumPy 逐字对拍。不支持 for / if 等语句——提示学生「用一行向量化咒语」。
+- **共用设施**：分级提示（概念 → 关键写法 → 参考解）、成绩与金银铜牌、未完成的作答会保存（存档 v3 可选字段 `games`）。
+- **待助教确认**：`.T`（外星信号挑战关）、`axis=`（星图拼绘提示里的读数）、花式下标（牌局自由咒语允许但不要求）是否超出 W3 讲义；
+  碎片 5 → 4。设计与决策见 [`.scratch/numpy-plateau/spec.md`](.scratch/numpy-plateau/spec.md)。
 
 ## 🆕 新关卡
 
@@ -171,6 +196,8 @@ src/
 ├── core/dojoSim.js          # 代码训练场关卡模拟器（主线程与 Worker 共用）
 ├── core/dojoPrelude.js      # 训练场的 Python 英雄 API 与中文报错翻译
 ├── core/pyRuntime.js        # Pyodide 运行时（Worker 管理、超时重建）；core/pyWorker.js 为 Worker 本体
+├── core/npmini.js           # NumPy 子集解释器：第三章试炼场的咒语执行器（打印 / 报错与 numpy 1.26 一致，带「选中了哪些格子」的来源信息）
+├── core/games.js            # 第三章试炼场进度规则（核心关按序解锁 / 挑战关 / 完成发碎片 / 读档清洗）
 ├── core/phase.js            # 章内阶段（新来/收集/集齐/门开/通关）：NPC 台词、HUD、世界地图的单一推断来源
 ├── core/quiz.js             # 答题行为层：随机抽题 pickQuestion + Python 语法高亮
 ├── core/seam.js             # 测试接缝：window.__PYQUEST__ 只读查询 + 语义动作（E2E 专用）
@@ -184,6 +211,12 @@ src/
 │   ├── realms.js            # Project 秘境注册表（独立于 CHAPTERS）：每步课题符文引用的题目与理由
 │   ├── realmMaps.js         # 秘境大厅 / 外庭 / 圣所地图
 │   └── dojoLevels.js        # 代码训练场 7 关（目标 / API / 模板 / 提示 / 参考解 / 多布局）
+├── games/                   # 第三章试炼场小游戏：registry.js 登记表 + 每个小游戏一个目录（levels 关卡 / 纯规则 / 界面 / 对拍用例）
+│   ├── cards/               # 阵列牌局（battle.js 战斗规则、autoplay.js 自动打法校验平衡）
+│   ├── picross/             # 星图拼绘（logic.js 线索与施法规则）
+│   ├── signal/              # 外星信号（logic.js 解码判定、art.js 图案）
+│   ├── arena/               # 向量风暴（ArenaScene.js 实时场景、rules.js 施法 / 法力规则、arenaMap.js）
+│   └── curve/               # 曲线对消（BOSS 护盾，rules.js 残差判定）
 ├── assets/ts.js             # Tiny Swords 素材清单/加载/动画（素材本体在 assets/TinySwordsFreePack/，未入库）
 ├── textures/pixelArt.js     # 程序化补充贴图（代码碎片/爱心/传送门/石门等）
 ├── textures/ground.js       # 整图地面画布（草地 → 水/土路 → 岸沫分层绘制）
@@ -201,24 +234,27 @@ src/
     ├── WorldScene.js        # 世界基类：地图/交互/传送门封印/答题接线（章节驱动）
     ├── ChapterScene.js      # 通用章节场景：FieldScene（野外）+ LairScene（巢穴）+ 工厂
     ├── secrets.js           # 秘藏石碑交互（浮空 / 无限回廊等特效）
+    ├── games.js             # 第三章阵列石台：入口、名牌进度、通关结算（发碎片 / 回血 / 破盾）
     ├── RealmScene.js        # Project 秘境大厅 / 外庭 / 圣所场景
     ├── TowerScene.js        # 试炼塔（一个场景反复重启呈现每一层）
     └── DojoScene.js         # 代码训练场（关卡房间 + 动作回放）
 ui/                          # DOM 覆盖层：HUD、对话框、答题面板（主线 / 复习两种模式）、结算、
                              # 错题本、观测台（stations/ 为第二批）、秘藏卷轴、BOSS 机制横幅、触控层、音乐开关、
-                             # 训练场编辑器面板、试炼塔结算页
+                             # 训练场编辑器面板、试炼塔结算页、小游戏面板外壳 GamePanel 与咒语输入行 SpellInput
 scripts/
 ├── smoke.mjs                # 无头冒烟测试（贴图/全部章节地图/题库/题池/抽题校验）
 ├── verify-quiz.mjs          # 题库自动校验（用本机 python 执行输出确定的题目，比对 stdout）
 ├── verify-secrets.mjs       # 秘藏彩蛋里展示的 Python 输出逐条用真 python 复现核对
 ├── verify-dojo.mjs          # 训练场每关参考解在全部布局上用 CPython 实跑通关、初始模板不能通关
+├── verify-npmini.mjs        # NumPy 子集解释器与真 NumPy 1.26 逐字对拍（含各小游戏参考解）
+├── verify-game-<id>.mjs     # 第三章各试炼场：参考解能过关、常见错解不过、判定规则与平衡（cards / picross / signal / arena / curve）
 ├── fixtures/                # 真实的 v1 / v2 存档样本（迁移测试用）
 ├── gen-ts-stubs.mjs         # 无素材环境（CI）生成 Tiny Swords 纯色占位图，让 E2E 可跑
 ├── run-e2e.mjs              # E2E 总入口（npm run test:e2e）：复用或临时启动 dev server，逐章跑并汇总
 ├── e2e/lib/runner.mjs       # 章节 E2E 共享运行器：各章脚本只声明 labels + steps
 ├── e2e.mjs                  # Playwright E2E：第一章全流程 + 存档
 ├── e2e-ch2.mjs              # 第二章 E2E（森林/洞窟/巨蟒/进入第三章/读档续玩）
-├── e2e-ch3.mjs              # 第三章 E2E（样板章全流程 + 衔接第四章 + 读档续玩）
+├── e2e-ch3.mjs              # 第三章 E2E（四座试炼场 → 开门 → 曲线对消破盾 → 魔君 → 衔接第四章 + 读档续玩）
 ├── e2e-ch4.mjs              # 第四章 E2E（星图塔/FITS 符文/单位术士/衔接第五章）
 ├── e2e-ch5.mjs              # 第五章 E2E（加速熔炉/深渊符文/迟缓巨魔/衔接第六章）
 ├── e2e-ch6.mjs              # 第六章 E2E（数值神殿/迷宫符文/优化牛头怪/衔接第七章）
@@ -228,7 +264,7 @@ scripts/
 ├── e2e-ch10.mjs             # 第十章 E2E（灵思之塔/验证回廊/幻言魔像/衔接第十一章）
 ├── e2e-ch11.mjs             # 第十一章 E2E（毕业试炼/三途之门/三途守门人/全部通关）
 └── e2e-<功能>.mjs           # 功能 E2E（自动发现）：boss-mechanics / observatory / stations / secrets / review / music /
-                             # mobile / realms / tower / dojo
+                             # mobile / realms / tower / dojo / game-cards / game-picross / game-signal / game-arena / game-curve
 ```
 
 ## 🎨 画面技术（Tiny Swords 素材 + 程序化补充）
@@ -271,6 +307,7 @@ npm run check                # lint → test → build → test:e2e
 ```bash
 npm run lint                 # ESLint（flat config，仅 recommended 规则，不管格式）
 npm test                     # smoke（地图 / 题库 / 存档迁移 / 学习记录 / 各玩法数据）+ verify-quiz / verify-secrets / verify-dojo（python 实跑核对）
+                             # + verify-npmini（咒语解释器与真 NumPy 对拍）+ verify-game-*（第三章试炼场关卡）
 npm run test:e2e             # 全部章节 E2E：5173 上已有 dev server 就复用，没有就临时起一个、跑完关掉
 npm run test:e2e -- 9 10 11  # 只跑指定章节
 npm run test:e2e -- review music  # 只跑指定功能（scripts/e2e-<功能>.mjs 自动发现）
@@ -287,7 +324,7 @@ npm run stubs                # 没有 Tiny Swords 素材时先生成占位图（
 ```bash
 node scripts/e2e.mjs         # E2E：第一章（答题/开门/BOSS/进第二章/存档）
 node scripts/e2e-ch2.mjs     # E2E：第二章（森林/洞窟/巨蟒/进第三章/读档续玩）
-node scripts/e2e-ch3.mjs     # E2E：第三章样板章（NumPy 符文/破盾/魔君/衔接第四章/读档）
+node scripts/e2e-ch3.mjs     # E2E：第三章样板章（四座试炼场/曲线对消/魔君/衔接第四章/读档）
 node scripts/e2e-ch4.mjs     # E2E：第四章（星图塔/FITS 符文/单位术士/衔接第五章）
 node scripts/e2e-ch5.mjs     # E2E：第五章（加速熔炉/深渊符文/迟缓巨魔/衔接第六章）
 node scripts/e2e-ch6.mjs     # E2E：第六章（数值神殿/迷宫符文/优化牛头怪/衔接第七章）
@@ -303,6 +340,8 @@ node scripts/e2e-ch11.mjs    # E2E：第十一章（毕业试炼/三途之门/�
 - [x] ~~八章节架构：数据驱动注册表 + 通用关卡生成器 + v2 多章存档~~ ✅
 - [x] ~~W1/W2 内容按周次重对齐（地牢=列表/元组，洞窟=控制流）~~ ✅
 - [x] ~~第三章 · 科学计算高原（NumPy/Matplotlib/蒙特卡洛，完整样板章）~~ ✅
+- [x] ~~第三章改造为「NumPy 本身就是玩法」：四座试炼场 + 曲线对消 BOSS，必经路径不再有四选一~~ ✅（见「第三章样板」）
+- [ ] 其余章节按同样思路改造（先试玩第三章确认方向）
 - [x] ~~W4-W8 注册为可玩关卡（传送门链 + 起步题池）~~ ✅
 - [x] ~~W4-W8 题量充实 · 第一阶段（每章 20 题：shard×10 基础 / lair×7 进阶 / boss×3 综合，tier 11-25）~~ ✅
 - [ ] W4-W8 题量进一步充实（可选扩展至每章 40-60 题：FITS 实操、emcee 漫步、NFW 拟合数值题）

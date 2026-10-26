@@ -39,6 +39,22 @@
 内容仍守 ADR-0001：秘境与试炼塔只引用题库已有题目；训练场是编程练习（清单见 `docs/code-dojo.md`，待助教对照讲义审核）；
 观测台用到的、题库未覆盖的知识（积分器、Beta 分位数数值积分、kNN 等）列在各工单 Comments 里待确认。
 
+## 第三波：第三章改造为「NumPy 本身就是玩法」（分支 `feat/ch3-numpy-games`）
+
+助教试玩反馈「各章玩法雷同」后的样板章，规格见 [`numpy-plateau/spec.md`](numpy-plateau/spec.md)。
+第三章必经路径不再有四选一：野外「阵列广场」四座试炼场（各 7 核心关 + 1 挑战关；向量风暴 4 + 1）+ 巢穴 BOSS 护盾「曲线对消」（4 + 1）。
+
+| 小游戏 | 借鉴 | 目录 |
+| --- | --- | --- |
+| 🃏 阵列牌局 | 《杀戮尖塔》卡牌构筑 | `src/games/cards/` |
+| ✦ 星图拼绘 | Picross 数织 + Zachtronics 评分 | `src/games/picross/` |
+| 📡 外星信号 | 1974 年阿雷西博信息 | `src/games/signal/` |
+| ⚡ 向量风暴 | 《吸血鬼幸存者》+ Noita | `src/games/arena/` |
+| 〰 曲线对消（BOSS） | Graphwar / Sine Rider | `src/games/curve/` |
+
+咒语由 `src/core/npmini.js`（NumPy 子集解释器）执行，`scripts/verify-npmini.mjs` 与真 NumPy 1.26 逐字对拍。
+待助教拍板的事项见 spec「待决策」：`.T` / `axis=` / 花式下标的讲义范围、碎片 5 → 4、是否推广到其他章节。
+
 ## 全部 effort
 
 ### 教学新题型（借鉴教学研究）
