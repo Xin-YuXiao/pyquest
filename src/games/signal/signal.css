@@ -1,0 +1,111 @@
+/* ============================================================
+   外星信号（src/games/signal/game.js）——射电望远镜的接收屏 / 解码屏
+   面板 body 约 890 × 440（#ui-scale 设计坐标）；只在 .gp-game-signal 内生效
+   ============================================================ */
+.gp-game-signal .sg {
+  height: 100%;
+  display: grid;
+  grid-template-rows: 58px minmax(0, 1fr) auto;
+  gap: 6px;
+}
+
+/* ---------- 示波器条带 ---------- */
+.gp-game-signal .sg-scope {
+  position: relative;
+  border-radius: 10px;
+  border: 2px solid #4b4362;
+  overflow: hidden;
+  box-shadow: inset 0 0 18px rgba(61, 218, 215, .12);
+}
+.gp-game-signal .sg-scope-cv { display: block; width: 100%; height: 100%; }
+.gp-game-signal .sg-scope-tag {
+  position: absolute; right: 8px; top: 0;
+  display: flex; align-items: center; gap: 6px;
+  font: 10.5px/14px "JetBrains Mono", Consolas, monospace; color: rgba(232, 227, 245, .78);
+  padding: 0 4px;
+  pointer-events: none;
+}
+.gp-game-signal .sg-dot {
+  width: 7px; height: 7px; border-radius: 50%; background: #7cf29a;
+  box-shadow: 0 0 6px #7cf29a; animation: sgBlink 1.1s steps(2) infinite;
+}
+@keyframes sgBlink { 50% { opacity: .25; } }
+
+/* ---------- 解码屏 + 侧栏 ---------- */
+.gp-game-signal .sg-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 268px;
+  gap: 8px;
+  min-height: 0;
+}
+.gp-game-signal .sg-screen {
+  position: relative;
+  border-radius: 12px;
+  border: 3px solid #3a3350;
+  background: #120f1f;
+  overflow: hidden;
+  box-shadow: inset 0 0 28px rgba(0, 0, 0, .7), 0 2px 0 rgba(0, 0, 0, .25);
+}
+.gp-game-signal .sg-screen-cv { display: block; width: 100%; height: 100%; }
+/* CRT：细扫描线 + 一条缓慢下移的亮带 */
+.gp-game-signal .sg-screen::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: repeating-linear-gradient(to bottom, rgba(255, 255, 255, .035) 0 1px, transparent 1px 3px);
+}
+.gp-game-signal .sg-screen::after {
+  content: ''; position: absolute; left: 0; right: 0; height: 46px; top: -46px; pointer-events: none;
+  background: linear-gradient(to bottom, transparent, rgba(61, 218, 215, .07), transparent);
+  animation: sgRoll 3.6s linear infinite;
+}
+@keyframes sgRoll { to { top: 100%; } }
+.gp-game-signal .sg-screen-tag {
+  position: absolute; left: 8px; top: 5px; pointer-events: none;
+  font: 11px "JetBrains Mono", Consolas, monospace; color: rgba(189, 247, 239, .8);
+  text-shadow: 0 0 6px rgba(61, 218, 215, .6);
+}
+.gp-game-signal .sg-reveal {
+  position: absolute; right: 8px; top: 5px; pointer-events: none;
+  font: bold 12px "JetBrains Mono", Consolas, monospace; color: #2c2438;
+  background: var(--gold); border-radius: 6px; padding: 1px 8px;
+  box-shadow: 0 0 12px rgba(255, 210, 87, .6); animation: sgUp .35s ease-out;
+}
+@keyframes sgUp { from { transform: translateY(-6px); opacity: 0; } }
+
+.gp-game-signal .sg-side {
+  display: flex; flex-direction: column; gap: 5px; min-height: 0;
+  background: #fffaf0; border: 1px solid #e3d2ae; border-radius: 10px; padding: 6px 8px;
+}
+.gp-game-signal .sg-side-title { font-size: var(--fs-caption); color: #7a6656; font-weight: bold; }
+.gp-game-signal .sg-vars { display: flex; flex-direction: column; gap: 4px; }
+.gp-game-signal .sg-var { display: grid; grid-template-columns: auto 1fr; gap: 1px 6px; align-items: baseline; }
+.gp-game-signal .sg-var-name {
+  font: bold 12px "JetBrains Mono", Consolas, monospace; color: #7cf29a;
+  background: #2f2a3d; border-radius: 4px; padding: 0 6px;
+}
+.gp-game-signal .sg-var-meta { font: 11px "JetBrains Mono", Consolas, monospace; color: #7a6656; }
+.gp-game-signal .sg-var-head {
+  grid-column: 1 / -1; margin: 0;
+  font: 11px/1.3 "JetBrains Mono", Consolas, monospace; color: var(--ink);
+  white-space: pre; overflow: hidden; text-overflow: ellipsis;
+}
+.gp-game-signal .sg-score { border-top: 1px dashed #e3d2ae; padding-top: 4px; }
+.gp-game-signal .sg-casts { font-size: var(--fs-body); }
+.gp-game-signal .sg-casts b { font: bold 18px "JetBrains Mono", Consolas, monospace; color: #b8860b; }
+.gp-game-signal .sg-par {
+  font: 11px "JetBrains Mono", Consolas, monospace; background: #f3e6c8; border-radius: 5px; padding: 0 5px; margin-left: 4px;
+}
+.gp-game-signal .sg-medals { display: flex; gap: 6px; font-size: 11px; color: #7a6656; margin-top: 2px; }
+.gp-game-signal .sg-medals .on { color: #b8860b; font-weight: bold; }
+.gp-game-signal .sg-best { font-size: 11px; color: #2a6f6d; margin-top: 2px; }
+.gp-game-signal .sg-verdict {
+  flex: 1 1 auto; min-height: 0; overflow-y: auto;
+  font-family: var(--font-kai); font-size: 13.5px; line-height: 1.4; color: var(--ink);
+  border-radius: 6px; padding: 3px 6px; white-space: pre-line;
+}
+.gp-game-signal .sg-verdict.bad { background: #fff0f0; color: #8e2a2a; }
+.gp-game-signal .sg-verdict.ok { background: #effaec; color: #2e7d32; font-weight: bold; }
+.gp-game-signal .sg-verdict.info { background: #f6efdd; color: #6b5a4a; }
+.gp-game-signal .sg-reset { align-self: flex-start; font-size: 13px; padding: 3px 10px; }
+
+/* ---------- 咒语输入行：本玩法输出区收矮一点，给解码屏留空间 ---------- */
+.gp-game-signal .sp-out { min-height: 34px; max-height: 62px; }
