@@ -391,6 +391,12 @@ function placeObservatory(w, h, anchor, forbidden, avoid) {
   }) || null;
 }
 
+/** 第三章「阵列广场」：方形路面的范围与四个角（行优先：[0,0] 西北、[0,1] 东北、[1,0] 西南、[1,1] 东南） */
+function gameRing(cx, midY) {
+  const x0 = cx - 8, x1 = cx + 8, y0 = midY - 5, y1 = midY + 5;
+  return { x0, x1, y0, y1, corners: [[x0, y0], [x1, y0], [x0, y1], [x1, y1]] };
+}
+
 export function buildField(ch) {
   const th = ch.theme || {};
   const w = th.w || 34, h = th.h || 26;
@@ -443,6 +449,20 @@ export function buildField(ch) {
     // 中央竖路 + 东西横路
     for (let y = 1; y < h - 1; y++) { grid[y][cx] = T.PATH; }
     for (let x = 2; x < w - 2; x++) { grid[midY][x] = T.PATH; }
+    // 试炼场章节：「阵列广场」——一圈方形路面与十字路口一起把高原分成 2×2 的格子（像数组的网格线），
+    // 四座石台站在四个角上；压在新路面上的内部树丛挪走
+    if (ch.games) {
+      const r = gameRing(cx, midY);
+      for (let x = r.x0; x <= r.x1; x++) { grid[r.y0][x] = T.PATH; grid[r.y1][x] = T.PATH; }
+      for (let y = r.y0; y <= r.y1; y++) { grid[y][r.x0] = T.PATH; grid[y][r.x1] = T.PATH; }
+      for (let i = trees.length - 1; i >= 0; i--) {
+        const t = trees[i];
+        const onRing = (t.ty === r.y0 || t.ty === r.y1) ? t.tx >= r.x0 - 1 && t.tx <= r.x1 + 1
+          : (t.tx === r.x0 || t.tx === r.x1) ? t.ty >= r.y0 - 1 && t.ty <= r.y1 + 1 : false;
+        const nearCorner = r.corners.some(([x, y]) => Math.abs(t.tx - x) <= 1 && Math.abs(t.ty - y) <= 1);
+        if (onRing || nearCorner) trees.splice(i, 1);
+      }
+    }
     // 左上小池塘
     for (let y = 3; y <= 6; y++) {
       for (let x = 3; x <= 7; x++) {
@@ -478,8 +498,15 @@ export function buildField(ch) {
   if (ch.prevKey) { blockTile(4, h - 1); blockTile(5, h - 1); blockTile(4, h - 2); blockTile(5, h - 2); }
   if (ch.nextKey) { blockTile(w - 2, midY); blockTile(w - 2, midY - 1); blockTile(w - 2, midY + 1); }
 
-  // 碎片坑位：数量取 th.shardSlots（缺省 = 碎片数）。第三章把坑位让给试炼场（ch.games），
-  // 坑位数仍按改造前的 5 个撒，随机数序列不变，其余布局（祝福符文 / 史莱姆 / 装饰）原样保留
+  // 试炼场石台（阵列广场的四个角）：先把周边 3×3 记为禁区，祝福符文 / 史莱姆 / 观测台都不压上来
+  const gameSpots = ch.games ? gameRing(cx, midY).corners.slice(0, ch.games.length).map(([tx, ty]) => ({ tx, ty })) : [];
+  gameSpots.forEach((g, i) => {
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) blockTile(g.tx + dx, g.ty + dy);
+    // 场景玩法（向量风暴）回来时站在石台前：提前登记成出生点，史莱姆禁入区与观测台选址都会避开它
+    const id = ch.games[i];
+    if (getGame(id) && getGame(id).kind === 'scene') spawns[`game:${id}`] = { x: pc(g.tx), y: pc(g.ty) + 230 };
+  });
+  // 碎片坑位：数量取 th.shardSlots（缺省 = 碎片数）；试炼场章节不放碎片符文，坑位只用来保持随机数序列
   const shardSpots = scatterSlots(rand, w, h, th.shardSlots ?? ch.shardsNeeded, 3, forbidden);
   const healSpots = scatterSlots(rand, w, h, th.healRunes ?? 2, 3, forbidden);
   // 史莱姆禁入区：所有出生点周边 4 格 + 两侧章节传送门周边 3 格
@@ -496,7 +523,7 @@ export function buildField(ch) {
   let observatory = null;
   if (ch.observatory) {
     const avoid = [
-      ...[...shardSpots, ...healSpots].map((s) => ({ tx: s.tx, ty: s.ty, r: 3 })),
+      ...[...(ch.games ? gameSpots : shardSpots), ...healSpots].map((s) => ({ tx: s.tx, ty: s.ty, r: 3 })),
       ...slimeSpots.map((s) => ({ tx: s.tx, ty: s.ty, r: 2 })),
       { tx: cx - 3, ty: midY + 3, r: 3 }, // 引导石碑
       { tx: cx, ty: 1, r: 3 },            // 巢穴封印门
@@ -516,11 +543,9 @@ export function buildField(ch) {
   // 碎片符文 / 试炼场石台（scenes/games.js）
   if (ch.games) {
     ch.games.forEach((id, i) => {
-      const s = shardSpots[i];
+      const s = gameSpots[i];
       if (!s) return;
-      props.push({ type: 'game', game: id, x: pc(s.tx), y: pc(s.ty) });
-      // 场景玩法（向量风暴）回来时站在石台前
-      if (getGame(id) && getGame(id).kind === 'scene') spawns[`game:${id}`] = { x: pc(s.tx), y: pc(s.ty) + 230 };
+      props.push({ type: 'game', game: id, x: pc(s.tx), y: pc(s.ty), index: `[${Math.floor(i / 2)}, ${i % 2}]` });
     });
   } else {
     shardSpots.forEach((s, i) => props.push({ type: 'rune', x: pc(s.tx), y: pc(s.ty), qid: `c${ch.id}s${i + 1}` }));

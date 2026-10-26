@@ -42,6 +42,13 @@ export function spawnGameSite(scene, p) {
   const label = scene.add.text(p.x, p.y - 236, '', {
     fontFamily: LABEL_FONT, fontSize: '50px', color: '#ffd257', stroke: '#2c2438', strokeThickness: 12, align: 'center',
   }).setOrigin(0.5, 1).setDepth(1950);
+  // 阵列广场的格子下标（第三章：四座石台 = 高原这个 2×2 数组的四个元素）
+  if (p.index) {
+    scene.add.text(p.x, p.y + 120, `高原${p.index}`, {
+      fontFamily: '"JetBrains Mono", Consolas, monospace', fontSize: '40px', color: '#e8e3f5',
+      stroke: '#2c2438', strokeThickness: 10,
+    }).setOrigin(0.5, 0).setDepth(p.y + 1);
+  }
   const it = {
     kind: 'game', custom: true, radius: GAME_SITE_RADIUS, game: p.game, x: p.x, y: p.y,
     sprite, aura, label, alive: true,
