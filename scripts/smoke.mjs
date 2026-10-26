@@ -143,7 +143,13 @@ for (const ch of CHAPTERS) {
     const shardRunes = field.props.filter((p) => p.type === 'rune' && !p.bossRune && !p.healRune);
     const npc = field.props.find((p) => p.type === 'npc');
     const toLair = (field.portals || []).find((p) => p.to === ch.lairKey);
-    if (shardRunes.length !== ch.shardsNeeded) fail(`${ch.fieldKey} 碎片符文 ${shardRunes.length} != ${ch.shardsNeeded}`);
+    if (ch.games) {
+      // 试炼场章节（第三章）：碎片来自试炼场，一座一枚；野外不再有碎片符文
+      const sites = field.props.filter((p) => p.type === 'game');
+      if (shardRunes.length) fail(`${ch.fieldKey} 试炼场章节不应再有碎片符文（${shardRunes.length} 块）`);
+      if (sites.length !== ch.games.length) fail(`${ch.fieldKey} 试炼场石台 ${sites.length} != ${ch.games.length}`);
+      if (ch.games.length !== ch.shardsNeeded) fail(`${ch.fieldKey} 试炼场数 ${ch.games.length} 应等于碎片数 ${ch.shardsNeeded}`);
+    } else if (shardRunes.length !== ch.shardsNeeded) fail(`${ch.fieldKey} 碎片符文 ${shardRunes.length} != ${ch.shardsNeeded}`);
     if (!npc) fail(`${ch.fieldKey} 缺少引导 NPC`);
     if (!toLair) fail(`${ch.fieldKey} 缺少通往巢穴的传送门`);
     if (ch.id > 1 && !toLair.requires) fail(`${ch.fieldKey} 通往巢穴的传送门应带封印条件`);
@@ -151,7 +157,10 @@ for (const ch of CHAPTERS) {
     // 巢穴：BOSS + BOSS 符文 + 回野外的传送门
     const bossRune = lair.props.filter((p) => p.type === 'rune' && p.bossRune);
     if (!lair.boss) fail(`${ch.lairKey} 缺少 BOSS`);
-    if (bossRune.length !== 1) fail(`${ch.lairKey} BOSS 符文数量 ${bossRune.length} != 1`);
+    if (ch.bossGame) {
+      const bossSite = lair.props.filter((p) => p.type === 'game' && p.game === ch.bossGame);
+      if (bossRune.length || bossSite.length !== 1) fail(`${ch.lairKey} BOSS 玩法石台应恰好 1 座且没有 BOSS 符文（石台 ${bossSite.length}，符文 ${bossRune.length}）`);
+    } else if (bossRune.length !== 1) fail(`${ch.lairKey} BOSS 符文数量 ${bossRune.length} != 1`);
     if (!(lair.portals || []).some((p) => p.to === ch.fieldKey)) fail(`${ch.lairKey} 缺少回野外的传送门`);
 
     // 章节衔接：非末章应有通往下一章的传送门（requires done）
@@ -445,7 +454,7 @@ try {
     }
     for (const p of def.props) {
       const d = cheb(t, tileOf(p));
-      if (['rune', 'npc', 'door', 'doorlink', 'gate', 'observatory'].includes(p.type) && d < R.interact) fail(`${label} 离 ${p.type}${p.qid ? ' ' + p.qid : ''} 只有 ${d} 格`);
+      if (['rune', 'npc', 'door', 'doorlink', 'gate', 'observatory', 'game'].includes(p.type) && d < R.interact) fail(`${label} 离 ${p.type}${p.qid ? ' ' + p.qid : ''} 只有 ${d} 格`);
       if (['tree', 'crystal', 'torch'].includes(p.type) && d < R.solid) fail(`${label} 离 ${p.type} 只有 ${d} 格`);
     }
     for (const s of Object.values(def.spawns)) if (cheb(t, tileOf(s)) < R.spawn) fail(`${label} 离出生点太近`);

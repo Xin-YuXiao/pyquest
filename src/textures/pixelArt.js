@@ -278,6 +278,40 @@ function drawSecretStone(ctx) {
 }
 
 // ============================================================
+// 试炼场石台（第三章 NumPy 小游戏入口）：石砌底座 + 顶面一块 3×4 发光阵列（ndarray），显示时 ×5.5
+// lit=false 未完成（青色阵列，一格高亮）；lit=true 已完成（金色阵列全亮）
+// ============================================================
+function drawGameSite(ctx, lit) {
+  const w = 40, h = 44, cx = 20;
+  // 底座：两级台阶
+  rect(ctx, 5, 34, 30, 8, P.stone);
+  hline(ctx, 5, 34, 34, P.stoneL);
+  rect(ctx, 5, 40, 30, 2, P.stoneD);
+  rect(ctx, 9, 24, 22, 10, P.stone);
+  hline(ctx, 9, 30, 24, P.stoneL);
+  rect(ctx, 28, 25, 3, 9, P.stoneD);
+  // 柱身刻纹：方括号 [ ]
+  rect(ctx, 12, 27, 1, 5, P.stoneDD); px(ctx, 13, 27, P.stoneDD); px(ctx, 13, 31, P.stoneDD);
+  rect(ctx, 27, 27, 1, 5, P.stoneDD); px(ctx, 26, 27, P.stoneDD); px(ctx, 26, 31, P.stoneDD);
+  // 顶面：深色石板 + 3 行 4 列发光格
+  rect(ctx, 6, 9, 28, 15, '#2f2a3d');
+  hline(ctx, 6, 33, 9, '#4b4362');
+  const on = lit ? P.gold : P.glow;
+  const off = lit ? P.goldD : P.crystalD;
+  for (let r = 0; r < 3; r++) {
+    for (let c = 0; c < 4; c++) {
+      const hot = lit || (r === 1 && c === 2);
+      rect(ctx, 9 + c * 6, 11 + r * 4, 4, 3, hot ? on : off);
+      if (hot) px(ctx, 9 + c * 6, 11 + r * 4, lit ? '#fff3b0' : P.crystalL);
+    }
+  }
+  // 顶部光点
+  px(ctx, cx, 5, lit ? '#fff3b0' : P.crystalL);
+  px(ctx, cx - 1, 6, on); px(ctx, cx + 1, 6, on); px(ctx, cx, 7, on);
+  outline(ctx, w, h);
+}
+
+// ============================================================
 // 入口：生成全部程序化贴图
 // ============================================================
 export function generateAllTextures(scene) {
@@ -291,6 +325,8 @@ export function generateAllTextures(scene) {
   makePx(scene, 'torch_0', 16, 32, drawTorch);
   makePx(scene, 'observatory', 40, 44, drawObservatory);
   makePx(scene, 'secret_stone', 20, 28, drawSecretStone);
+  makePx(scene, 'game_site', 40, 44, (ctx) => drawGameSite(ctx, false));
+  makePx(scene, 'game_site_lit', 40, 44, (ctx) => drawGameSite(ctx, true));
 
   makeSlash(scene);
   makeParticle(scene);

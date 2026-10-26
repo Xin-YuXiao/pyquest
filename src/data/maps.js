@@ -15,6 +15,7 @@
 // ============================================================
 
 import { REALM_HALL, realmsUnlocked } from './realms.js';
+import { getGame } from '../games/registry.js';
 
 export const T = { GRASS: 0, GRASS2: 1, PATH: 2, WATER: 3, WATER2: 4, FLOWER: 5, DFLOOR: 6, DWALL: 7, VOID: 8, WATER3: 9, GRASS3: 10, GRASS4: 11 };
 
@@ -477,7 +478,9 @@ export function buildField(ch) {
   if (ch.prevKey) { blockTile(4, h - 1); blockTile(5, h - 1); blockTile(4, h - 2); blockTile(5, h - 2); }
   if (ch.nextKey) { blockTile(w - 2, midY); blockTile(w - 2, midY - 1); blockTile(w - 2, midY + 1); }
 
-  const shardSpots = scatterSlots(rand, w, h, ch.shardsNeeded, 3, forbidden);
+  // 碎片坑位：数量取 th.shardSlots（缺省 = 碎片数）。第三章把坑位让给试炼场（ch.games），
+  // 坑位数仍按改造前的 5 个撒，随机数序列不变，其余布局（祝福符文 / 史莱姆 / 装饰）原样保留
+  const shardSpots = scatterSlots(rand, w, h, th.shardSlots ?? ch.shardsNeeded, 3, forbidden);
   const healSpots = scatterSlots(rand, w, h, th.healRunes ?? 2, 3, forbidden);
   // 史莱姆禁入区：所有出生点周边 4 格 + 两侧章节传送门周边 3 格
   // （防出生即接敌被推挤进传送门；r=4 格 = 512px，覆盖史莱姆的索敌半径）
@@ -510,8 +513,18 @@ export function buildField(ch) {
   const props = [];
   // 引导石碑（十字路口旁）
   props.push({ type: 'npc', x: pc(cx - 3), y: pc(midY + 3), id: ch.npcKind, tex: 'tablet' });
-  // 碎片符文
-  shardSpots.forEach((s, i) => props.push({ type: 'rune', x: pc(s.tx), y: pc(s.ty), qid: `c${ch.id}s${i + 1}` }));
+  // 碎片符文 / 试炼场石台（scenes/games.js）
+  if (ch.games) {
+    ch.games.forEach((id, i) => {
+      const s = shardSpots[i];
+      if (!s) return;
+      props.push({ type: 'game', game: id, x: pc(s.tx), y: pc(s.ty) });
+      // 场景玩法（向量风暴）回来时站在石台前
+      if (getGame(id) && getGame(id).kind === 'scene') spawns[`game:${id}`] = { x: pc(s.tx), y: pc(s.ty) + 230 };
+    });
+  } else {
+    shardSpots.forEach((s, i) => props.push({ type: 'rune', x: pc(s.tx), y: pc(s.ty), qid: `c${ch.id}s${i + 1}` }));
+  }
   // 祝福符文
   healSpots.forEach((s, i) => props.push({ type: 'rune', x: pc(s.tx), y: pc(s.ty), qid: `c${ch.id}h${i + 1}`, healRune: true }));
   // 观测台（可选小游戏，不产碎片、不影响封印门）
@@ -618,7 +631,10 @@ export function buildLair(ch) {
       ...torches,
       ...crystals,
       ...heal,
-      { type: 'rune', x: pc(midX + 0.5), y: pc(9), qid: `c${ch.id}boss`, bossRune: true },
+      // BOSS 符文；ch.bossGame 时换成 BOSS 玩法石台（第三章：曲线对消，scenes/games.js）
+      ch.bossGame
+        ? { type: 'game', game: ch.bossGame, x: pc(midX + 0.5), y: pc(9) }
+        : { type: 'rune', x: pc(midX + 0.5), y: pc(9), qid: `c${ch.id}boss`, bossRune: true },
       { type: 'door', x: pc(midX + 0.5), y: px(h - 1.6) },
     ],
     slimes: [

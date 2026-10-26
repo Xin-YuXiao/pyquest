@@ -156,7 +156,11 @@ export const CHAPTERS = [
     title: '第三章 · 科学计算高原',
     subtitle: 'Week 3 · Scientific Computing',
     shardLabel: '数值碎片',
-    shardsNeeded: 5,
+    shardsNeeded: 4,
+    // 样板章：野外四座 NumPy 试炼场（每座的核心关全部通过 = 1 枚碎片），巢穴 BOSS 护盾 = 曲线对消
+    // （src/games/registry.js；设计见 .scratch/numpy-plateau/spec.md）
+    games: ['cards', 'picross', 'signal', 'arena'],
+    bossGame: 'curve',
     fieldKey: 'SciField', lairKey: 'SciLair',
     fieldName: '科学计算高原', lairName: '混沌巢穴',
     buildField: buildField, buildLair: buildLair,
@@ -170,6 +174,7 @@ export const CHAPTERS = [
     observatory: 'montecarlo', // 野外观测台：蒙特卡洛估 π（core/stations.js）
     theme: {
       palette: 'grass', seed: 20260301, w: 34, h: 26,
+      shardSlots: 5, // 坑位数保持改造前的 5 个（布局不变），前 4 个给试炼场
       healRunes: 2, slimeVariant: 'red', slimes: 5,
       lairHealRunes: 3, lairAmbient: 0x1a1430,
     },
@@ -181,17 +186,18 @@ export const CHAPTERS = [
     },
     npcLines: {
       new: ({ cp }) => [
-        '旅行者……欢迎来到科学计算高原。这里的魔法由 NumPy 驱动。',
-        '「ndarray」是装满同种材料的魔法方阵：一次施法（向量化），整列数据同时变化，比 for 循环快上百倍。',
-        '高原上的符文石记载着数组、索引、广播与绘图的咒语——答对它们，收集数值碎片。',
-        `集齐 ${cp.shardsNeeded} 枚碎片，北方的混沌巢穴封印就会打开。魔君的护盾，唯有 NumPy 的真谛可以击碎。`,
+        '旅行者……欢迎来到科学计算高原。这里的魔法由 NumPy 驱动——在高原上，你要亲手写咒语。',
+        '「ndarray」是装满同种材料的魔法方阵：一句咒语（向量化），整片数据同时变化，用不着 for 循环。',
+        '高原上立着四座阵列石台：🃏 阵列牌局、✦ 星图拼绘、📡 外星信号、⚡ 向量风暴。每座石台都是一种玩法，你写的每一行都是真正的 NumPy。',
+        `通过一座石台的全部关卡，就得到 1 枚数值碎片；集齐 ${cp.shardsNeeded} 枚，北方的混沌巢穴封印就会打开。`,
       ],
       collecting: ({ cp }) => [
         `已收集 ${cp.shards} / ${cp.shardsNeeded} 枚数值碎片。`,
-        '提示：NumPy 数组的索引和切片规则，与列表一脉相承。',
+        '提示：卡住了就点「提示」——先给概念，再给关键写法，最后才是参考解。',
+        '输入咒语时下面会实时显示结果；报错也别怕，它会告诉你哪里不对。',
       ],
-      ready: ['数值碎片已集齐！北方的巢穴封印正在瓦解……'],
-      done: ['混沌曲线魔君已被你击败！东侧传送门通往「天文包星图塔」。'],
+      ready: ['数值碎片已集齐！北方的巢穴封印正在瓦解……', '魔君的护盾是一条混沌曲线——想想 np.sin 的振幅和频率。'],
+      done: ['混沌曲线魔君已被你击败！东侧传送门通往「天文包星图塔」。', '石台还在：挑战关 ★ 随时可以回来玩。'],
     },
     victory: {
       title: '⚡ 第三章 完成！',

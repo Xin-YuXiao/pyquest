@@ -1,0 +1,161 @@
+/* ============================================================
+   第三章小游戏面板（ui/GamePanel.js）+ 咒语输入行（ui/SpellInput.js）
+   挂在 #ui-scale 设计坐标系（960×640）里，沿用羊皮纸 token：
+   --panel / --panel-border / --ink / --gold / --teal / --font-kai
+   各小游戏自己的样式写在 src/games/<id>/*.css，类名前缀用 .gp-game-<id>
+   ============================================================ */
+.gp-backdrop {
+  position: absolute; inset: 0;
+  background: rgba(20, 14, 30, .62);
+  display: none; align-items: center; justify-content: center;
+  z-index: 40;
+}
+.gp-backdrop.show { display: flex; }
+
+.gp-panel {
+  position: relative;
+  width: 920px; height: 616px;
+  display: flex; flex-direction: column;
+  background: var(--panel);
+  border: 3px solid var(--panel-border);
+  border-radius: 16px;
+  box-shadow: 0 8px 0 rgba(0,0,0,.3);
+  padding: 8px 14px 8px;
+  color: var(--ink);
+  animation: gpPop .18s ease-out;
+  outline: none;
+  overflow: hidden;
+}
+@keyframes gpPop { from { transform: scale(.95); opacity: 0; } }
+.gp-panel.won { border-color: var(--gold); box-shadow: 0 8px 0 rgba(0,0,0,.3), 0 0 0 4px rgba(255,210,87,.4); }
+
+.gp-head { display: flex; align-items: center; gap: 10px; }
+.gp-badge {
+  flex: 0 0 auto; width: 38px; height: 38px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--gold); color: #5a3d07; font-size: 22px;
+  box-shadow: inset 0 -3px 0 rgba(0,0,0,.15);
+}
+.gp-titles { flex: 0 1 auto; min-width: 0; }
+.gp-title { margin: 0; font-size: var(--fs-display); letter-spacing: 1px; line-height: 1.1; }
+.gp-sub { font-size: var(--fs-caption); color: #7a6656; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 430px; }
+.gp-levels { margin-left: auto; display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+.gp-lv {
+  min-width: 28px; height: 28px; padding: 0 6px;
+  border-radius: 8px; border: 2px solid #d8c193; background: #fdf3dc;
+  font: bold 13px/1 "JetBrains Mono", Consolas, monospace; color: var(--ink); cursor: pointer;
+}
+.gp-lv.done { background: #d8f3d2; border-color: #7cc472; }
+.gp-lv.done::after { content: '✓'; font-size: 10px; margin-left: 2px; color: #2e7d32; }
+.gp-lv.challenge { color: #b8860b; }
+.gp-lv.locked { opacity: .45; cursor: not-allowed; }
+.gp-lv.cur { border-color: var(--panel-border); background: var(--gold); box-shadow: 0 2px 0 rgba(0,0,0,.2); }
+.gp-x {
+  flex: 0 0 auto; width: 30px; height: 30px; border-radius: 8px; border: 2px solid #d8c193;
+  background: #fdf3dc; color: var(--ink); font-size: 15px; cursor: pointer;
+}
+
+.gp-level-head { display: flex; align-items: baseline; gap: 12px; margin: 6px 2px 0; }
+.gp-level-name { font-weight: bold; font-size: var(--fs-body-lg); }
+.gp-level-concept {
+  font-size: var(--fs-caption); color: #2a6f6d; background: #dff6f4; border-radius: 6px; padding: 1px 8px;
+}
+.gp-story {
+  margin: 4px 2px 4px; font-family: var(--font-kai); font-size: var(--fs-body); line-height: 1.45;
+}
+.gp-story code, .gp-hint code, .gp-game code {
+  font-family: "JetBrains Mono", Consolas, monospace; font-size: .92em;
+  background: #2f2a3d; color: #ffe8a3; border-radius: 4px; padding: 0 4px;
+}
+
+.gp-body { flex: 1 1 auto; min-height: 0; position: relative; }
+.gp-game { height: 100%; }
+.gp-empty { font-family: var(--font-kai); font-size: var(--fs-body-lg); text-align: center; margin-top: 120px; color: #7a6656; }
+
+.gp-hint {
+  margin: 4px 0 0; padding: 4px 10px; border-radius: 8px; max-height: 92px; overflow-y: auto;
+  background: #fff3c4; border: 1px dashed #d99a28;
+  font-family: var(--font-kai); font-size: var(--fs-body);
+}
+.gp-hint p { margin: 2px 0; }
+
+.gp-foot { display: flex; align-items: center; gap: 10px; margin-top: 6px; min-height: 32px; }
+.gp-status { flex: 1 1 auto; font-family: var(--font-kai); font-size: var(--fs-body); min-width: 0; }
+.gp-status.ok { color: #2e7d32; font-weight: bold; }
+.gp-status.bad { color: #c62828; }
+.gp-keys { font-size: var(--fs-caption); color: #7a6656; white-space: nowrap; }
+.gp-keys kbd {
+  font-family: "JetBrains Mono", Consolas, monospace; font-size: 11px;
+  border: 1px solid #c9b48a; border-bottom-width: 2px; border-radius: 4px; padding: 0 4px; background: #fffaf0;
+}
+.gp-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.gp-actions .btn { white-space: nowrap; font-size: var(--fs-body); padding: 5px 14px; }
+
+.gp-win {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  background: rgba(255, 248, 234, .78);
+  animation: gpFade .2s ease-out;
+}
+@keyframes gpFade { from { opacity: 0; } }
+.gp-win-card {
+  min-width: 380px; max-width: 560px; text-align: center;
+  background: #fffaf0; border: 3px solid var(--gold); border-radius: 16px; padding: 18px 26px 16px;
+  box-shadow: 0 8px 0 rgba(0,0,0,.18);
+}
+.gp-win-title { font-family: "ZCOOL KuaiLe", "PingFang SC", sans-serif; font-size: 34px; color: #b8860b; }
+.gp-win-summary { font-family: var(--font-kai); font-size: var(--fs-body-lg); margin: 6px 0 4px; }
+.gp-win-rewards { list-style: none; padding: 0; margin: 6px 0 12px; font-size: var(--fs-body); }
+.gp-win-rewards li { margin: 3px 0; color: #2a6f6d; font-weight: bold; }
+.gp-win-actions { display: flex; gap: 10px; justify-content: center; }
+
+/* ---------- 咒语输入行 ---------- */
+.sp-wrap { display: flex; flex-direction: column; gap: 4px; }
+.sp-wrap.shake { animation: spShake .3s; }
+@keyframes spShake { 20%, 60% { transform: translateX(-5px); } 40%, 80% { transform: translateX(5px); } }
+.sp-line {
+  display: flex; align-items: center; gap: 6px;
+  background: #2f2a3d; border-radius: 10px; padding: 4px 4px 4px 10px;
+  border: 2px solid #4b4362;
+}
+.sp-line:focus-within { border-color: var(--teal); }
+.sp-prompt { color: #7cf29a; font: bold 15px "JetBrains Mono", Consolas, monospace; }
+.sp-input {
+  flex: 1 1 auto; min-width: 0; background: transparent; border: 0; outline: none;
+  color: #f4efff; font: 16px/1.6 "JetBrains Mono", Consolas, monospace; caret-color: var(--gold);
+}
+.sp-input::placeholder { color: rgba(232,227,245,.38); }
+.sp-cast { padding: 4px 14px; font-size: var(--fs-body); white-space: nowrap; }
+.sp-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.sp-chip {
+  min-width: 28px; padding: 2px 7px; border-radius: 6px; border: 1px solid #c9b48a; background: #fffaf0;
+  font: 13px "JetBrains Mono", Consolas, monospace; color: var(--ink); cursor: pointer;
+}
+.sp-chip:active { background: var(--gold); }
+.sp-out {
+  margin: 0; min-height: 40px; max-height: 128px; overflow: auto;
+  background: #fffaf0; border: 1px solid #e3d2ae; border-radius: 8px; padding: 4px 8px;
+  font: 13px/1.45 "JetBrains Mono", Consolas, monospace; color: var(--ink); white-space: pre;
+}
+.sp-out.idle, .sp-out .sp-dim { color: #a08c78; font-family: var(--font-kai); white-space: normal; }
+.sp-out.err { background: #fff0f0; border-color: #f2b8b8; }
+.sp-out .sp-etype { color: #c62828; font-weight: bold; }
+.sp-out .sp-emsg { color: #8e2a2a; white-space: pre-wrap; }
+.sp-out .sp-ehint { display: block; margin-top: 2px; color: #6b4a2a; font-family: var(--font-kai); font-size: 14px; white-space: pre-wrap; }
+.sp-out .sp-name { color: #2a6f6d; font-weight: bold; }
+.sp-out .sp-print { color: #555; }
+.sp-out.msg { font-family: var(--font-kai); font-size: var(--fs-body); white-space: pre-wrap; }
+.sp-out.msg.ok { background: #effaec; border-color: #a8d9a0; color: #2e7d32; }
+.sp-out.msg.bad { background: #fff0f0; border-color: #f2b8b8; color: #8e2a2a; }
+
+/* ---------- 「可用变量」 ---------- */
+.sp-vars { display: flex; flex-direction: column; gap: 4px; }
+.sp-var { display: flex; gap: 6px; align-items: flex-start; }
+.sp-var-name {
+  flex: 0 0 auto; font: bold 13px "JetBrains Mono", Consolas, monospace;
+  background: #2f2a3d; color: #7cf29a; border-radius: 4px; padding: 1px 6px;
+}
+.sp-var-name::after { content: ' ='; color: #c9c2d6; }
+.sp-var-val {
+  margin: 0; font: 12px/1.35 "JetBrains Mono", Consolas, monospace; color: var(--ink);
+  white-space: pre; overflow-x: auto; max-width: 100%;
+}

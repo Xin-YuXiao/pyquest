@@ -64,6 +64,7 @@ export const G = {
   towerRun: null,           // 进行中的一次试炼塔挑战（不持久化；结构见 core/tower.js 的 newRun）
   realms: {},            // Project 秘境进度：秘境 id → { steps, done, doneAt }（core/realms.js；不计入章节进度）
   realm: null,           // 玩家当前所在的秘境：null 不在秘境 / 'hall' 秘境大厅 / 秘境 id（不存档，场景进入时设定）
+  games: {},             // 第三章试炼场（NumPy 小游戏）进度：小游戏 id → { levels, doneAt, data }（core/games.js）
 };
 
 export function resetState() {
@@ -84,6 +85,7 @@ export function resetState() {
   G.towerRun = null;
   G.realms = {};
   G.realm = null;
+  G.games = {};
 }
 
 /** 取某章进度（默认当前章） */

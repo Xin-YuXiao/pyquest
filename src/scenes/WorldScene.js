@@ -26,6 +26,7 @@ import { spawnSecretProp, interactSecret, secretHint, SECRET_RADIUS } from './se
 import { ACTION_EVENT, isTouchMode, pressLabel } from '../core/input.js';
 import { touchControls } from '../ui/TouchControls.js';
 import { DOJO_KEY } from './DojoScene.js';
+import { spawnGameSite } from './games.js';
 
 // ---------- 交互判定半径（玩法冻结：数值即原字面量，勿改） ----------
 /** 符文石可交互/提示半径（px，世界坐标距离） */
@@ -42,7 +43,7 @@ const INTERACT_DOJO_RADIUS = 280;
  * 由 WorldScene.spawnProp 消费；交互类道具会进一步转化为 Interactable 供 tryInteract 使用。
  *
  * @typedef {Object} PropDef
- * @property {string} type 道具种类：'tree'|'house'|'npc'|'rune'|'gate'|'torch'|'bush'|'crystal'|'shroom'|'door'|'doorlink'|'observatory'|'secret'|'dojo'
+ * @property {string} type 道具种类：'tree'|'house'|'npc'|'rune'|'gate'|'torch'|'bush'|'crystal'|'shroom'|'door'|'doorlink'|'observatory'|'secret'|'dojo'|'game'
  * @property {number} x 世界坐标 x（px）
  * @property {number} y 世界坐标 y（px，多数贴图以此为锚/基准深度）
  * @property {string} [id] 仅 type='npc'：'tablet'（引导石碑）|'elder'（长老）等
@@ -54,6 +55,7 @@ const INTERACT_DOJO_RADIUS = 280;
  * @property {string[]} [lockLines] 仅 type='doorlink'： locked 时被检查的对话行（缺省内置文案）
  * @property {string} [kind] 仅 type='observatory'：观测台 id（core/observatory.js 的 OBSERVATORIES 键）
  * @property {string} [secretId] 仅 type='secret'：秘藏彩蛋 id（data/secrets.js，由 withSecret 挂到野外）
+ * @property {string} [game] 仅 type='game'：试炼场小游戏 id（games/registry.js；入口见 scenes/games.js）
  */
 
 /**
@@ -393,6 +395,11 @@ export class WorldScene extends Phaser.Scene {
         spawnSecretProp(this, p);
         break;
       }
+      case 'game': {
+        // 试炼场石台（第三章 NumPy 小游戏）：生成 / 交互 / 结算全部在 scenes/games.js
+        spawnGameSite(this, p);
+        break;
+      }
       case 'doorlink': {
         // 带封印状态的传送门：locked 时有实体阻挡 + 可按 E 检查（子类可覆写 onDoorLocked 解锁）
         const locked = !meetsRequires(p.requires);
@@ -453,6 +460,7 @@ export class WorldScene extends Phaser.Scene {
   tryInteract() {
     if (this.quiz.isOpen || this.dialogue.isOpen || this.observatory.isOpen || this.player.dying || this.player.scripted) return;
     if (this.secretScroll && this.secretScroll.isOpen) return;
+    if (this.gamePanel && this.gamePanel.isOpen) return;
     const px = this.player.x, py = this.player.y;
     const dist = (x, y) => Phaser.Math.Distance.Between(px, py, x, y);
 

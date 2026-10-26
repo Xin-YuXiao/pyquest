@@ -9,6 +9,7 @@ import { makeFieldScene, makeLairScene } from './scenes/ChapterScene.js';
 import { TowerScene } from './scenes/TowerScene.js';
 import { TOWER_KEY } from './core/tower.js';
 import { makeRealmScenes, REALM_SCENE_KEYS } from './scenes/RealmScene.js';
+import { ArenaScene, ARENA_KEY } from './games/arena/ArenaScene.js';
 import { CHAPTERS } from './data/chapters.js';
 import { initAutosave } from './core/save.js';
 
@@ -31,6 +32,9 @@ sceneKeys.push(TOWER_KEY);
 // Project 秘境（独立注册表 data/realms.js，不计入章节数）：大厅 + 每个秘境的外庭与圣所
 scenes.push(...makeRealmScenes());
 sceneKeys.push(...REALM_SCENE_KEYS);
+// 第三章试炼场「向量风暴」（场景玩法，从科学计算高原的石台进入）
+scenes.push(ArenaScene);
+sceneKeys.push(ARENA_KEY);
 
 const config = {
   type: Phaser.AUTO,

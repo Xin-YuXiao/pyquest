@@ -3,7 +3,7 @@
 //
 // 只暴露两类入口，不再直接暴露可写的全局状态 G：
 //   只读查询 —— scene(key) / active() / state() / audio() / observatory() / secrets() / bossMech(key) /
-//     mistakes() / quizInfo() / input() / dojo() / tower() / realms()
+//     mistakes() / quizInfo() / input() / dojo() / tower() / realms() / games()
 //     · state() 返回纯数据快照（Set → 数组、progress / 学习记录深拷贝），
 //       可安全跨 Playwright evaluate 序列化
 //     · secrets() 返回秘藏快照（已发现 / 总数 / 本场景石碑位置 / 特效状态）
@@ -11,9 +11,10 @@
 //     · mistakes() 错题本视图；quizInfo() 答题面板模式与正确项展示下标
 //     · tower() 试炼塔快照（是否开放 / 累计战绩 / 进行中的挑战 / 本层符文与阶梯位置 / 结算页）
 //     · realms() Project 秘境快照（是否开启 / 各秘境进度 / 所在秘境 / 本场景课题符文状态）
+//     · games() 第三章试炼场快照（各小游戏已通过关卡 / 是否完成；面板打开时附面板与小游戏快照）
 //   语义动作 —— teleport / godmode / clearMinions / pinBoss / hitBoss /
 //     breakBossShield / slayBoss / gotoChapter / gotoLair / setShards / setHearts / applyTestState /
-//     openDojo / towerJump / unlockRealms / gotoRealm
+//     openDojo / towerJump / unlockRealms / gotoRealm / openGame / winGameLevel
 //     （openDojo 直达代码训练场；dojo() 返回训练场关卡 / 运行阶段 / 结果 / Python 运行时 / 进度）
 //     每个动作一个明确语义，脚本侧无法绕过它们直接改写进度。
 //
@@ -32,6 +33,9 @@ import { DOJO_KEY } from '../scenes/DojoScene.js';
 import { TOWER_KEY, towerUnlocked, floorCleared } from './tower.js';
 import { REALMS, REALM_HALL, REALM_UNLOCK_CHAPTER, getRealm, realmsUnlocked } from '../data/realms.js';
 import { realmState, badgeCount } from './realms.js';
+import { GAMES } from '../games/registry.js';
+import { gameState, gameComplete, levelUnlocked } from './games.js';
+import { openGameSite, applyLevelWin, refreshGameSites } from '../scenes/games.js';
 
 export function buildSeam(game, sceneKeys) {
   // ---------- 只读查询 ----------
@@ -333,6 +337,45 @@ export function buildSeam(game, sceneKeys) {
     return true;
   }
 
+  // ---------- 第三章试炼场（NumPy 小游戏） ----------
+  /** 试炼场快照：各小游戏已通过的关卡 / 是否完成 / 可玩关卡；面板打开时附带面板与小游戏自己的快照 */
+  function games() {
+    const s = active();
+    const out = {};
+    for (const [id, meta] of Object.entries(GAMES)) {
+      const st = gameState(G, id);
+      out[id] = {
+        done: Object.keys(st.levels),
+        complete: gameComplete(G, id),
+        unlocked: meta.levels.filter((l) => levelUnlocked(G, id, l.id)).map((l) => l.id),
+        levels: meta.levels.map((l) => l.id),
+        data: JSON.parse(JSON.stringify(st.data || {})),
+      };
+    }
+    return {
+      state: out,
+      panel: s && s.gamePanel ? s.gamePanel.snapshot() : null,
+      sites: s && s.gameSites ? s.gameSites.map((it) => ({ game: it.game, x: it.x, y: it.y })) : [],
+      arena: s && s.arenaSnapshot ? s.arenaSnapshot() : null,
+    };
+  }
+
+  /** 打开当前场景里的试炼场（levelId 可空 = 下一关）；场景玩法会切场景 */
+  function openGame(id, levelId = null) {
+    return openGameSite(active(), id, levelId);
+  }
+
+  /** 直接判定通过一关（走与真实通关同一套结算：碎片 / 回血 / 破盾），返回结算结果 */
+  function winGameLevel(id, levelId) {
+    const s = active();
+    const r = applyLevelWin(id, levelId, {}, s && s.ch && !s.ch.virtual ? s.ch : null);
+    if (s) {
+      refreshGameSites(s);
+      if (r.breakShield && s.breakBossShield) s.breakBossShield();
+    }
+    return r;
+  }
+
   function setHearts(n) {
     G.hearts = Math.max(1, Math.min(G.maxHearts, n));
     updateHud();
@@ -356,5 +399,6 @@ export function buildSeam(game, sceneKeys) {
     scene, active, state, audio, observatory, secrets, bossMech, mistakes, quizInfo, input, dojo, tower, realms,
     teleport, godmode, clearMinions, pinBoss, hitBoss, breakBossShield, slayBoss,
     gotoChapter, gotoLair, setShards, setHearts, applyTestState, openDojo, towerJump, unlockRealms, gotoRealm,
+    games, openGame, winGameLevel,
   };
 }
