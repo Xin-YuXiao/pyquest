@@ -9,7 +9,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint .",
-    "test": "node scripts/smoke.mjs && node scripts/verify-quiz.mjs && node scripts/verify-secrets.mjs && node scripts/verify-dojo.mjs && node scripts/verify-npmini.mjs",
+    "test": "node scripts/smoke.mjs && node scripts/verify-quiz.mjs && node scripts/verify-secrets.mjs && node scripts/verify-dojo.mjs && node scripts/verify-npmini.mjs && node scripts/verify-game-curve.mjs && node scripts/verify-game-picross.mjs && node scripts/verify-game-cards.mjs",
     "test:e2e": "node scripts/run-e2e.mjs",
     "stubs": "node scripts/gen-ts-stubs.mjs",
     "check": "npm run lint && npm test && npm run build && npm run test:e2e"
