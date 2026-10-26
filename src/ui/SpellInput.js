@@ -19,6 +19,8 @@ export class SpellInput {
    * @param {Array<string|{label: string, text: string}>} [opts.chips]
    * @param {string} [opts.placeholder]
    * @param {string} [opts.castLabel]
+   * @param {(res: object, scope: object) => (string|null)} [opts.describe] 接管成功结果的显示文字（返回 null 用默认显示）
+   * @param {string} [opts.idleText] 输入为空时输出区的说明
    */
   constructor(root, opts) {
     this.opts = opts;
@@ -155,6 +157,9 @@ export class SpellInput {
       if (res.error.hint) add(`💡 ${res.error.hint}`, 'sp-ehint');
       return;
     }
+    // 小游戏可以接管成功结果的显示（例如 100 个点的曲线只显示形状与读数）
+    const custom = this.opts.describe ? this.opts.describe(res, scope) : null;
+    if (typeof custom === 'string') { add(custom, 'sp-val'); return; }
     if (res.value !== NONE) {
       add(strValue(res.value), 'sp-val');
       return;

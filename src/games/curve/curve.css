@@ -1,0 +1,63 @@
+/* 曲线对消（第三章 BOSS 护盾）——示波器面板 */
+.gp-game-curve { display: flex; flex-direction: column; gap: 4px; }
+.cv-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.cv-shield { display: flex; align-items: center; gap: 6px; }
+.cv-pip {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #ffd0e0, #e2537a 60%, #8a2346);
+  border: 2px solid #5c1a33; box-shadow: 0 0 8px rgba(242, 86, 112, .55);
+  animation: cvPulse 1.6s ease-in-out infinite;
+}
+.cv-pip.cur { outline: 3px solid var(--gold); outline-offset: 2px; }
+.cv-pip.broken {
+  background: repeating-linear-gradient(45deg, #9b93ad 0 4px, #6e6683 4px 8px);
+  border-color: #4f4862; box-shadow: none; animation: none; opacity: .55;
+  clip-path: polygon(0 0, 45% 0, 60% 40%, 100% 30%, 100% 100%, 50% 100%, 35% 60%, 0 75%);
+}
+@keyframes cvPulse { 50% { box-shadow: 0 0 14px rgba(242, 86, 112, .85); } }
+.cv-shield-label { font-family: var(--font-kai); font-size: var(--fs-body); margin-left: 6px; }
+.cv-core { font-family: var(--font-kai); font-size: var(--fs-body-lg); color: #8a2346; font-weight: bold; }
+
+.cv-meter { display: flex; align-items: center; gap: 8px; font-size: var(--fs-caption); }
+.cv-meter-label { color: #7a6656; }
+.cv-meter-bar {
+  position: relative; width: 180px; height: 12px; border-radius: 6px; overflow: hidden;
+  background: #eadbbd; border: 2px solid #d8c193;
+}
+.cv-meter-bar i { position: absolute; left: 0; top: 0; bottom: 0; background: #e2537a; transition: width .12s; }
+.cv-meter-bar i[data-ok="1"] { background: var(--green); }
+.cv-meter-bar em { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--ink); }
+.cv-meter-val { font-family: "JetBrains Mono", Consolas, monospace; font-size: 14px; min-width: 44px; }
+
+.cv-scope {
+  display: block; width: 100%; height: auto;
+  background: radial-gradient(ellipse at center, #2b2740 0%, #1c1830 100%);
+  border-radius: 12px; border: 2px solid #4b4362;
+  font-family: "JetBrains Mono", Consolas, monospace; font-size: 12px;
+}
+.cv-scope.miss { animation: cvShake .32s; }
+@keyframes cvShake { 25% { transform: translateX(-6px); } 50% { transform: translateX(5px); } 75% { transform: translateX(-3px); } }
+.cv-grid line { stroke: rgba(232, 227, 245, .1); stroke-width: 1; }
+.cv-grid line.zero { stroke: rgba(232, 227, 245, .32); }
+.cv-grid text { fill: rgba(232, 227, 245, .55); }
+.cv-axis { fill: rgba(124, 242, 154, .7) !important; font-size: 11px; }
+.cv-boss { fill: none; stroke: #ff5d7c; stroke-width: 3; stroke-linejoin: round; }
+.cv-boss-glow { fill: none; stroke: rgba(255, 93, 124, .35); stroke-width: 10; filter: blur(3px); animation: cvGlow 1.4s ease-in-out infinite; }
+@keyframes cvGlow { 50% { stroke-width: 16; stroke: rgba(255, 93, 124, .2); } }
+.cv-scope.cancelled .cv-boss-glow { animation: none; stroke: rgba(255, 210, 87, .3); }
+.cv-mine { fill: none; stroke: #3ddad7; stroke-width: 2.6; stroke-dasharray: 7 4; stroke-linejoin: round; }
+.cv-res { fill: rgba(255, 210, 87, .28); stroke: none; }
+.cv-worst { stroke: #ffd257; stroke-width: 1.4; stroke-dasharray: 3 3; }
+.cv-worst-t { fill: #ffd257; font-size: 12px; font-weight: bold; }
+.cv-sweep { fill: rgba(61, 218, 215, .14); }
+.cv-sweep.go { animation: cvSweep .6s ease-in forwards; }
+@keyframes cvSweep { from { width: 0; } to { width: 814px; } }
+.cv-spark { animation: cvSpark .85s ease-out forwards; }
+@keyframes cvSpark { to { transform: translate(var(--dx), var(--dy)); opacity: 0; } }
+
+.cv-legend { display: flex; align-items: center; gap: 14px; font-size: var(--fs-caption); }
+.cv-l.boss { color: #d43d5f; font-weight: bold; }
+.cv-l.mine { color: #1f9e9b; font-weight: bold; }
+.cv-l.res { color: #b8860b; }
+.cv-stats { margin-left: auto; font-family: "JetBrains Mono", Consolas, monospace; color: #6b5a4a; }
+.cv-input .sp-out { max-height: 64px; min-height: 30px; }
