@@ -239,6 +239,7 @@ class TouchControls {
     // 不收起的话左半屏的摇杆区会截走拟合台滑块的拖动
     if ((s.observatory && s.observatory.isOpen) || (s.secretScroll && s.secretScroll.isOpen)) return 'off';
     if (s.towerResult && s.towerResult.isOpen) return 'off'; // 试炼塔结算页
+    if (s.touchBlocked && s.touchBlocked()) return 'off'; // 场景自管的全屏面板（如向量风暴的备咒台 / 结算页）
     if (s.worldmap && s.worldmap.isOpen) return s.worldmap.book && s.worldmap.book.isOpen ? 'off' : 'map';
     return 'play';
   }
