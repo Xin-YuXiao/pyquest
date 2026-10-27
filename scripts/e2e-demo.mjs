@@ -2,7 +2,7 @@
 // 端到端测试：课堂演示入口（标题画面「第三章演示」按钮，npm run demo 打开的 /?demo）
 // 用法: node scripts/e2e-demo.mjs（需要先 npm run dev；npm run test:e2e -- demo 会自动起服）
 // 断言：不带 ?demo 时按钮不出现；带 ?demo 点按钮 → 第三章野外，第一、二章已通关、第三章全新；
-// 已有存档时先弹确认，确认后同样从第三章开头开始。
+// 已有存档时先弹确认，确认后同样从第三章开头开始；「全部关卡已通关」按钮把五个小游戏全部记为通过。
 // ============================================================
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
@@ -73,6 +73,22 @@ try {
   st = await page.evaluate(() => window.__PYQUEST__.state());
   check(!!confirmed && confirmed.includes('覆盖当前存档'), '已有存档时先弹确认框');
   check(st.progress[3].shards === 0, '确认后第三章重新开始（碎片清零）');
+
+  // 「全部关卡已通关」：五个小游戏每一关都记为通过，碎片集齐、封印已开、护盾已破，魔君仍在
+  await page.goto(demoUrl, { waitUntil: 'networkidle' });
+  await waitForTitle();
+  check(await page.evaluate(() => !!document.getElementById('btn-demo-all').offsetParent), '带 ?demo：还有「全部关卡已通关」按钮');
+  page.once('dialog', (d) => d.accept());
+  await page.click('#btn-demo-all');
+  await waitForField();
+  await page.waitForTimeout(600);
+  st = await page.evaluate(() => window.__PYQUEST__.state());
+  const gs = await page.evaluate(() => window.__PYQUEST__.games().state);
+  check(Object.values(gs).every((g) => g.complete && g.done.length === g.levels.length),
+    `五个小游戏全部关卡（含挑战关）已通过：${Object.entries(gs).map(([k, g]) => `${k} ${g.done.length}/${g.levels.length}`).join('，')}`);
+  check(st.progress[3].shards === 4 && st.progress[3].gateOpen, '碎片 4 / 4、巢穴封印已开');
+  check(!st.progress[3].bossShielded && !st.progress[3].done, '魔君护盾已破、魔君仍在（可以演示 BOSS 战）');
+  await page.screenshot({ path: 'scripts/shots/demo-03-all-cleared.png' });
 } catch (e) {
   failed = true;
   console.log(`✗ 异常：${e.message}`);

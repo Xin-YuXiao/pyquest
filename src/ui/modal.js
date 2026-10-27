@@ -15,20 +15,23 @@ import { mountMusicToggle } from './musicToggle.js';
 // eslint-disable-next-line no-misleading-character-class -- U+FE0F（emoji 变体选择符）单列进字符类是有意的：与前一个 emoji 逐码位一起剥掉
 const STRIP_EMOJI = /^[\s\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]+\s*/u;
 
-export function initTitle({ onNew, onContinue, onDemo }) {
+export function initTitle({ onNew, onContinue, onDemo, onDemoAll }) {
   const el = document.getElementById('title');
   const btnStart = document.getElementById('btn-start');
   const btnNew = document.getElementById('btn-new');
   // 课堂演示（网址带 ?demo）：多一个按钮，从第三章开头开始（第一、二章记为已通关）
-  const btnDemo = document.getElementById('btn-demo');
-  if (btnDemo && onDemo && new URLSearchParams(window.location.search).has('demo')) {
-    btnDemo.style.display = '';
-    btnDemo.addEventListener('click', () => {
-      if (hasSave() && !window.confirm('演示会从第三章开头重新开始，覆盖当前存档，确定吗？')) return;
+  // 「全部关卡已通关」：第三章五个小游戏的每一关都记为通过，任何一关都能直接点开演示
+  const demoMode = new URLSearchParams(window.location.search).has('demo');
+  [['btn-demo', onDemo], ['btn-demo-all', onDemoAll]].forEach(([id, cb]) => {
+    const btn = document.getElementById(id);
+    if (!btn || !cb || !demoMode) return;
+    btn.style.display = '';
+    btn.addEventListener('click', () => {
+      if (hasSave() && !window.confirm('演示会重新开始第三章，覆盖当前存档，确定吗？')) return;
       el.classList.add('hidden');
-      onDemo();
+      cb();
     });
-  }
+  });
   // 标题主题曲 + 右上角音乐开关（首次点击 / 按键后才真正发声，见 audio/music.js）
   mountMusicToggle(el);
   music.play('title');
