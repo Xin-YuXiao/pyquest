@@ -21,7 +21,7 @@
 // 正常游戏路径完全不经过本模块（仅 main.js 启动时挂载一次）；
 // 场景 / 实体 / 数据层逻辑零改动。
 // ============================================================
-import { G, updateHud } from './state.js';
+import { G, updateHud, completeChaptersBefore } from './state.js';
 import { CHAPTERS, getChapter } from '../data/chapters.js';
 import { music } from '../audio/music.js';
 import { SECRET_TOTAL } from '../data/secrets.js';
@@ -261,23 +261,6 @@ export function buildSeam(game, sceneKeys) {
     b.hp = 1;
     b.hurtCdUntil = 0; // 清受击冷却：紧跟在上一击之后补刀时（机器负载高、游戏时钟走得慢）不会被吞掉
     b.hurt(1, b.x, b.y + 224);
-  }
-
-  /** 把第 1..target-1 章标记为完整通关（含符文槽破解） */
-  function completeChaptersBefore(target) {
-    for (const ch of CHAPTERS) {
-      if (ch.id >= target.id) break;
-      const p = G.progress[ch.id];
-      p.shards = p.shardsNeeded;
-      p.gateOpen = true;
-      p.bossShielded = false;
-      p.bossDefeated = true;
-      p.done = true;
-      // 该章全部符文槽标记为已破解（符文石变灰，不再可交互）
-      for (const prop of [...ch.buildField(ch).props, ...ch.buildLair(ch).props]) {
-        if (prop.type === 'rune') G.answered.add(prop.qid);
-      }
-    }
   }
 
   /** 跳章：把第 1..id-1 章标记为完整通关（含符文槽破解），落到第 id 章野外 */

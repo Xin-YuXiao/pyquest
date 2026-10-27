@@ -152,6 +152,26 @@ export function meetsRequires(req) {
   return !!p[req.flag];
 }
 
+/**
+ * 把第 1..target-1 章标记为完整通关（含符文槽破解）：测试接缝的跳章与标题画面的「第三章演示」共用。
+ * target 是章节对象；不切场景、不写档（调用方自己 updateHud / 存档）
+ */
+export function completeChaptersBefore(target) {
+  for (const ch of CHAPTERS) {
+    if (ch.id >= target.id) break;
+    const p = cp(ch.id);
+    p.shards = p.shardsNeeded;
+    p.gateOpen = true;
+    p.bossShielded = false;
+    p.bossDefeated = true;
+    p.done = true;
+    // 该章全部符文槽标记为已破解（符文石变灰，不再可交互）
+    for (const prop of [...ch.buildField(ch).props, ...ch.buildLair(ch).props]) {
+      if (prop.type === 'rune') G.answered.add(prop.qid);
+    }
+  }
+}
+
 /** 玩家进度可推进到的最新章节（用于标题「继续冒险」落点） */
 export function furthestChapter() {
   let n = 1;

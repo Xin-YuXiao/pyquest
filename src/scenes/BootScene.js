@@ -6,7 +6,7 @@ import Phaser from 'phaser';
 import { generateAllTextures, createAnimations } from '../textures/pixelArt.js';
 import { loadTSAssets, createTSAnimations } from '../assets/ts.js';
 import { initTitle } from '../ui/modal.js';
-import { resetState, furthestChapter } from '../core/state.js';
+import { G, resetState, furthestChapter, completeChaptersBefore } from '../core/state.js';
 import { getChapter } from '../data/chapters.js';
 import { clearSave, loadGame, armAutosave } from '../core/save.js';
 
@@ -28,6 +28,16 @@ export default class BootScene extends Phaser.Scene {
         resetState();
         armAutosave();
         this.scene.start('Village', { spawn: 'start' });
+      },
+      // 第三章演示（标题画面 ?demo）：新存档，第一、二章记为已通关，从高原入口开始
+      onDemo: () => {
+        clearSave();
+        resetState();
+        armAutosave();
+        const ch = getChapter(3);
+        completeChaptersBefore(ch);
+        G.current = ch.id;
+        this.scene.start(ch.fieldKey, { spawn: 'fromPrev' });
       },
       onContinue: () => {
         if (!loadGame()) { clearSave(); resetState(); }
